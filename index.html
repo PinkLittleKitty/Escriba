@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escriba - Tu carpeta universitaria</title>
+    <meta name="description" content="Organizá tus apuntes universitarios como en una carpeta real. Perfecto para estudiantes argentinos.">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1><i class="fas fa-book-open"></i> Escriba</h1>
+                <div class="semester-info">
+                    <span id="currentSemester">1er Cuatrimestre</span>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button id="newSubjectBtn" class="btn btn-accent" title="Crear nueva materia">
+                    <i class="fas fa-folder-plus"></i> Nueva Materia
+                </button>
+                <button id="newNoteBtn" class="btn btn-primary" title="Crear nuevo apunte">
+                    <i class="fas fa-file-plus"></i> Nuevo Apunte
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" title="Opciones">
+                        <i class="fas fa-cog"></i> Opciones
+                    </button>
+                    <div class="dropdown-menu">
+                        <button id="exportBtn"><i class="fas fa-download"></i> Exportar Carpeta</button>
+                        <button id="importBtn"><i class="fas fa-upload"></i> Importar Carpeta</button>
+                        <button id="settingsBtn"><i class="fas fa-palette"></i> Personalizar</button>
+                        <button id="printBtn"><i class="fas fa-print"></i> Imprimir Apunte</button>
+                    </div>
+                </div>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="search-section">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Buscá en tu carpeta..." autocomplete="off">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="view-toggles">
+                        <button class="view-btn active" data-view="subjects" title="Ver por materias">
+                            <i class="fas fa-folder"></i> Materias
+                        </button>
+                        <button class="view-btn" data-view="recent" title="Ver apuntes recientes">
+                            <i class="fas fa-clock"></i> Recientes
+                        </button>
+                        <button class="view-btn" data-view="favorites" title="Ver apuntes favoritos">
+                            <i class="fas fa-star"></i> Favoritos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="subjects-container" id="subjectsContainer">
+                    <!-- Las materias y apuntes se cargan acá -->
+                </div>
+            </aside>
+
+            <main class="editor-area">
+                <div id="welcomeScreen" class="welcome-screen">
+                    <div class="welcome-content">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h2>¡Bienvenido a Escriba!</h2>
+                        <p>Organizá tus apuntes universitarios por materia, como en una carpeta real. Perfecto para estudiantes argentinos.</p>
+                        <div class="welcome-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-folder"></i>
+                                <span>Organizá por materias</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-search"></i>
+                                <span>Buscá rápidamente</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-cloud"></i>
+                                <span>Guardado automático</span>
+                            </div>
+                        </div>
+                        <div class="welcome-actions">
+                            <button class="btn btn-primary" id="welcomeNewSubject">
+                                <i class="fas fa-folder-plus"></i> Crear Primera Materia
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="noteEditor" class="note-editor" style="display: none;">
+                    <div class="note-header">
+                        <div class="note-title-section">
+                            <input type="text" id="noteTitle" placeholder="Apunte sin título" class="title-input" autocomplete="off">
+                            <div class="note-breadcrumb">
+                                <span id="noteSubject"></span>
+                                <i class="fas fa-chevron-right"></i>
+                                <span id="noteType">Apuntes de Clase</span>
+                            </div>
+                        </div>
+                        <div class="note-actions">
+                            <select id="noteTypeSelect" class="note-type-select" title="Tipo de apunte">
+                                <option value="lecture">📝 Apuntes de Clase</option>
+                                <option value="assignment">📋 Trabajo Práctico</option>
+                                <option value="study">📚 Guía de Estudio</option>
+                                <option value="lab">🧪 Informe de Lab</option>
+                                <option value="project">🚀 Proyecto</option>
+                                <option value="exam">📊 Preparación Parcial</option>
+                                <option value="summary">📄 Resumen</option>
+                                <option value="exercise">✏️ Ejercicios</option>
+                            </select>
+                            <div class="note-meta">
+                                <button id="favoriteBtn" class="btn btn-icon" title="Marcar como favorito">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <span id="noteDate"></span>
+                                <button id="deleteNoteBtn" class="btn btn-danger-subtle" title="Eliminar apunte">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="editor-toolbar">
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" data-command="bold" title="Negrita (Ctrl+B)"><i
+                                    class="fas fa-bold"></i></button>
+                            <button class="toolbar-btn" data-command="italic" title="Cursiva (Ctrl+I)"><i
+                                    class="fas fa-italic"></i></button>
+                            <button class="toolbar-btn" data-command="underline" title="Subrayado (Ctrl+U)"><i
+                                    class="fas fa-underline"></i></button>
+                            <button class="toolbar-btn" data-command="strikeThrough" title="Tachado"><i
+                                    class="fas fa-strikethrough"></i></button>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" data-command="insertUnorderedList" title="Lista con viñetas"><i
+                                    class="fas fa-list-ul"></i></button>
+                            <button class="toolbar-btn" data-command="insertOrderedList" title="Lista numerada"><i
+                                    class="fas fa-list-ol"></i></button>
+                            <button class="toolbar-btn" data-command="indent" title="Aumentar sangría"><i
+                                    class="fas fa-indent"></i></button>
+                            <button class="toolbar-btn" data-command="outdent" title="Reducir sangría"><i
+                                    class="fas fa-outdent"></i></button>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" id="highlightBtn" title="Resaltar texto"><i
+                                    class="fas fa-highlighter"></i></button>
+                            <button class="toolbar-btn" data-command="removeFormat" title="Limpiar formato"><i
+                                    class="fas fa-remove-format"></i></button>
+                            <button class="toolbar-btn" id="insertDateBtn" title="Insertar fecha"><i
+                                    class="fas fa-calendar"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="noteContent" class="note-content" contenteditable="true"
+                        placeholder="Empezá a escribir tus apuntes... Usá Ctrl+B para negrita, Ctrl+I para cursiva"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modal para crear materia -->
+        <div id="subjectModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-folder-plus"></i> Crear Nueva Materia</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="subjectName">Nombre de la Materia</label>
+                        <input type="text" id="subjectName" placeholder="ej: Análisis Matemático I" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="subjectCode">Código (opcional)</label>
+                        <input type="text" id="subjectCode" placeholder="ej: MAT101" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="subjectProfessor">Profesor (opcional)</label>
+                        <input type="text" id="subjectProfessor" placeholder="ej: Dr. García" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="subjectColor">Color de la Materia</label>
+                        <div class="color-picker">
+                            <div class="color-option" data-color="#3b82f6" style="background: #3b82f6" title="Azul"></div>
+                            <div class="color-option" data-color="#10b981" style="background: #10b981" title="Verde"></div>
+                            <div class="color-option" data-color="#f59e0b" style="background: #f59e0b" title="Naranja"></div>
+                            <div class="color-option" data-color="#ef4444" style="background: #ef4444" title="Rojo"></div>
+                            <div class="color-option" data-color="#8b5cf6" style="background: #8b5cf6" title="Violeta"></div>
+                            <div class="color-option" data-color="#06b6d4" style="background: #06b6d4" title="Celeste"></div>
+                            <div class="color-option" data-color="#84cc16" style="background: #84cc16" title="Lima"></div>
+                            <div class="color-option" data-color="#f97316" style="background: #f97316" title="Naranja oscuro"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelSubject">Cancelar</button>
+                    <button class="btn btn-primary" id="createSubject">Crear Materia</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast para notificaciones -->
+        <div id="toast" class="toast">
+            <div class="toast-content">
+                <i class="toast-icon"></i>
+                <span class="toast-message"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

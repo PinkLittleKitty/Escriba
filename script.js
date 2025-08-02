@@ -9,7 +9,10 @@ class CuadernoDigital {
     }
 
     init() {
+        document.body.classList.add('loading');
+
         this.bindEvents();
+        this.loadSettings();
         this.renderSubjects();
 
         if (this.subjects.length === 0) {
@@ -17,6 +20,10 @@ class CuadernoDigital {
         }
 
         this.updateSemesterInfo();
+
+        setTimeout(() => {
+            document.body.classList.remove('loading');
+        }, 100);
     }
 
     bindEvents() {
@@ -35,6 +42,7 @@ class CuadernoDigital {
 
         document.getElementById('exportBtn').addEventListener('click', () => this.exportCarpeta());
         document.getElementById('importBtn').addEventListener('click', () => this.importCarpeta());
+        document.getElementById('settingsBtn').addEventListener('click', () => this.showSettingsModal());
         document.getElementById('printBtn').addEventListener('click', () => this.printCurrentNote());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImport(e));
 
@@ -47,6 +55,15 @@ class CuadernoDigital {
         document.getElementById('createSubject').addEventListener('click', () => this.createSubject());
         document.getElementById('cancelSubject').addEventListener('click', () => this.hideSubjectModal());
         document.querySelector('.modal-close').addEventListener('click', () => this.hideSubjectModal());
+
+        document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
+        document.getElementById('cancelSettings').addEventListener('click', () => this.hideSettingsModal());
+        document.getElementById('clearAllData').addEventListener('click', () => this.clearAllData());
+        document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
+
+        document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
+            btn.addEventListener('click', () => this.hideSettingsModal());
+        });
 
         document.querySelectorAll('.color-option').forEach(option => {
             option.addEventListener('click', (e) => this.selectColor(e.target.dataset.color));
@@ -81,7 +98,21 @@ class CuadernoDigital {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.hideSubjectModal();
+                this.hideSettingsModal();
             }
+        });
+
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', (e) => this.selectTheme(e.target.closest('.theme-option').dataset.theme));
+        });
+
+        document.getElementById('fontSize').addEventListener('input', (e) => {
+            document.getElementById('fontSizeValue').textContent = e.target.value + 'px';
+            document.documentElement.style.setProperty('--font-size', e.target.value + 'px');
+        });
+
+        document.getElementById('fontFamily').addEventListener('change', (e) => {
+            document.documentElement.style.setProperty('--font-family', e.target.value);
         });
     }
 
@@ -260,7 +291,7 @@ class CuadernoDigital {
         const favoriteBtn = document.getElementById('favoriteBtn');
         favoriteBtn.classList.toggle('active', note.favorite || false);
 
-        document.querySelectorAll('.note-item').forEach(item => {
+        document.querySelectorAll('.note-item, .note-item-compact').forEach(item => {
             item.classList.toggle('active', item.dataset.noteId === noteId);
         });
 
@@ -502,26 +533,31 @@ class CuadernoDigital {
                     <i class="fas fa-star"></i>
                     <span>Apuntes Favoritos (${favoriteNotes.length})</span>
                 </div>
-                ${favoriteNotes.map(note => `
-                    <div class="note-item favorite" data-note-id="${note.id}">
-                        <div class="note-type-icon">${this.getNoteTypeIcon(note.type)}</div>
-                        <div class="note-details">
-                            <h3>
-                                ${this.escapeHtml(note.title)}
+                <div class="favorites-content">
+                    ${favoriteNotes.map(note => `
+                        <div class="note-item-compact favorite" data-note-id="${note.id}">
+                            <div class="compact-note-header">
+                                <div class="note-type-icon" data-tooltip="${this.escapeHtml(note.title)}">${this.getNoteTypeIcon(note.type)}</div>
+                                <div class="note-title-compact">${this.escapeHtml(note.title)}</div>
                                 <i class="fas fa-star favorite-star"></i>
-                            </h3>
-                            <p>${this.getPreview(note.content)}</p>
-                            <div class="note-meta-row">
-                                <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
-                                <span class="note-date">${this.formatDate(note.updatedAt)}</span>
+                                <button class="expand-btn" onclick="event.stopPropagation(); this.parentElement.parentElement.classList.toggle('expanded')">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="note-details-expanded">
+                                <p class="note-preview">${this.getPreview(note.content)}</p>
+                                <div class="note-meta-row">
+                                    <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
+                                    <span class="note-date">${this.formatDate(note.updatedAt)}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                </div>
             </div>
         `;
 
-        container.querySelectorAll('.note-item').forEach(item => {
+        container.querySelectorAll('.note-item-compact').forEach(item => {
             item.addEventListener('click', () => this.openNote(item.dataset.noteId));
         });
     }
@@ -554,26 +590,31 @@ class CuadernoDigital {
                     <i class="fas fa-clock"></i>
                     <span>Apuntes Recientes</span>
                 </div>
-                ${recentNotes.map(note => `
-                    <div class="note-item ${note.favorite ? 'favorite' : ''}" data-note-id="${note.id}">
-                        <div class="note-type-icon">${this.getNoteTypeIcon(note.type)}</div>
-                        <div class="note-details">
-                            <h3>
-                                ${this.escapeHtml(note.title)}
+                <div class="recent-content">
+                    ${recentNotes.map(note => `
+                        <div class="note-item-compact ${note.favorite ? 'favorite' : ''}" data-note-id="${note.id}">
+                            <div class="compact-note-header">
+                                <div class="note-type-icon" data-tooltip="${this.escapeHtml(note.title)}">${this.getNoteTypeIcon(note.type)}</div>
+                                <div class="note-title-compact">${this.escapeHtml(note.title)}</div>
                                 ${note.favorite ? '<i class="fas fa-star favorite-star"></i>' : ''}
-                            </h3>
-                            <p>${this.getPreview(note.content)}</p>
-                            <div class="note-meta-row">
-                                <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
-                                <span class="note-date">${this.formatDate(note.updatedAt)}</span>
+                                <button class="expand-btn" onclick="event.stopPropagation(); this.parentElement.parentElement.classList.toggle('expanded')">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="note-details-expanded">
+                                <p class="note-preview">${this.getPreview(note.content)}</p>
+                                <div class="note-meta-row">
+                                    <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
+                                    <span class="note-date">${this.formatDate(note.updatedAt)}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                </div>
             </div>
         `;
 
-        container.querySelectorAll('.note-item').forEach(item => {
+        container.querySelectorAll('.note-item-compact').forEach(item => {
             item.addEventListener('click', () => this.openNote(item.dataset.noteId));
         });
     }
@@ -638,26 +679,31 @@ class CuadernoDigital {
                     <i class="fas fa-search"></i>
                     <span>Búsqueda: "${query}" (${resultText})</span>
                 </div>
-                ${results.map(note => `
-                    <div class="note-item ${note.favorite ? 'favorite' : ''}" data-note-id="${note.id}">
-                        <div class="note-type-icon">${this.getNoteTypeIcon(note.type)}</div>
-                        <div class="note-details">
-                            <h3>
-                                ${this.highlightSearchTerm(this.escapeHtml(note.title), query)}
+                <div class="search-content">
+                    ${results.map(note => `
+                        <div class="note-item-compact ${note.favorite ? 'favorite' : ''}" data-note-id="${note.id}">
+                            <div class="compact-note-header">
+                                <div class="note-type-icon" data-tooltip="${this.escapeHtml(note.title)}">${this.getNoteTypeIcon(note.type)}</div>
+                                <div class="note-title-compact">${this.highlightSearchTerm(this.escapeHtml(note.title), query)}</div>
                                 ${note.favorite ? '<i class="fas fa-star favorite-star"></i>' : ''}
-                            </h3>
-                            <p>${this.highlightSearchTerm(this.getPreview(note.content), query)}</p>
-                            <div class="note-meta-row">
-                                <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
-                                <span class="note-date">${this.formatDate(note.updatedAt)}</span>
+                                <button class="expand-btn" onclick="event.stopPropagation(); this.parentElement.parentElement.classList.toggle('expanded')">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="note-details-expanded">
+                                <p class="note-preview">${this.highlightSearchTerm(this.getPreview(note.content), query)}</p>
+                                <div class="note-meta-row">
+                                    <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
+                                    <span class="note-date">${this.formatDate(note.updatedAt)}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                </div>
             </div>
         `;
 
-        container.querySelectorAll('.note-item').forEach(item => {
+        container.querySelectorAll('.note-item-compact').forEach(item => {
             item.addEventListener('click', () => this.openNote(item.dataset.noteId));
         });
     }
@@ -786,6 +832,184 @@ class CuadernoDigital {
 
     saveCarpeta() {
         localStorage.setItem('cuadernoDigital', JSON.stringify(this.subjects));
+    }
+
+    showSettingsModal() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            modal.classList.add('active');
+            this.updateSettingsStats();
+            this.loadCurrentSettings();
+        } else {
+            console.error('Settings modal not found');
+        }
+    }
+
+    hideSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('active');
+    }
+
+    loadSettings() {
+        const settings = JSON.parse(localStorage.getItem('escribaSettings')) || {};
+
+        if (settings.theme) {
+            document.documentElement.setAttribute('data-theme', settings.theme);
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+
+        if (settings.fontFamily) {
+            document.documentElement.style.setProperty('--font-family', settings.fontFamily);
+        }
+
+        if (settings.fontSize) {
+            document.documentElement.style.setProperty('--font-size', settings.fontSize + 'px');
+        }
+
+        if (settings.autoSave !== undefined) {
+            if (!settings.autoSave && this.autoSaveInterval) {
+                clearInterval(this.autoSaveInterval);
+                this.autoSaveInterval = null;
+            }
+        }
+    }
+
+    loadCurrentSettings() {
+        const settings = JSON.parse(localStorage.getItem('escribaSettings')) || {
+            theme: 'dark',
+            fontFamily: 'Inter',
+            fontSize: 16,
+            autoSave: true,
+            expandSubjects: true,
+            showWelcome: true
+        };
+
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.classList.toggle('active', option.dataset.theme === settings.theme);
+        });
+
+        const fontFamilyEl = document.getElementById('fontFamily');
+        const fontSizeEl = document.getElementById('fontSize');
+        const fontSizeValueEl = document.getElementById('fontSizeValue');
+        const autoSaveEl = document.getElementById('autoSave');
+        const expandSubjectsEl = document.getElementById('expandSubjects');
+        const showWelcomeEl = document.getElementById('showWelcome');
+
+        if (fontFamilyEl) fontFamilyEl.value = settings.fontFamily;
+        if (fontSizeEl) fontSizeEl.value = settings.fontSize;
+        if (fontSizeValueEl) fontSizeValueEl.textContent = settings.fontSize + 'px';
+        if (autoSaveEl) autoSaveEl.checked = settings.autoSave;
+        if (expandSubjectsEl) expandSubjectsEl.checked = settings.expandSubjects;
+        if (showWelcomeEl) showWelcomeEl.checked = settings.showWelcome;
+    }
+
+    selectTheme(theme) {
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.classList.toggle('active', option.dataset.theme === theme);
+        });
+        document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    saveSettings() {
+        const activeTheme = document.querySelector('.theme-option.active');
+        const fontFamilyEl = document.getElementById('fontFamily');
+        const fontSizeEl = document.getElementById('fontSize');
+        const autoSaveEl = document.getElementById('autoSave');
+        const expandSubjectsEl = document.getElementById('expandSubjects');
+        const showWelcomeEl = document.getElementById('showWelcome');
+
+        if (!activeTheme || !fontFamilyEl || !fontSizeEl || !autoSaveEl || !expandSubjectsEl || !showWelcomeEl) {
+            console.error('Settings form elements not found');
+            return;
+        }
+
+        const settings = {
+            theme: activeTheme.dataset.theme,
+            fontFamily: fontFamilyEl.value,
+            fontSize: parseInt(fontSizeEl.value),
+            autoSave: autoSaveEl.checked,
+            expandSubjects: expandSubjectsEl.checked,
+            showWelcome: showWelcomeEl.checked
+        };
+
+        localStorage.setItem('escribaSettings', JSON.stringify(settings));
+
+        document.documentElement.setAttribute('data-theme', settings.theme);
+        document.documentElement.style.setProperty('--font-family', settings.fontFamily);
+        document.documentElement.style.setProperty('--font-size', settings.fontSize + 'px');
+
+        if (settings.autoSave && !this.autoSaveInterval) {
+            this.autoSaveInterval = setInterval(() => {
+                if (this.currentNoteId) {
+                    this.saveCurrentNote(true);
+                }
+            }, 2000);
+        } else if (!settings.autoSave && this.autoSaveInterval) {
+            clearInterval(this.autoSaveInterval);
+            this.autoSaveInterval = null;
+        }
+
+        if (settings.expandSubjects) {
+            this.subjects.forEach(subject => {
+                subject.expanded = true;
+            });
+            this.saveCarpeta();
+            this.renderSubjects();
+        }
+
+        this.hideSettingsModal();
+        this.showToast('Configuración guardada exitosamente', 'success');
+    }
+
+    updateSettingsStats() {
+        const totalSubjects = this.subjects.length;
+        const totalNotes = this.subjects.reduce((sum, subject) => sum + subject.notes.length, 0);
+        const totalWords = this.subjects.reduce((sum, subject) => {
+            return sum + subject.notes.reduce((noteSum, note) => {
+                const text = note.content.replace(/<[^>]*>/g, '').trim();
+                return noteSum + (text ? text.split(/\s+/).length : 0);
+            }, 0);
+        }, 0);
+
+        document.getElementById('totalSubjects').textContent = totalSubjects;
+        document.getElementById('totalNotes').textContent = totalNotes;
+        document.getElementById('totalWords').textContent = totalWords.toLocaleString();
+    }
+
+    clearAllData() {
+        if (confirm('¿Estás seguro de que querés eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
+            if (confirm('Esta acción eliminará todas tus materias y apuntes permanentemente. ¿Estás completamente seguro?')) {
+                localStorage.removeItem('cuadernoDigital');
+                this.subjects = [];
+                this.currentNoteId = null;
+                this.renderSubjects();
+                this.showWelcomeScreen();
+                this.hideSettingsModal();
+                this.showToast('Todos los datos han sido eliminados', 'success');
+            }
+        }
+    }
+
+    resetSettings() {
+        if (confirm('¿Querés restaurar la configuración por defecto?')) {
+            localStorage.removeItem('escribaSettings');
+
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.removeProperty('--font-family');
+            document.documentElement.style.removeProperty('--font-size');
+
+            if (this.autoSaveInterval) {
+                clearInterval(this.autoSaveInterval);
+            }
+            this.autoSaveInterval = setInterval(() => {
+                if (this.currentNoteId) {
+                    this.saveCurrentNote(true);
+                }
+            }, 2000);
+
+            this.loadCurrentSettings();
+            this.showToast('Configuración restaurada', 'success');
+        }
     }
 
     getPreview(content) {

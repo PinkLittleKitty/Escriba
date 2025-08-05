@@ -38,6 +38,8 @@
                         <button id="importBtn"><i class="fas fa-upload"></i> Importar Carpeta</button>
                         <button id="settingsBtn"><i class="fas fa-palette"></i> Personalizar</button>
                         <button id="printBtn"><i class="fas fa-print"></i> Imprimir Apunte</button>
+                        <hr style="margin: 0.5rem 0; border: none; border-top: 1px solid var(--border-color);">
+                        <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
                     </div>
                 </div>
                 <input type="file" id="importFile" accept=".json" style="display: none;">
@@ -65,7 +67,6 @@
                 </div>
 
                 <div class="subjects-container" id="subjectsContainer">
-                    <!-- Las materias y apuntes se cargan acá -->
                 </div>
             </aside>
 
@@ -171,7 +172,6 @@
             </main>
         </div>
 
-        <!-- Modal para crear materia -->
         <div id="subjectModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -220,7 +220,6 @@
             </div>
         </div>
 
-        <!-- Modal de personalización -->
         <div id="settingsModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -378,7 +377,6 @@
             </div>
         </div>
 
-        <!-- Toast para notificaciones -->
         <div id="toast" class="toast">
             <div class="toast-content">
                 <i class="toast-icon"></i>
@@ -387,7 +385,13 @@
         </div>
     </div>
 
+    <script src="api.js"></script>
     <script src="script.js"></script>
+    <script>
+        if (!api.isAuthenticated()) {
+            window.location.href = '/auth.html';
+        }
+    </script>
 </body>
 
 </html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuaderno Digital - Acceso</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-logo {
+            font-size: 3rem;
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+        }
+
+        .auth-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-focus);
+        }
+
+        .auth-button {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--accent-shadow);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-switch {
+            margin-top: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-switch button {
+            background: none;
+            border: none;
+            color: var(--accent-blue);
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: inherit;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .auth-card {
+                padding: 2rem;
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <i class="fas fa-book-open"></i>
+            </div>
+            
+            <div id="loginForm">
+                <h1 class="auth-title">Bienvenido de vuelta</h1>
+                <p class="auth-subtitle">Accede a tu cuaderno digital</p>
+                
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                
+                <form class="auth-form" id="loginFormElement">
+                    <div class="form-group">
+                        <label for="loginUsername">Usuario o Email</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loginPassword">Contraseña</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    
+                    <button type="submit" class="auth-button" id="loginButton">
+                        <span class="button-text">Iniciar Sesión</span>
+                        <span class="loading" style="display: none;"></span>
+                    </button>
+                </form>
+                
+                <div class="auth-switch">
+                    ¿No tienes cuenta? 
+                    <button type="button" onclick="showRegister()">Regístrate aquí</button>
+                </div>
+            </div>
+            
+            <div id="registerForm" style="display: none;">
+                <h1 class="auth-title">Crear cuenta</h1>
+                <p class="auth-subtitle">Únete a Cuaderno Digital</p>
+                
+                <div id="registerErrorMessage" class="error-message" style="display: none;"></div>
+                
+                <form class="auth-form" id="registerFormElement">
+                    <div class="form-group">
+                        <label for="registerUsername">Nombre de usuario</label>
+                        <input type="text" id="registerUsername" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registerPassword">Contraseña</label>
+                        <input type="password" id="registerPassword" required minlength="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar contraseña</label>
+                        <input type="password" id="confirmPassword" required minlength="6">
+                    </div>
+                    
+                    <button type="submit" class="auth-button" id="registerButton">
+                        <span class="button-text">Crear Cuenta</span>
+                        <span class="loading" style="display: none;"></span>
+                    </button>
+                </form>
+                
+                <div class="auth-switch">
+                    ¿Ya tienes cuenta? 
+                    <button type="button" onclick="showLogin()">Inicia sesión aquí</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script>
+        // Check if already authenticated
+        if (api.isAuthenticated()) {
+            window.location.href = '/';
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            clearErrors();
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+            clearErrors();
+        }
+
+        function clearErrors() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('registerErrorMessage').style.display = 'none';
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function setLoading(buttonId, loading) {
+            const button = document.getElementById(buttonId);
+            const text = button.querySelector('.button-text');
+            const spinner = button.querySelector('.loading');
+            
+            if (loading) {
+                text.style.display = 'none';
+                spinner.style.display = 'inline-block';
+                button.disabled = true;
+            } else {
+                text.style.display = 'inline';
+                spinner.style.display = 'none';
+                button.disabled = false;
+            }
+        }
+
+        // Login form handler
+        document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors();
+            setLoading('loginButton', true);
+
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                await api.login(username, password);
+                window.location.href = '/';
+            } catch (error) {
+                showError('errorMessage', error.message);
+            } finally {
+                setLoading('loginButton', false);
+            }
+        });
+
+        // Register form handler
+        document.getElementById('registerFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors();
+
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showError('registerErrorMessage', 'Las contraseñas no coinciden');
+                return;
+            }
+
+            setLoading('registerButton', true);
+
+            try {
+                await api.register(username, email, password);
+                window.location.href = '/';
+            } catch (error) {
+                showError('registerErrorMessage', error.message);
+            } finally {
+                setLoading('registerButton', false);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 class CuadernoDigital {
     constructor() {
-        this.subjects = JSON.parse(localStorage.getItem('cuadernoDigital')) || [];
+        this.subjects = [];
+        this.notes = [];
         this.currentNoteId = null;
         this.currentView = 'subjects';
         this.selectedColor = '#3b82f6';
@@ -8,11 +9,12 @@ class CuadernoDigital {
         this.init();
     }
 
-    init() {
+    async init() {
         document.body.classList.add('loading');
 
         this.bindEvents();
-        this.loadSettings();
+        await this.loadSettings();
+        await this.loadData();
         this.renderSubjects();
 
         if (this.subjects.length === 0) {
@@ -44,6 +46,11 @@ class CuadernoDigital {
         document.getElementById('importBtn').addEventListener('click', () => this.importCarpeta());
         document.getElementById('settingsBtn').addEventListener('click', () => this.showSettingsModal());
         document.getElementById('printBtn').addEventListener('click', () => this.printCurrentNote());
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImport(e));
 
         document.querySelectorAll('.view-btn').forEach(btn => {
@@ -114,6 +121,25 @@ class CuadernoDigital {
         document.getElementById('fontFamily').addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--font-family', e.target.value);
         });
+    }
+
+    async loadData() {
+        try {
+            this.subjects = await api.getSubjects();
+            this.notes = await api.getNotes();
+
+            console.log('Loaded subjects:', this.subjects);
+            console.log('Loaded notes:', this.notes);
+
+            this.subjects.forEach(subject => {
+                subject.notes = this.notes.filter(note => note.subject_id == subject.id);
+                subject.expanded = true;
+                console.log(`Subject "${subject.name}" (ID: ${subject.id}) has ${subject.notes.length} notes`);
+            });
+        } catch (error) {
+            console.error('Failed to load data:', error);
+            this.showToast('Error al cargar los datos', 'error');
+        }
     }
 
     updateSemesterInfo() {
@@ -190,7 +216,7 @@ class CuadernoDigital {
         });
     }
 
-    createSubject() {
+    async createSubject() {
         const name = document.getElementById('subjectName').value.trim();
         const code = document.getElementById('subjectCode').value.trim();
         const professor = document.getElementById('subjectProfessor').value.trim();
@@ -200,29 +226,28 @@ class CuadernoDigital {
             return;
         }
 
-        const subject = {
-            id: Date.now().toString(),
-            name: name,
-            code: code,
-            professor: professor,
-            color: this.selectedColor,
-            notes: [],
-            createdAt: new Date().toISOString(),
-            expanded: true
-        };
+        try {
+            const subject = await api.createSubject(name, this.selectedColor);
+            subject.code = code;
+            subject.professor = professor;
+            subject.notes = [];
+            subject.expanded = true;
 
-        this.subjects.unshift(subject);
-        this.saveCarpeta();
-        this.renderSubjects();
-        this.hideSubjectModal();
-        this.showToast(`Materia "${name}" creada exitosamente`, 'success');
+            this.subjects.unshift(subject);
+            this.renderSubjects();
+            this.hideSubjectModal();
+            this.showToast(`Materia "${name}" creada exitosamente`, 'success');
 
-        if (this.subjects.length === 1) {
-            this.showWelcomeScreen(false);
+            if (this.subjects.length === 1) {
+                this.showWelcomeScreen(false);
+            }
+        } catch (error) {
+            console.error('Failed to create subject:', error);
+            this.showToast('Error al crear la materia', 'error');
         }
     }
 
-    createNewNote() {
+    async createNewNote() {
         if (this.subjects.length === 0) {
             this.showToast('Primero creá una materia', 'info');
             this.showSubjectModal();
@@ -230,30 +255,27 @@ class CuadernoDigital {
         }
 
         const subjectId = this.getCurrentSubjectId() || this.subjects[0].id;
-        const subject = this.subjects.find(s => s.id === subjectId);
+        const subject = this.subjects.find(s => s.id == subjectId);
 
-        const note = {
-            id: Date.now().toString(),
-            title: 'Apunte sin título',
-            content: '',
-            type: 'lecture',
-            subjectId: subjectId,
-            favorite: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
+        try {
+            const note = await api.createNote(subjectId, 'Apunte sin título', '', 'lecture');
+            note.subjectId = subjectId;
 
-        subject.notes.unshift(note);
-        this.saveCarpeta();
-        this.renderSubjects();
-        this.openNote(note.id);
-        this.showToast('Nuevo apunte creado', 'success');
+            subject.notes.unshift(note);
+            this.notes.unshift(note);
+            this.renderSubjects();
+            this.openNote(note.id);
+            this.showToast('Nuevo apunte creado', 'success');
+        } catch (error) {
+            console.error('Failed to create note:', error);
+            this.showToast('Error al crear el apunte', 'error');
+        }
     }
 
     getCurrentSubjectId() {
         if (this.currentNoteId) {
             for (const subject of this.subjects) {
-                const note = subject.notes.find(n => n.id === this.currentNoteId);
+                const note = subject.notes.find(n => n.id == this.currentNoteId);
                 if (note) return subject.id;
             }
         }
@@ -261,11 +283,13 @@ class CuadernoDigital {
     }
 
     openNote(noteId) {
+        console.log('Opening note with ID:', noteId, 'Type:', typeof noteId);
         let note = null;
         let subject = null;
 
         for (const s of this.subjects) {
-            const foundNote = s.notes.find(n => n.id === noteId);
+            console.log('Checking subject:', s.name, 'Notes:', s.notes.map(n => ({ id: n.id, type: typeof n.id, title: n.title })));
+            const foundNote = s.notes.find(n => n.id == noteId);
             if (foundNote) {
                 note = foundNote;
                 subject = s;
@@ -273,7 +297,10 @@ class CuadernoDigital {
             }
         }
 
-        if (!note || !subject) return;
+        if (!note || !subject) {
+            console.log('Note or subject not found. Note:', note, 'Subject:', subject);
+            return;
+        }
 
         this.currentNoteId = noteId;
 
@@ -283,7 +310,7 @@ class CuadernoDigital {
         document.getElementById('noteTitle').value = note.title;
         document.getElementById('noteContent').innerHTML = note.content;
         document.getElementById('noteTypeSelect').value = note.type || 'lecture';
-        document.getElementById('noteDate').textContent = this.formatDate(note.updatedAt);
+        document.getElementById('noteDate').textContent = this.formatDate(note.updated_at || note.updatedAt);
 
         document.getElementById('noteSubject').textContent = subject.name;
         document.getElementById('noteType').textContent = this.getNoteTypeLabel(note.type || 'lecture');
@@ -292,7 +319,7 @@ class CuadernoDigital {
         favoriteBtn.classList.toggle('active', note.favorite || false);
 
         document.querySelectorAll('.note-item, .note-item-compact').forEach(item => {
-            item.classList.toggle('active', item.dataset.noteId === noteId);
+            item.classList.toggle('active', item.dataset.noteId == noteId);
         });
 
         setTimeout(() => {
@@ -314,12 +341,12 @@ class CuadernoDigital {
         return types[type] || '📝 Apuntes de Clase';
     }
 
-    toggleFavorite() {
+    async toggleFavorite() {
         if (!this.currentNoteId) return;
 
         let note = null;
         for (const subject of this.subjects) {
-            const foundNote = subject.notes.find(n => n.id === this.currentNoteId);
+            const foundNote = subject.notes.find(n => n.id == this.currentNoteId);
             if (foundNote) {
                 note = foundNote;
                 break;
@@ -328,15 +355,22 @@ class CuadernoDigital {
 
         if (!note) return;
 
-        note.favorite = !note.favorite;
-        this.saveCarpeta();
-        this.renderSubjects();
+        try {
+            const newFavoriteStatus = !note.favorite;
+            await api.updateNote(this.currentNoteId, note.title, note.content, newFavoriteStatus);
 
-        const favoriteBtn = document.getElementById('favoriteBtn');
-        favoriteBtn.classList.toggle('active', note.favorite);
+            note.favorite = newFavoriteStatus;
+            this.renderSubjects();
 
-        const message = note.favorite ? 'Apunte agregado a favoritos' : 'Apunte removido de favoritos';
-        this.showToast(message, 'success');
+            const favoriteBtn = document.getElementById('favoriteBtn');
+            favoriteBtn.classList.toggle('active', note.favorite);
+
+            const message = note.favorite ? 'Apunte agregado a favoritos' : 'Apunte removido de favoritos';
+            this.showToast(message, 'success');
+        } catch (error) {
+            console.error('Failed to toggle favorite:', error);
+            this.showToast('Error al actualizar favorito', 'error');
+        }
     }
 
     insertDate() {
@@ -371,14 +405,14 @@ class CuadernoDigital {
         window.print();
     }
 
-    saveCurrentNote(isAutoSave = false) {
+    async saveCurrentNote(isAutoSave = false) {
         if (!this.currentNoteId) return;
 
         let note = null;
         let subject = null;
 
         for (const s of this.subjects) {
-            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
+            const foundNote = s.notes.find(n => n.id == this.currentNoteId);
             if (foundNote) {
                 note = foundNote;
                 subject = s;
@@ -395,41 +429,60 @@ class CuadernoDigital {
         const hasChanges = note.title !== title || note.content !== content || note.type !== type;
         if (!hasChanges && isAutoSave) return;
 
-        note.title = title;
-        note.content = content;
-        note.type = type;
-        note.updatedAt = new Date().toISOString();
+        try {
+            await api.updateNote(this.currentNoteId, title, content, note.favorite);
 
-        this.saveCarpeta();
-        this.renderSubjects();
-        document.getElementById('noteDate').textContent = this.formatDate(note.updatedAt);
-        document.getElementById('noteType').textContent = this.getNoteTypeLabel(type);
+            note.title = title;
+            note.content = content;
+            note.type = type;
+            note.updated_at = new Date().toISOString();
 
-        if (!isAutoSave) {
-            this.showToast('Apunte guardado', 'success');
+            this.renderSubjects();
+            document.getElementById('noteDate').textContent = this.formatDate(note.updated_at);
+            document.getElementById('noteType').textContent = this.getNoteTypeLabel(type);
+
+            if (!isAutoSave) {
+                this.showToast('Apunte guardado', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to save note:', error);
+            if (!isAutoSave) {
+                this.showToast('Error al guardar el apunte', 'error');
+            }
         }
     }
 
-    deleteCurrentNote() {
+    async deleteCurrentNote() {
         if (!this.currentNoteId) return;
 
         if (confirm('¿Estás seguro de que querés eliminar este apunte? Esta acción no se puede deshacer.')) {
             let noteTitle = '';
 
-            for (const subject of this.subjects) {
-                const noteIndex = subject.notes.findIndex(n => n.id === this.currentNoteId);
-                if (noteIndex !== -1) {
-                    noteTitle = subject.notes[noteIndex].title;
-                    subject.notes.splice(noteIndex, 1);
-                    break;
-                }
-            }
+            try {
+                await api.deleteNote(this.currentNoteId);
 
-            this.saveCarpeta();
-            this.renderSubjects();
-            this.showWelcomeScreen();
-            this.currentNoteId = null;
-            this.showToast(`Apunte "${noteTitle}" eliminado`, 'success');
+                for (const subject of this.subjects) {
+                    const noteIndex = subject.notes.findIndex(n => n.id == this.currentNoteId);
+                    if (noteIndex !== -1) {
+                        noteTitle = subject.notes[noteIndex].title;
+                        subject.notes.splice(noteIndex, 1);
+                        break;
+                    }
+                }
+
+                const globalNoteIndex = this.notes.findIndex(n => n.id == this.currentNoteId);
+                if (globalNoteIndex !== -1) {
+                    this.notes.splice(globalNoteIndex, 1);
+                }
+
+                this.renderSubjects();
+                this.showWelcomeScreen();
+                this.currentNoteId = null;
+                this.showToast(`Apunte "${noteTitle}" eliminado`, 'success');
+            } catch (error) {
+                console.error('Failed to delete note:', error);
+                this.showToast('Error al eliminar el apunte', 'error');
+            }
         }
     }
 
@@ -477,7 +530,7 @@ class CuadernoDigital {
                                         ${note.favorite ? '<i class="fas fa-star favorite-star"></i>' : ''}
                                     </h3>
                                     <p>${this.getPreview(note.content)}</p>
-                                    <div class="note-date">${this.formatDate(note.updatedAt)}</div>
+                                    <div class="note-date">${this.formatDate(note.updated_at || note.updatedAt)}</div>
                                 </div>
                             </div>
                         `).join('')
@@ -491,7 +544,7 @@ class CuadernoDigital {
                 const folder = header.closest('.subject-folder');
                 folder.classList.toggle('expanded');
                 const subjectId = folder.dataset.subjectId;
-                const subject = this.subjects.find(s => s.id === subjectId);
+                const subject = this.subjects.find(s => s.id == subjectId);
                 if (subject) {
                     subject.expanded = folder.classList.contains('expanded');
                     this.saveCarpeta();
@@ -520,7 +573,7 @@ class CuadernoDigital {
             });
         });
 
-        favoriteNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        favoriteNotes.sort((a, b) => new Date(b.updated_at || b.updatedAt) - new Date(a.updated_at || a.updatedAt));
 
         if (favoriteNotes.length === 0) {
             container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No tenés apuntes favoritos todavía</div>';
@@ -576,7 +629,7 @@ class CuadernoDigital {
             });
         });
 
-        allNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        allNotes.sort((a, b) => new Date(b.updated_at || b.updatedAt) - new Date(a.updated_at || a.updatedAt));
         const recentNotes = allNotes.slice(0, 20);
 
         if (recentNotes.length === 0) {
@@ -830,16 +883,12 @@ class CuadernoDigital {
         }
     }
 
-    saveCarpeta() {
-        localStorage.setItem('cuadernoDigital', JSON.stringify(this.subjects));
-    }
-
-    showSettingsModal() {
+    async showSettingsModal() {
         const modal = document.getElementById('settingsModal');
         if (modal) {
             modal.classList.add('active');
             this.updateSettingsStats();
-            this.loadCurrentSettings();
+            await this.loadCurrentSettings();
         } else {
             console.error('Settings modal not found');
         }
@@ -849,58 +898,70 @@ class CuadernoDigital {
         document.getElementById('settingsModal').classList.remove('active');
     }
 
-    loadSettings() {
-        const settings = JSON.parse(localStorage.getItem('escribaSettings')) || {};
+    async loadSettings() {
+        try {
+            const settings = await api.getSettings();
 
-        if (settings.theme) {
-            document.documentElement.setAttribute('data-theme', settings.theme);
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-
-        if (settings.fontFamily) {
-            document.documentElement.style.setProperty('--font-family', settings.fontFamily);
-        }
-
-        if (settings.fontSize) {
-            document.documentElement.style.setProperty('--font-size', settings.fontSize + 'px');
-        }
-
-        if (settings.autoSave !== undefined) {
-            if (!settings.autoSave && this.autoSaveInterval) {
-                clearInterval(this.autoSaveInterval);
-                this.autoSaveInterval = null;
+            if (settings.theme) {
+                document.documentElement.setAttribute('data-theme', settings.theme);
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
+
+            if (settings.font_family) {
+                document.documentElement.style.setProperty('--font-family', settings.font_family);
+            }
+
+            if (settings.font_size) {
+                document.documentElement.style.setProperty('--font-size', settings.font_size + 'px');
+            }
+
+            if (settings.auto_save !== undefined) {
+                if (!settings.auto_save && this.autoSaveInterval) {
+                    clearInterval(this.autoSaveInterval);
+                    this.autoSaveInterval = null;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+            document.documentElement.setAttribute('data-theme', 'dark');
         }
     }
 
-    loadCurrentSettings() {
-        const settings = JSON.parse(localStorage.getItem('escribaSettings')) || {
-            theme: 'dark',
-            fontFamily: 'Inter',
-            fontSize: 16,
-            autoSave: true,
-            expandSubjects: true,
-            showWelcome: true
-        };
+    async loadCurrentSettings() {
+        try {
+            const settings = await api.getSettings();
+            const defaults = {
+                theme: 'dark',
+                font_family: 'Inter',
+                font_size: 16,
+                auto_save: true,
+                expand_subjects: true,
+                show_welcome: true
+            };
 
-        document.querySelectorAll('.theme-option').forEach(option => {
-            option.classList.toggle('active', option.dataset.theme === settings.theme);
-        });
+            const finalSettings = { ...defaults, ...settings };
 
-        const fontFamilyEl = document.getElementById('fontFamily');
-        const fontSizeEl = document.getElementById('fontSize');
-        const fontSizeValueEl = document.getElementById('fontSizeValue');
-        const autoSaveEl = document.getElementById('autoSave');
-        const expandSubjectsEl = document.getElementById('expandSubjects');
-        const showWelcomeEl = document.getElementById('showWelcome');
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.theme === finalSettings.theme);
+            });
 
-        if (fontFamilyEl) fontFamilyEl.value = settings.fontFamily;
-        if (fontSizeEl) fontSizeEl.value = settings.fontSize;
-        if (fontSizeValueEl) fontSizeValueEl.textContent = settings.fontSize + 'px';
-        if (autoSaveEl) autoSaveEl.checked = settings.autoSave;
-        if (expandSubjectsEl) expandSubjectsEl.checked = settings.expandSubjects;
-        if (showWelcomeEl) showWelcomeEl.checked = settings.showWelcome;
+            const fontFamilyEl = document.getElementById('fontFamily');
+            const fontSizeEl = document.getElementById('fontSize');
+            const fontSizeValueEl = document.getElementById('fontSizeValue');
+            const autoSaveEl = document.getElementById('autoSave');
+            const expandSubjectsEl = document.getElementById('expandSubjects');
+            const showWelcomeEl = document.getElementById('showWelcome');
+
+            if (fontFamilyEl) fontFamilyEl.value = finalSettings.font_family;
+            if (fontSizeEl) fontSizeEl.value = finalSettings.font_size;
+            if (fontSizeValueEl) fontSizeValueEl.textContent = finalSettings.font_size + 'px';
+            if (autoSaveEl) autoSaveEl.checked = finalSettings.auto_save;
+            if (expandSubjectsEl) expandSubjectsEl.checked = finalSettings.expand_subjects;
+            if (showWelcomeEl) showWelcomeEl.checked = finalSettings.show_welcome;
+        } catch (error) {
+            console.error('Failed to load current settings:', error);
+        }
     }
 
     selectTheme(theme) {
@@ -910,7 +971,7 @@ class CuadernoDigital {
         document.documentElement.setAttribute('data-theme', theme);
     }
 
-    saveSettings() {
+    async saveSettings() {
         const activeTheme = document.querySelector('.theme-option.active');
         const fontFamilyEl = document.getElementById('fontFamily');
         const fontSizeEl = document.getElementById('fontSize');
@@ -925,40 +986,44 @@ class CuadernoDigital {
 
         const settings = {
             theme: activeTheme.dataset.theme,
-            fontFamily: fontFamilyEl.value,
-            fontSize: parseInt(fontSizeEl.value),
-            autoSave: autoSaveEl.checked,
-            expandSubjects: expandSubjectsEl.checked,
-            showWelcome: showWelcomeEl.checked
+            font_family: fontFamilyEl.value,
+            font_size: parseInt(fontSizeEl.value),
+            auto_save: autoSaveEl.checked,
+            expand_subjects: expandSubjectsEl.checked,
+            show_welcome: showWelcomeEl.checked
         };
 
-        localStorage.setItem('escribaSettings', JSON.stringify(settings));
+        try {
+            await api.updateSettings(settings);
 
-        document.documentElement.setAttribute('data-theme', settings.theme);
-        document.documentElement.style.setProperty('--font-family', settings.fontFamily);
-        document.documentElement.style.setProperty('--font-size', settings.fontSize + 'px');
+            document.documentElement.setAttribute('data-theme', settings.theme);
+            document.documentElement.style.setProperty('--font-family', settings.font_family);
+            document.documentElement.style.setProperty('--font-size', settings.font_size + 'px');
 
-        if (settings.autoSave && !this.autoSaveInterval) {
-            this.autoSaveInterval = setInterval(() => {
-                if (this.currentNoteId) {
-                    this.saveCurrentNote(true);
-                }
-            }, 2000);
-        } else if (!settings.autoSave && this.autoSaveInterval) {
-            clearInterval(this.autoSaveInterval);
-            this.autoSaveInterval = null;
+            if (settings.auto_save && !this.autoSaveInterval) {
+                this.autoSaveInterval = setInterval(() => {
+                    if (this.currentNoteId) {
+                        this.saveCurrentNote(true);
+                    }
+                }, 2000);
+            } else if (!settings.auto_save && this.autoSaveInterval) {
+                clearInterval(this.autoSaveInterval);
+                this.autoSaveInterval = null;
+            }
+
+            if (settings.expand_subjects) {
+                this.subjects.forEach(subject => {
+                    subject.expanded = true;
+                });
+                this.renderSubjects();
+            }
+
+            this.hideSettingsModal();
+            this.showToast('Configuración guardada exitosamente', 'success');
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            this.showToast('Error al guardar la configuración', 'error');
         }
-
-        if (settings.expandSubjects) {
-            this.subjects.forEach(subject => {
-                subject.expanded = true;
-            });
-            this.saveCarpeta();
-            this.renderSubjects();
-        }
-
-        this.hideSettingsModal();
-        this.showToast('Configuración guardada exitosamente', 'success');
     }
 
     updateSettingsStats() {
@@ -976,39 +1041,62 @@ class CuadernoDigital {
         document.getElementById('totalWords').textContent = totalWords.toLocaleString();
     }
 
-    clearAllData() {
+    async clearAllData() {
         if (confirm('¿Estás seguro de que querés eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
             if (confirm('Esta acción eliminará todas tus materias y apuntes permanentemente. ¿Estás completamente seguro?')) {
-                localStorage.removeItem('cuadernoDigital');
-                this.subjects = [];
-                this.currentNoteId = null;
-                this.renderSubjects();
-                this.showWelcomeScreen();
-                this.hideSettingsModal();
-                this.showToast('Todos los datos han sido eliminados', 'success');
+                try {
+                    for (const note of this.notes) {
+                        await api.deleteNote(note.id);
+                    }
+
+                    this.subjects = [];
+                    this.notes = [];
+                    this.currentNoteId = null;
+                    this.renderSubjects();
+                    this.showWelcomeScreen();
+                    this.hideSettingsModal();
+                    this.showToast('Todos los datos han sido eliminados', 'success');
+                } catch (error) {
+                    console.error('Failed to clear all data:', error);
+                    this.showToast('Error al eliminar los datos', 'error');
+                }
             }
         }
     }
 
-    resetSettings() {
+    async resetSettings() {
         if (confirm('¿Querés restaurar la configuración por defecto?')) {
-            localStorage.removeItem('escribaSettings');
+            try {
+                const defaultSettings = {
+                    theme: 'dark',
+                    font_family: 'Inter',
+                    font_size: 16,
+                    auto_save: true,
+                    expand_subjects: true,
+                    show_welcome: true
+                };
 
-            document.documentElement.setAttribute('data-theme', 'dark');
-            document.documentElement.style.removeProperty('--font-family');
-            document.documentElement.style.removeProperty('--font-size');
+                await api.updateSettings(defaultSettings);
 
-            if (this.autoSaveInterval) {
-                clearInterval(this.autoSaveInterval);
-            }
-            this.autoSaveInterval = setInterval(() => {
-                if (this.currentNoteId) {
-                    this.saveCurrentNote(true);
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.style.removeProperty('--font-family');
+                document.documentElement.style.removeProperty('--font-size');
+
+                if (this.autoSaveInterval) {
+                    clearInterval(this.autoSaveInterval);
                 }
-            }, 2000);
+                this.autoSaveInterval = setInterval(() => {
+                    if (this.currentNoteId) {
+                        this.saveCurrentNote(true);
+                    }
+                }, 2000);
 
-            this.loadCurrentSettings();
-            this.showToast('Configuración restaurada', 'success');
+                await this.loadCurrentSettings();
+                this.showToast('Configuración restaurada', 'success');
+            } catch (error) {
+                console.error('Failed to reset settings:', error);
+                this.showToast('Error al restaurar la configuración', 'error');
+            }
         }
     }
 
@@ -1042,6 +1130,13 @@ class CuadernoDigital {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    logout() {
+        if (confirm('¿Estás seguro de que querés cerrar sesión?')) {
+            api.logout();
+            window.location.href = '/auth.html';
+        }
     }
 }
 

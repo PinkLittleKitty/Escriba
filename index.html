@@ -4,13 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escriba - Tu cuaderno digital universitario</title>
-    <meta name="description" content="Organizá tus apuntes universitarios como en una carpeta real.">
+    <title>Escriba - Tu cuaderno digital</title>
+    <meta name="description" content="Organizá tus apuntes como en una carpeta real.">
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+    <link rel="icon" type="image/png" href="assets/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/icon-48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-256.png">
 </head>
 
 <body>
@@ -74,7 +77,7 @@
                     <div class="welcome-content">
                         <i class="fas fa-graduation-cap"></i>
                         <h2>¡Bienvenido a Escriba!</h2>
-                        <p>Organizá tus apuntes universitarios por materia, como en una carpeta real.</p>
+                        <p>Organizá tus apuntes por materia, como en una carpeta real.</p>
                         <div class="welcome-stats">
                             <div class="stat-item">
                                 <i class="fas fa-folder"></i>
@@ -374,6 +377,27 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="cancelSettings">Cancelar</button>
                     <button class="btn btn-primary" id="saveSettings">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para seleccionar materia -->
+        <div id="subjectPickerModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-file-plus"></i> Crear Nuevo Apunte</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Seleccioná la materia para el nuevo apunte:</label>
+                        <div id="subjectPickerList" class="subject-picker-list">
+                            <!-- Las materias se cargan acá -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelSubjectPicker">Cancelar</button>
                 </div>
             </div>
         </div>

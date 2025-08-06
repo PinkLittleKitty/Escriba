@@ -61,8 +61,14 @@ class CuadernoDigital {
         document.getElementById('clearAllData').addEventListener('click', () => this.clearAllData());
         document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
 
+        document.getElementById('cancelSubjectPicker').addEventListener('click', () => this.hideSubjectPickerModal());
+
         document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.hideSettingsModal());
+        });
+
+        document.querySelectorAll('#subjectPickerModal .modal-close').forEach(btn => {
+            btn.addEventListener('click', () => this.hideSubjectPickerModal());
         });
 
         document.querySelectorAll('.color-option').forEach(option => {
@@ -95,10 +101,18 @@ class CuadernoDigital {
             }
         }, 2000);
 
+        if (window.electronAPI) {
+            window.electronAPI.onMenuNewSubject(() => this.showSubjectModal());
+            window.electronAPI.onMenuNewNote(() => this.createNewNote());
+            window.electronAPI.onMenuExport(() => this.exportCarpeta());
+            window.electronAPI.onMenuImport(() => this.importCarpeta());
+        }
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.hideSubjectModal();
                 this.hideSettingsModal();
+                this.hideSubjectPickerModal();
             }
         });
 
@@ -179,6 +193,39 @@ class CuadernoDigital {
         this.updateColorSelection();
     }
 
+    showSubjectPickerModal() {
+        const modal = document.getElementById('subjectPickerModal');
+        const listContainer = document.getElementById('subjectPickerList');
+
+        listContainer.innerHTML = this.subjects.map(subject => `
+            <div class="subject-picker-item" data-subject-id="${subject.id}">
+                <div class="subject-picker-icon" style="background: ${subject.color}"></div>
+                <div class="subject-picker-info">
+                    <div class="subject-picker-name">${this.escapeHtml(subject.name)}</div>
+                    <div class="subject-picker-details">
+                        ${subject.code ? `<span class="subject-picker-code">${this.escapeHtml(subject.code)}</span>` : ''}
+                        ${subject.professor ? `<span>Prof. ${this.escapeHtml(subject.professor)}</span>` : ''}
+                        <span class="subject-picker-count">${subject.notes.length} apuntes</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        listContainer.querySelectorAll('.subject-picker-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const subjectId = item.dataset.subjectId;
+                this.hideSubjectPickerModal();
+                this.createNoteInSubject(subjectId);
+            });
+        });
+
+        modal.classList.add('active');
+    }
+
+    hideSubjectPickerModal() {
+        document.getElementById('subjectPickerModal').classList.remove('active');
+    }
+
     selectColor(color) {
         this.selectedColor = color;
         this.updateColorSelection();
@@ -229,8 +276,17 @@ class CuadernoDigital {
             return;
         }
 
-        const subjectId = this.getCurrentSubjectId() || this.subjects[0].id;
+        if (this.subjects.length === 1) {
+            this.createNoteInSubject(this.subjects[0].id);
+            return;
+        }
+
+        this.showSubjectPickerModal();
+    }
+
+    createNoteInSubject(subjectId) {
         const subject = this.subjects.find(s => s.id === subjectId);
+        if (!subject) return;
 
         const note = {
             id: Date.now().toString(),
@@ -247,7 +303,7 @@ class CuadernoDigital {
         this.saveCarpeta();
         this.renderSubjects();
         this.openNote(note.id);
-        this.showToast('Nuevo apunte creado', 'success');
+        this.showToast(`Nuevo apunte creado en ${subject.name}`, 'success');
     }
 
     getCurrentSubjectId() {
@@ -463,7 +519,12 @@ class CuadernoDigital {
                         </div>
                         <span class="subject-count">${subject.notes.length}</span>
                     </div>
-                    <i class="fas fa-chevron-right subject-toggle"></i>
+                    <div class="subject-actions">
+                        <button class="btn-add-note" data-subject-id="${subject.id}" title="Crear apunte en ${this.escapeHtml(subject.name)}">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <i class="fas fa-chevron-right subject-toggle"></i>
+                    </div>
                 </div>
                 <div class="notes-list">
                     ${subject.notes.length === 0 ?
@@ -501,6 +562,14 @@ class CuadernoDigital {
 
         container.querySelectorAll('.note-item').forEach(item => {
             item.addEventListener('click', () => this.openNote(item.dataset.noteId));
+        });
+
+        container.querySelectorAll('.btn-add-note').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const subjectId = btn.dataset.subjectId;
+                this.createNoteInSubject(subjectId);
+            });
         });
     }
 
@@ -763,7 +832,7 @@ class CuadernoDigital {
         }
     }
 
-    exportCarpeta() {
+    async exportCarpeta() {
         const exportData = {
             version: '1.0',
             exportDate: new Date().toISOString(),
@@ -771,18 +840,61 @@ class CuadernoDigital {
         };
 
         const dataStr = JSON.stringify(exportData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
 
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `cuaderno-digital-${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-
-        this.showToast('Carpeta exportada exitosamente', 'success');
+        if (window.electronAPI) {
+            const result = await window.electronAPI.saveFile(dataStr);
+            if (result.success) {
+                this.showToast('Carpeta exportada exitosamente', 'success');
+            } else {
+                this.showToast('Error al exportar la carpeta', 'error');
+            }
+        } else {
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `cuaderno-digital-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            this.showToast('Carpeta exportada exitosamente', 'success');
+        }
     }
 
-    importCarpeta() {
-        document.getElementById('importFile').click();
+    async importCarpeta() {
+        if (window.electronAPI) {
+            const result = await window.electronAPI.loadFile();
+            if (result.success) {
+                this.processImportData(result.data);
+            } else if (result.error) {
+                this.showToast('Error al importar la carpeta', 'error');
+            }
+        } else {
+            document.getElementById('importFile').click();
+        }
+    }
+
+    processImportData(dataString) {
+        try {
+            const importedData = JSON.parse(dataString);
+            let subjects = [];
+
+            if (importedData.subjects && Array.isArray(importedData.subjects)) {
+                subjects = importedData.subjects;
+            } else if (Array.isArray(importedData)) {
+                subjects = importedData;
+            } else {
+                throw new Error('Formato inválido');
+            }
+
+            if (confirm('Esto va a reemplazar toda tu carpeta. ¿Querés continuar?')) {
+                this.subjects = subjects;
+                this.saveCarpeta();
+                this.renderSubjects();
+                this.showWelcomeScreen();
+                this.currentNoteId = null;
+                this.showToast('Carpeta importada exitosamente', 'success');
+            }
+        } catch (error) {
+            this.showToast('Archivo inválido. Por favor seleccioná un archivo de respaldo válido.', 'error');
+        }
     }
 
     handleImport(event) {
@@ -791,29 +903,7 @@ class CuadernoDigital {
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                let subjects = [];
-
-                if (importedData.subjects && Array.isArray(importedData.subjects)) {
-                    subjects = importedData.subjects;
-                } else if (Array.isArray(importedData)) {
-                    subjects = importedData;
-                } else {
-                    throw new Error('Formato inválido');
-                }
-
-                if (confirm('Esto va a reemplazar toda tu carpeta. ¿Querés continuar?')) {
-                    this.subjects = subjects;
-                    this.saveCarpeta();
-                    this.renderSubjects();
-                    this.showWelcomeScreen();
-                    this.currentNoteId = null;
-                    this.showToast('Carpeta importada exitosamente', 'success');
-                }
-            } catch (error) {
-                this.showToast('Archivo inválido. Por favor seleccioná un archivo de respaldo válido.', 'error');
-            }
+            this.processImportData(e.target.result);
         };
         reader.readAsText(file);
 

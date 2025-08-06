@@ -101,13 +101,7 @@ class CuadernoDigital {
             }
         }, 2000);
 
-        // Electron menu integration
-        if (window.electronAPI) {
-            window.electronAPI.onMenuNewSubject(() => this.showSubjectModal());
-            window.electronAPI.onMenuNewNote(() => this.createNewNote());
-            window.electronAPI.onMenuExport(() => this.exportCarpeta());
-            window.electronAPI.onMenuImport(() => this.importCarpeta());
-        }
+
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -198,7 +192,6 @@ class CuadernoDigital {
         const modal = document.getElementById('subjectPickerModal');
         const listContainer = document.getElementById('subjectPickerList');
 
-        // Render subject options
         listContainer.innerHTML = this.subjects.map(subject => `
             <div class="subject-picker-item" data-subject-id="${subject.id}">
                 <div class="subject-picker-icon" style="background: ${subject.color}"></div>
@@ -213,7 +206,6 @@ class CuadernoDigital {
             </div>
         `).join('');
 
-        // Add click handlers
         listContainer.querySelectorAll('.subject-picker-item').forEach(item => {
             item.addEventListener('click', () => {
                 const subjectId = item.dataset.subjectId;
@@ -279,13 +271,11 @@ class CuadernoDigital {
             return;
         }
 
-        // If there's only one subject, use it directly
         if (this.subjects.length === 1) {
             this.createNoteInSubject(this.subjects[0].id);
             return;
         }
 
-        // If there are multiple subjects, show subject picker
         this.showSubjectPickerModal();
     }
 
@@ -569,10 +559,9 @@ class CuadernoDigital {
             item.addEventListener('click', () => this.openNote(item.dataset.noteId));
         });
 
-        // Add event handlers for quick add note buttons
         container.querySelectorAll('.btn-add-note').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent subject header click
+                e.stopPropagation();
                 const subjectId = btn.dataset.subjectId;
                 this.createNoteInSubject(subjectId);
             });
@@ -838,7 +827,7 @@ class CuadernoDigital {
         }
     }
 
-    async exportCarpeta() {
+    exportCarpeta() {
         const exportData = {
             version: '1.0',
             exportDate: new Date().toISOString(),
@@ -846,39 +835,16 @@ class CuadernoDigital {
         };
 
         const dataStr = JSON.stringify(exportData, null, 2);
-
-        // Check if we're in Electron
-        if (window.electronAPI) {
-            const result = await window.electronAPI.saveFile(dataStr);
-            if (result.success) {
-                this.showToast('Carpeta exportada exitosamente', 'success');
-            } else {
-                this.showToast('Error al exportar la carpeta', 'error');
-            }
-        } else {
-            // Fallback for web version
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `cuaderno-digital-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            this.showToast('Carpeta exportada exitosamente', 'success');
-        }
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `cuaderno-digital-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        this.showToast('Carpeta exportada exitosamente', 'success');
     }
 
-    async importCarpeta() {
-        // Check if we're in Electron
-        if (window.electronAPI) {
-            const result = await window.electronAPI.loadFile();
-            if (result.success) {
-                this.processImportData(result.data);
-            } else if (result.error) {
-                this.showToast('Error al importar la carpeta', 'error');
-            }
-        } else {
-            // Fallback for web version
-            document.getElementById('importFile').click();
-        }
+    importCarpeta() {
+        document.getElementById('importFile').click();
     }
 
     processImportData(dataString) {

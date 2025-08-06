@@ -378,6 +378,27 @@
             </div>
         </div>
 
+        <!-- Modal para seleccionar materia -->
+        <div id="subjectPickerModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-file-plus"></i> Crear Nuevo Apunte</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Seleccioná la materia para el nuevo apunte:</label>
+                        <div id="subjectPickerList" class="subject-picker-list">
+                            <!-- Las materias se cargan acá -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelSubjectPicker">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Toast para notificaciones -->
         <div id="toast" class="toast">
             <div class="toast-content">

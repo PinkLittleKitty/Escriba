@@ -91,6 +91,7 @@ class CuadernoDigital {
         });
 
         document.getElementById('highlightBtn').addEventListener('click', () => this.highlightText());
+        document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertDateBtn').addEventListener('click', () => this.insertDate());
 
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
@@ -123,6 +124,38 @@ class CuadernoDigital {
         document.getElementById('fontFamily').addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--font-family', e.target.value);
         });
+
+        document.getElementById('noteContent').addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+                const range = selection.getRangeAt(0);
+                let node = range.startContainer;
+                let inCodeBlock = false;
+                while (node && node !== document.getElementById('noteContent')) {
+                    if (node.nodeName === 'CODE' && node.parentNode.nodeName === 'PRE') {
+                        inCodeBlock = true;
+                        break;
+                    }
+                    node = node.parentNode;
+                }
+                if (inCodeBlock) {
+                    document.execCommand('insertText', false, '    ');
+                } else {
+                    document.execCommand('insertText', false, '\u00A0\u00A0\u00A0\u00A0');
+                }
+            }
+        });
+    }
+
+    insertCodeBlock() {
+        document.getElementById('noteContent').focus();
+        document.execCommand(
+            'insertHTML',
+            false,
+            '<pre><code></code></pre>'
+        );
     }
 
     updateSemesterInfo() {

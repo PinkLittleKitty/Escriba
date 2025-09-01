@@ -70,6 +70,9 @@ class CuadernoDigital {
         document.getElementById('shareWhatsApp').addEventListener('click', () => this.shareToWhatsApp());
         document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
 
+        document.getElementById('mobileNavToggle').addEventListener('click', () => this.toggleMobileNav());
+        document.getElementById('mobileOverlay').addEventListener('click', () => this.closeMobileNav());
+
         document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.hideSettingsModal());
         });
@@ -122,6 +125,13 @@ class CuadernoDigital {
                 this.hideSettingsModal();
                 this.hideSubjectPickerModal();
                 this.hideShareModal();
+                this.closeMobileNav();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                this.closeMobileNav();
             }
         });
 
@@ -456,6 +466,44 @@ class CuadernoDigital {
 
         const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject_line)}&body=${encodeURIComponent(body)}`;
         window.location.href = mailtoUrl;
+    }
+
+    toggleMobileNav() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileNavToggle');
+        
+        const isOpen = sidebar.classList.contains('mobile-open');
+        
+        if (isOpen) {
+            this.closeMobileNav();
+        } else {
+            this.openMobileNav();
+        }
+    }
+
+    openMobileNav() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileNavToggle');
+        
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+        toggle.innerHTML = '<i class="fas fa-times"></i>';
+        
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeMobileNav() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileNavToggle');
+        
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        toggle.innerHTML = '<i class="fas fa-bars"></i>';
+        
+        document.body.style.overflow = '';
     }
 
     checkForSharedNote() {
@@ -945,7 +993,12 @@ class CuadernoDigital {
         });
 
         container.querySelectorAll('.note-item').forEach(item => {
-            item.addEventListener('click', () => this.openNote(item.dataset.noteId));
+            item.addEventListener('click', () => {
+                this.openNote(item.dataset.noteId);
+                if (window.innerWidth <= 768) {
+                    this.closeMobileNav();
+                }
+            });
         });
 
         container.querySelectorAll('.btn-add-note').forEach(btn => {

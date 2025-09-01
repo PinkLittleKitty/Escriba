@@ -1,10 +1,13 @@
 class CuadernoDigital {
     constructor() {
         this.subjects = JSON.parse(localStorage.getItem('cuadernoDigital')) || [];
+        this.events = JSON.parse(localStorage.getItem('cuadernoEvents')) || [];
         this.currentNoteId = null;
         this.currentView = 'subjects';
         this.selectedColor = '#3b82f6';
         this.autoSaveInterval = null;
+        this.currentDate = new Date();
+        this.currentEventId = null;
     }
 
     init() {
@@ -79,6 +82,13 @@ class CuadernoDigital {
         document.getElementById('shareWhatsApp').addEventListener('click', () => this.shareToWhatsApp());
         document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
 
+        document.getElementById('addEventBtn').addEventListener('click', () => this.showEventModal());
+        document.getElementById('saveEvent').addEventListener('click', () => this.saveEvent());
+        document.getElementById('cancelEvent').addEventListener('click', () => this.hideEventModal());
+        document.getElementById('deleteEvent').addEventListener('click', () => this.deleteEvent());
+        document.getElementById('prevMonth').addEventListener('click', () => this.previousMonth());
+        document.getElementById('nextMonth').addEventListener('click', () => this.nextMonth());
+
 
 
         document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
@@ -91,6 +101,10 @@ class CuadernoDigital {
 
         document.querySelectorAll('#shareModal .modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.hideShareModal());
+        });
+
+        document.querySelectorAll('#eventModal .modal-close').forEach(btn => {
+            btn.addEventListener('click', () => this.hideEventModal());
         });
 
         document.querySelectorAll('.color-option').forEach(option => {
@@ -133,6 +147,7 @@ class CuadernoDigital {
                 this.hideSettingsModal();
                 this.hideSubjectPickerModal();
                 this.hideShareModal();
+                this.hideEventModal();
                 this.closeMobileMenu();
             }
         });
@@ -1124,7 +1139,18 @@ class CuadernoDigital {
             btn.classList.toggle('active', btn.dataset.view === view);
         });
 
-        this.renderSubjects();
+        const subjectsContainer = document.getElementById('subjectsContainer');
+        const calendarContainer = document.getElementById('calendarContainer');
+
+        if (view === 'calendar') {
+            subjectsContainer.style.display = 'none';
+            calendarContainer.style.display = 'flex';
+            this.renderCalendar();
+        } else {
+            subjectsContainer.style.display = 'block';
+            calendarContainer.style.display = 'none';
+            this.renderSubjects();
+        }
     }
 
     searchContent(query) {
@@ -1556,11 +1582,11 @@ class CuadernoDigital {
         const sidebar = document.querySelector('.sidebar');
         const overlay = document.getElementById('mobileOverlay');
         const toggle = document.getElementById('mobileMenuToggle');
-        
+
         if (!sidebar || !overlay || !toggle) return;
-        
+
         const isOpen = sidebar.classList.contains('mobile-open');
-        
+
         if (isOpen) {
             this.closeMobileMenu();
         } else {
@@ -1572,14 +1598,14 @@ class CuadernoDigital {
         const sidebar = document.querySelector('.sidebar');
         const overlay = document.getElementById('mobileOverlay');
         const toggle = document.getElementById('mobileMenuToggle');
-        
+
         if (!sidebar || !overlay || !toggle) return;
-        
+
         sidebar.classList.add('mobile-open');
         overlay.classList.add('active');
         toggle.classList.add('active');
         toggle.innerHTML = '<i class="fas fa-times"></i>';
-        
+
         document.body.style.overflow = 'hidden';
     }
 
@@ -1587,23 +1613,367 @@ class CuadernoDigital {
         const sidebar = document.querySelector('.sidebar');
         const overlay = document.getElementById('mobileOverlay');
         const toggle = document.getElementById('mobileMenuToggle');
-        
+
         if (!sidebar || !overlay || !toggle) return;
-        
+
         sidebar.classList.remove('mobile-open');
         overlay.classList.remove('active');
         toggle.classList.remove('active');
         toggle.innerHTML = '<i class="fas fa-bars"></i>';
-        
+
         if (window.innerWidth <= 768) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
         }
     }
+
+    renderCalendar() {
+        this.renderCalendarGrid();
+        this.renderEventsList();
+        this.updateCalendarHeader();
+    }
+
+    updateCalendarHeader() {
+        const monthNames = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+
+        const monthYear = `${monthNames[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
+        document.getElementById('currentMonth').textContent = monthYear;
+    }
+
+    renderCalendarGrid() {
+        const grid = document.getElementById('calendarGrid');
+        const today = new Date();
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+
+        grid.innerHTML = '';
+
+        const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        dayHeaders.forEach(day => {
+            const header = document.createElement('div');
+            header.className = 'calendar-day-header';
+            header.textContent = day;
+            grid.appendChild(header);
+        });
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = firstDay.getDay();
+
+        const prevMonth = new Date(year, month - 1, 0);
+        const daysInPrevMonth = prevMonth.getDate();
+
+        for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+            const dayElement = this.createCalendarDay(
+                daysInPrevMonth - i,
+                new Date(year, month - 1, daysInPrevMonth - i),
+                true
+            );
+            grid.appendChild(dayElement);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const isToday = date.toDateString() === today.toDateString();
+            const dayElement = this.createCalendarDay(day, date, false, isToday);
+            grid.appendChild(dayElement);
+        }
+
+        const totalCells = grid.children.length - 7;
+        const remainingCells = 42 - totalCells;
+
+        for (let day = 1; day <= remainingCells; day++) {
+            const dayElement = this.createCalendarDay(
+                day,
+                new Date(year, month + 1, day),
+                true
+            );
+            grid.appendChild(dayElement);
+        }
+    }
+
+    createCalendarDay(dayNumber, date, isOtherMonth = false, isToday = false) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+
+        if (isOtherMonth) {
+            dayElement.classList.add('other-month');
+        }
+
+        if (isToday) {
+            dayElement.classList.add('today');
+        }
+
+        const dayEvents = this.getEventsForDate(date);
+        if (dayEvents.length > 0) {
+            dayElement.classList.add('has-events');
+        }
+
+        dayElement.innerHTML = `
+            <div class="calendar-day-number">${dayNumber}</div>
+            <div class="calendar-events-indicator">
+                ${dayEvents.slice(0, 3).map(event =>
+            `<div class="event-dot ${event.type}"></div>`
+        ).join('')}
+            </div>
+        `;
+
+        dayElement.addEventListener('click', () => {
+            if (!isOtherMonth) {
+                this.showEventModal(date);
+            }
+        });
+
+        return dayElement;
+    }
+
+    getEventsForDate(date) {
+        const dateStr = date.toISOString().split('T')[0];
+        return this.events.filter(event => event.date === dateStr);
+    }
+
+    renderEventsList() {
+        const eventsList = document.getElementById('eventsList');
+        const upcomingEvents = this.getUpcomingEvents();
+
+        if (upcomingEvents.length === 0) {
+            eventsList.innerHTML = `
+                <div class="empty-events">
+                    <i class="fas fa-calendar-check"></i>
+                    <p>No hay exámenes próximos</p>
+                    <button class="btn btn-primary btn-sm" onclick="cuaderno.showEventModal()">
+                        <i class="fas fa-plus"></i> Agregar Examen
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        eventsList.innerHTML = upcomingEvents.map(event => {
+            const timeLeft = this.getTimeLeft(event.date);
+            const subject = this.subjects.find(s => s.id === event.subjectId);
+            const subjectName = subject ? subject.name : 'Sin materia';
+
+            return `
+                <div class="event-item" data-event-id="${event.id}">
+                    <div class="event-icon ${event.type}">
+                        ${this.getEventTypeIcon(event.type)}
+                    </div>
+                    <div class="event-details">
+                        <div class="event-title">${this.escapeHtml(event.title)}</div>
+                        <div class="event-meta">
+                            <div class="event-date">
+                                <i class="fas fa-calendar"></i>
+                                ${this.formatEventDate(event.date)}
+                                ${event.time ? `<i class="fas fa-clock"></i> ${event.time}` : ''}
+                            </div>
+                            <div class="event-subject">
+                                <i class="fas fa-book"></i>
+                                ${this.escapeHtml(subjectName)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event-time-left ${timeLeft.class}">
+                        ${timeLeft.text}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        eventsList.querySelectorAll('.event-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const eventId = item.dataset.eventId;
+                this.editEvent(eventId);
+            });
+        });
+    }
+
+    getUpcomingEvents() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return this.events
+            .filter(event => new Date(event.date) >= today)
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .slice(0, 10);
+    }
+
+    getTimeLeft(eventDate) {
+        const today = new Date();
+        const event = new Date(eventDate);
+        const diffTime = event - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) {
+            return { text: 'Pasado', class: 'urgent' };
+        } else if (diffDays === 0) {
+            return { text: 'Hoy', class: 'urgent' };
+        } else if (diffDays === 1) {
+            return { text: 'Mañana', class: 'urgent' };
+        } else if (diffDays <= 7) {
+            return { text: `${diffDays} días`, class: 'soon' };
+        } else if (diffDays <= 30) {
+            return { text: `${diffDays} días`, class: 'normal' };
+        } else {
+            const weeks = Math.floor(diffDays / 7);
+            return { text: `${weeks} semanas`, class: 'normal' };
+        }
+    }
+
+    getEventTypeIcon(type) {
+        const icons = {
+            parcial: '📊',
+            final: '🎯',
+            tp: '📋',
+            quiz: '❓',
+            presentacion: '🎤',
+            entrega: '📤'
+        };
+        return icons[type] || '📅';
+    }
+
+    formatEventDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('es-AR', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short'
+        });
+    }
+
+    previousMonth() {
+        this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+        this.renderCalendar();
+    }
+
+    nextMonth() {
+        this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+        this.renderCalendar();
+    }
+
+    showEventModal(date = null) {
+        const modal = document.getElementById('eventModal');
+        const modalTitle = document.getElementById('eventModalTitle');
+        const deleteBtn = document.getElementById('deleteEvent');
+
+        document.getElementById('eventTitle').value = '';
+        document.getElementById('eventDate').value = date ? date.toISOString().split('T')[0] : '';
+        document.getElementById('eventTime').value = '';
+        document.getElementById('eventType').value = 'parcial';
+        document.getElementById('eventNotes').value = '';
+
+        const subjectSelect = document.getElementById('eventSubject');
+        subjectSelect.innerHTML = '<option value="">Seleccionar materia...</option>' +
+            this.subjects.map(subject =>
+                `<option value="${subject.id}">${this.escapeHtml(subject.name)}</option>`
+            ).join('');
+
+        if (this.currentEventId) {
+            modalTitle.textContent = 'Editar Examen';
+            deleteBtn.style.display = 'inline-flex';
+            this.loadEventData();
+        } else {
+            modalTitle.textContent = 'Agregar Examen';
+            deleteBtn.style.display = 'none';
+        }
+
+        modal.classList.add('active');
+        document.getElementById('eventTitle').focus();
+    }
+
+    hideEventModal() {
+        document.getElementById('eventModal').classList.remove('active');
+        this.currentEventId = null;
+    }
+
+    loadEventData() {
+        const event = this.events.find(e => e.id === this.currentEventId);
+        if (!event) return;
+
+        document.getElementById('eventTitle').value = event.title;
+        document.getElementById('eventSubject').value = event.subjectId || '';
+        document.getElementById('eventDate').value = event.date;
+        document.getElementById('eventTime').value = event.time || '';
+        document.getElementById('eventType').value = event.type;
+        document.getElementById('eventNotes').value = event.notes || '';
+    }
+
+    saveEvent() {
+        const title = document.getElementById('eventTitle').value.trim();
+        const subjectId = document.getElementById('eventSubject').value;
+        const date = document.getElementById('eventDate').value;
+        const time = document.getElementById('eventTime').value;
+        const type = document.getElementById('eventType').value;
+        const notes = document.getElementById('eventNotes').value.trim();
+
+        if (!title) {
+            this.showToast('Por favor ingresá el título del examen', 'error');
+            return;
+        }
+
+        if (!date) {
+            this.showToast('Por favor seleccioná una fecha', 'error');
+            return;
+        }
+
+        const eventData = {
+            id: this.currentEventId || Date.now().toString(),
+            title,
+            subjectId,
+            date,
+            time,
+            type,
+            notes,
+            createdAt: this.currentEventId ?
+                this.events.find(e => e.id === this.currentEventId).createdAt :
+                new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (this.currentEventId) {
+            const index = this.events.findIndex(e => e.id === this.currentEventId);
+            this.events[index] = eventData;
+            this.showToast('Examen actualizado exitosamente', 'success');
+        } else {
+            this.events.push(eventData);
+            this.showToast('Examen agregado exitosamente', 'success');
+        }
+
+        this.saveEvents();
+        this.renderCalendar();
+        this.hideEventModal();
+    }
+
+    editEvent(eventId) {
+        this.currentEventId = eventId;
+        this.showEventModal();
+    }
+
+    deleteEvent() {
+        if (!this.currentEventId) return;
+
+        if (confirm('¿Estás seguro de que querés eliminar este examen?')) {
+            this.events = this.events.filter(e => e.id !== this.currentEventId);
+            this.saveEvents();
+            this.renderCalendar();
+            this.hideEventModal();
+            this.showToast('Examen eliminado exitosamente', 'success');
+        }
+    }
+
+    saveEvents() {
+        localStorage.setItem('cuadernoEvents', JSON.stringify(this.events));
+    }
 }
 
+let cuaderno;
+
 document.addEventListener('DOMContentLoaded', () => {
-    const app = new CuadernoDigital();
-    app.init();
+    cuaderno = new CuadernoDigital();
+    cuaderno.init();
 });

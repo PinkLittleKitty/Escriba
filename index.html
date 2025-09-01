@@ -68,11 +68,42 @@
                         <button class="view-btn" data-view="favorites" title="Ver apuntes favoritos">
                             <i class="fas fa-star"></i>
                         </button>
+                        <button class="view-btn" data-view="calendar" title="Ver calendario de exámenes">
+                            <i class="fas fa-calendar-alt"></i>
+                        </button>
                     </div>
                 </div>
 
                 <div class="subjects-container" id="subjectsContainer">
                     <!-- Las materias y apuntes se cargan acá -->
+                </div>
+
+                <div class="calendar-container" id="calendarContainer" style="display: none;">
+                    <div class="calendar-section">
+                        <div class="calendar-header">
+                            <button id="prevMonth" class="btn btn-icon">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 id="currentMonth"></h3>
+                            <button id="nextMonth" class="btn btn-icon">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- El calendario se genera aquí -->
+                        </div>
+                    </div>
+                    <div class="calendar-events">
+                        <div class="events-header">
+                            <h4><i class="fas fa-calendar-check"></i> Próximos Exámenes</h4>
+                            <button id="addEventBtn" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> Agregar
+                            </button>
+                        </div>
+                        <div id="eventsList" class="events-list">
+                            <!-- Los eventos se cargan aquí -->
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -407,6 +438,54 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="cancelSubjectPicker">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para agregar evento -->
+        <div id="eventModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-calendar-plus"></i> <span id="eventModalTitle">Agregar Examen</span></h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="eventTitle">Título del Examen</label>
+                        <input type="text" id="eventTitle" placeholder="ej: Parcial de Análisis Matemático" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="eventSubject">Materia</label>
+                        <select id="eventSubject" class="settings-select">
+                            <option value="">Seleccionar materia...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventDate">Fecha</label>
+                        <input type="date" id="eventDate" class="date-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Hora (opcional)</label>
+                        <input type="time" id="eventTime" class="time-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="eventType">Tipo de Examen</label>
+                        <select id="eventType" class="settings-select">
+                            <option value="parcial">📊 Parcial</option>
+                            <option value="final">🎯 Final</option>
+                            <option value="tp">📋 Trabajo Práctico</option>
+                            <option value="entrega">📤 Entrega</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventNotes">Notas (opcional)</label>
+                        <textarea id="eventNotes" placeholder="Temas a estudiar, aula, etc." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelEvent">Cancelar</button>
+                    <button class="btn btn-danger" id="deleteEvent" style="display: none;">Eliminar</button>
+                    <button class="btn btn-primary" id="saveEvent">Guardar</button>
                 </div>
             </div>
         </div>

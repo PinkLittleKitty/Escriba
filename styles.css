@@ -1502,6 +1502,117 @@ textarea::placeholder {
     color: var(--text-muted);
 }
 
+/* Link Modal Styles */
+.link-notes-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card);
+}
+
+.link-note-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.link-note-item:last-child {
+    border-bottom: none;
+}
+
+.link-note-item:hover {
+    background: var(--bg-hover);
+}
+
+.link-note-item.selected {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid var(--accent-blue);
+}
+
+.link-note-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+}
+
+.link-note-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.link-note-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.link-note-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.link-note-subject {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.link-note-date {
+    opacity: 0.7;
+}
+
+.empty-link-results {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-link-results i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Internal Link Styles in Notes */
+.internal-link {
+    color: var(--accent-blue);
+    text-decoration: underline;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.internal-link:hover {
+    color: var(--accent-purple);
+    text-decoration: none;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+}
+
+.internal-link.broken {
+    color: var(--accent-red);
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.internal-link.broken:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
 /* Small Mobile Screens (600px and below) */
 @media (max-width: 600px) {
 
@@ -1932,6 +2043,32 @@ textarea::placeholder {
 
     .event-title {
         font-size: 0.8rem;
+    }
+
+    /* Link Modal Mobile Styles */
+    .link-notes-list {
+        max-height: 250px;
+    }
+
+    .link-note-item {
+        padding: 0.6rem;
+        gap: 0.6rem;
+    }
+
+    .link-note-icon {
+        font-size: 0.9rem;
+        width: 20px;
+    }
+
+    .link-note-title {
+        font-size: 0.85rem;
+    }
+
+    .link-note-meta {
+        font-size: 0.75rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
     }
 }
 

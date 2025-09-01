@@ -89,6 +89,10 @@ class CuadernoDigital {
         document.getElementById('prevMonth').addEventListener('click', () => this.previousMonth());
         document.getElementById('nextMonth').addEventListener('click', () => this.nextMonth());
 
+        document.getElementById('createLink').addEventListener('click', () => this.createInternalLink());
+        document.getElementById('cancelLink').addEventListener('click', () => this.hideLinkModal());
+        document.getElementById('linkSearchInput').addEventListener('input', (e) => this.searchNotesForLink(e.target.value));
+
 
 
         document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
@@ -105,6 +109,10 @@ class CuadernoDigital {
 
         document.querySelectorAll('#eventModal .modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.hideEventModal());
+        });
+
+        document.querySelectorAll('#linkModal .modal-close').forEach(btn => {
+            btn.addEventListener('click', () => this.hideLinkModal());
         });
 
         document.querySelectorAll('.color-option').forEach(option => {
@@ -130,6 +138,7 @@ class CuadernoDigital {
         document.getElementById('highlightBtn').addEventListener('click', () => this.highlightText());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertDateBtn').addEventListener('click', () => this.insertDate());
+        document.getElementById('insertLinkBtn').addEventListener('click', () => this.showLinkModal());
 
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
 
@@ -148,6 +157,7 @@ class CuadernoDigital {
                 this.hideSubjectPickerModal();
                 this.hideShareModal();
                 this.hideEventModal();
+                this.hideLinkModal();
                 this.closeMobileMenu();
             }
         });
@@ -731,6 +741,7 @@ class CuadernoDigital {
 
         setTimeout(() => {
             document.getElementById('noteContent').focus();
+            this.addLinkListeners();
         }, 100);
     }
 
@@ -1626,6 +1637,177 @@ class CuadernoDigital {
         } else {
             document.body.style.overflow = '';
         }
+    }
+
+    showLinkModal() {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+
+        document.getElementById('linkText').value = selectedText || '';
+        document.getElementById('linkSearchInput').value = '';
+
+        this.currentSelection = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+
+        this.searchNotesForLink('');
+
+        document.getElementById('linkModal').classList.add('active');
+        document.getElementById('linkText').focus();
+
+        this.selectedNoteForLink = null;
+        document.getElementById('createLink').disabled = true;
+    }
+
+    hideLinkModal() {
+        document.getElementById('linkModal').classList.remove('active');
+        this.currentSelection = null;
+        this.selectedNoteForLink = null;
+    }
+
+    searchNotesForLink(query) {
+        const notesList = document.getElementById('linkNotesList');
+        const allNotes = [];
+
+        this.subjects.forEach(subject => {
+            subject.notes.forEach(note => {
+                if (note.id !== this.currentNoteId) {
+                    allNotes.push({
+                        ...note,
+                        subjectName: subject.name,
+                        subjectColor: subject.color
+                    });
+                }
+            });
+        });
+
+        let filteredNotes = allNotes;
+        if (query.trim()) {
+            const searchTerm = query.toLowerCase();
+            filteredNotes = allNotes.filter(note =>
+                note.title.toLowerCase().includes(searchTerm) ||
+                note.subjectName.toLowerCase().includes(searchTerm) ||
+                this.stripHtml(note.content).toLowerCase().includes(searchTerm)
+            );
+        }
+
+        filteredNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+        if (filteredNotes.length === 0) {
+            notesList.innerHTML = `
+                <div class="empty-link-results">
+                    <i class="fas fa-search"></i>
+                    <p>${query.trim() ? 'No se encontraron apuntes' : 'No hay otros apuntes disponibles'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        notesList.innerHTML = filteredNotes.map(note => `
+            <div class="link-note-item" data-note-id="${note.id}">
+                <div class="link-note-icon">
+                    ${this.getEventTypeIcon(note.type || 'lecture')}
+                </div>
+                <div class="link-note-details">
+                    <div class="link-note-title">${this.escapeHtml(note.title)}</div>
+                    <div class="link-note-meta">
+                        <div class="link-note-subject">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${note.subjectColor}"></div>
+                            ${this.escapeHtml(note.subjectName)}
+                        </div>
+                        <div class="link-note-date">${this.formatDate(note.updatedAt)}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        notesList.querySelectorAll('.link-note-item').forEach(item => {
+            item.addEventListener('click', () => {
+                notesList.querySelectorAll('.link-note-item').forEach(i => i.classList.remove('selected'));
+
+                item.classList.add('selected');
+                this.selectedNoteForLink = item.dataset.noteId;
+
+                document.getElementById('createLink').disabled = false;
+            });
+        });
+    }
+
+    createInternalLink() {
+        const linkText = document.getElementById('linkText').value.trim();
+        const noteId = this.selectedNoteForLink;
+
+        if (!linkText) {
+            this.showToast('Por favor ingresá el texto del enlace', 'error');
+            return;
+        }
+
+        if (!noteId) {
+            this.showToast('Por favor seleccioná un apunte para enlazar', 'error');
+            return;
+        }
+
+        let linkedNote = null;
+        for (const subject of this.subjects) {
+            const note = subject.notes.find(n => n.id === noteId);
+            if (note) {
+                linkedNote = note;
+                break;
+            }
+        }
+
+        if (!linkedNote) {
+            this.showToast('Error: No se pudo encontrar el apunte', 'error');
+            return;
+        }
+
+        const linkHtml = `<a href="#" class="internal-link" data-note-id="${noteId}" title="Ir a: ${this.escapeHtml(linkedNote.title)}">${this.escapeHtml(linkText)}</a>`;
+
+        const noteContent = document.getElementById('noteContent');
+        noteContent.focus();
+
+        if (this.currentSelection) {
+            this.currentSelection.deleteContents();
+            this.currentSelection.insertNode(document.createRange().createContextualFragment(linkHtml));
+        } else {
+            document.execCommand('insertHTML', false, linkHtml);
+        }
+
+        this.addLinkListeners();
+
+        this.saveCurrentNote();
+
+        this.hideLinkModal();
+        this.showToast('Enlace creado exitosamente', 'success');
+    }
+
+    addLinkListeners() {
+        document.querySelectorAll('#noteContent .internal-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const noteId = link.dataset.noteId;
+
+                let noteExists = false;
+                for (const subject of this.subjects) {
+                    if (subject.notes.find(n => n.id === noteId)) {
+                        noteExists = true;
+                        break;
+                    }
+                }
+
+                if (noteExists) {
+                    this.openNote(noteId);
+                    this.showToast('Navegando al apunte enlazado', 'info');
+                } else {
+                    link.classList.add('broken');
+                    this.showToast('El apunte enlazado ya no existe', 'error');
+                }
+            });
+        });
+    }
+
+    stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
     }
 
     renderCalendar() {

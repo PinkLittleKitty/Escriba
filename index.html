@@ -204,6 +204,8 @@
                                     class="fas fa-remove-format"></i></button>
                             <button class="toolbar-btn" id="insertDateBtn" title="Insertar fecha"><i
                                     class="fas fa-calendar"></i></button>
+                            <button class="toolbar-btn" id="insertLinkBtn" title="Enlazar apunte"><i
+                                    class="fas fa-link"></i></button>
                         </div>
                     </div>
 
@@ -438,6 +440,39 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="cancelSubjectPicker">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para enlazar apunte -->
+        <div id="linkModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-link"></i> Enlazar Apunte</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="linkText">Texto del enlace</label>
+                        <input type="text" id="linkText" placeholder="ej: como vimos la semana pasada" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Buscar apunte para enlazar:</label>
+                        <div class="search-box">
+                            <input type="text" id="linkSearchInput" placeholder="Buscar por título o materia..." autocomplete="off">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Seleccionar apunte:</label>
+                        <div id="linkNotesList" class="link-notes-list">
+                            <!-- Los apuntes se cargan aquí -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelLink">Cancelar</button>
+                    <button class="btn btn-primary" id="createLink" disabled>Crear Enlace</button>
                 </div>
             </div>
         </div>

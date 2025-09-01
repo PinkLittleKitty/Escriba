@@ -517,6 +517,42 @@ class CuadernoDigital {
         }
     }
 
+    deleteSubject(subjectId) {
+        const subject = this.subjects.find(s => s.id === subjectId);
+        if (!subject) return;
+
+        const noteCount = subject.notes.length;
+        let confirmMessage = `¿Estás seguro de que querés eliminar la materia "${subject.name}"?`;
+        
+        if (noteCount > 0) {
+            confirmMessage += `\n\nEsto también eliminará ${noteCount} apunte${noteCount > 1 ? 's' : ''} de esta materia.`;
+        }
+        
+        confirmMessage += '\n\nEsta acción no se puede deshacer.';
+
+        if (confirm(confirmMessage)) {
+            if (this.currentNoteId) {
+                const currentNote = subject.notes.find(n => n.id === this.currentNoteId);
+                if (currentNote) {
+                    this.currentNoteId = null;
+                    this.showWelcomeScreen();
+                }
+            }
+
+            const subjectIndex = this.subjects.findIndex(s => s.id === subjectId);
+            if (subjectIndex !== -1) {
+                this.subjects.splice(subjectIndex, 1);
+                this.saveCarpeta();
+                this.renderSubjects();
+                this.showToast(`Materia "${subject.name}" eliminada`, 'success');
+
+                if (this.subjects.length === 0) {
+                    this.showWelcomeScreen();
+                }
+            }
+        }
+    }
+
     renderSubjects() {
         const container = document.getElementById('subjectsContainer');
 
@@ -550,6 +586,9 @@ class CuadernoDigital {
                     <div class="subject-actions">
                         <button class="btn-add-note" data-subject-id="${subject.id}" title="Crear apunte en ${this.escapeHtml(subject.name)}">
                             <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="btn-delete-subject" data-subject-id="${subject.id}" title="Eliminar materia">
+                            <i class="fas fa-trash"></i>
                         </button>
                         <i class="fas fa-chevron-right subject-toggle"></i>
                     </div>
@@ -597,6 +636,14 @@ class CuadernoDigital {
                 e.stopPropagation();
                 const subjectId = btn.dataset.subjectId;
                 this.createNoteInSubject(subjectId);
+            });
+        });
+
+        container.querySelectorAll('.btn-delete-subject').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const subjectId = btn.dataset.subjectId;
+                this.deleteSubject(subjectId);
             });
         });
     }
@@ -820,9 +867,31 @@ class CuadernoDigital {
     }
 
     highlightText() {
-        document.execCommand('backgroundColor', false, '#fbbf24');
-        document.getElementById('noteContent').focus();
-        this.saveCurrentNote();
+        const content = document.getElementById('noteContent');
+        content.focus();
+        
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return;
+        
+        const range = selection.getRangeAt(0);
+        if (range.collapsed) return;
+        
+        let parentElement = range.commonAncestorContainer;
+        if (parentElement.nodeType === Node.TEXT_NODE) {
+            parentElement = parentElement.parentElement;
+        }
+        
+        if (parentElement.tagName === 'MARK' || parentElement.closest('mark')) {
+            document.execCommand('removeFormat');
+            this.saveCurrentNote();
+            return;
+        }
+        
+        const selectedText = range.toString();
+        if (selectedText.trim()) {
+            document.execCommand('insertHTML', false, `<mark>${selectedText}</mark>`);
+            this.saveCurrentNote();
+        }
     }
 
     updateToolbarStates() {

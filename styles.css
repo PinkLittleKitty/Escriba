@@ -348,7 +348,8 @@ header h1 i {
     gap: 0.5rem;
 }
 
-.btn-add-note {
+.btn-add-note,
+.btn-delete-subject {
     background: transparent;
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -365,7 +366,8 @@ header h1 i {
     transform: scale(0.8);
 }
 
-.subject-header:hover .btn-add-note {
+.subject-header:hover .btn-add-note,
+.subject-header:hover .btn-delete-subject {
     opacity: 1;
     transform: scale(1);
 }
@@ -376,6 +378,14 @@ header h1 i {
     border-color: var(--accent-blue);
     transform: scale(1.1);
     box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.btn-delete-subject:hover {
+    background: var(--accent-red);
+    color: white;
+    border-color: var(--accent-red);
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 .subject-toggle {

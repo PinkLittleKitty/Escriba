@@ -1450,6 +1450,154 @@ select:focus,
     font-size: 0.9rem;
 }
 
+/* Share Modal Styles */
+.share-section {
+    margin-bottom: 2rem;
+}
+
+.share-section:last-child {
+    margin-bottom: 0;
+}
+
+.share-section h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.share-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.share-url-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.share-url-input {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: monospace;
+}
+
+.qr-container {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+#qrCanvas {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+}
+
+.social-share-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-social {
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-social.whatsapp {
+    background: #25d366;
+    color: white;
+}
+
+.btn-social.whatsapp:hover {
+    background: #1da851;
+    transform: translateY(-1px);
+}
+
+.btn-social.twitter {
+    background: #1da1f2;
+    color: white;
+}
+
+.btn-social.twitter:hover {
+    background: #0d8bd9;
+    transform: translateY(-1px);
+}
+
+.btn-social.email {
+    background: var(--accent-orange);
+    color: white;
+}
+
+.btn-social.email:hover {
+    background: #e67e22;
+    transform: translateY(-1px);
+}
+
+/* Shared Note Banner */
+.shared-note-banner {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    color: white;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.shared-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.shared-banner-content i {
+    font-size: 1.25rem;
+    margin-right: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .social-share-buttons {
+        flex-direction: column;
+    }
+    
+    .btn-social {
+        justify-content: center;
+    }
+    
+    .shared-banner-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+}
+
 mark {
     background: rgba(251, 191, 36, 0.4);
     color: var(--text-primary);

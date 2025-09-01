@@ -13,9 +13,12 @@ class CuadernoDigital {
 
         this.bindEvents();
         this.loadSettings();
+
+        this.checkForSharedNote();
+
         this.renderSubjects();
 
-        if (this.subjects.length === 0) {
+        if (this.subjects.length === 0 && !this.isViewingSharedNote) {
             this.showWelcomeScreen();
         }
 
@@ -62,6 +65,11 @@ class CuadernoDigital {
         document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
 
         document.getElementById('cancelSubjectPicker').addEventListener('click', () => this.hideSubjectPickerModal());
+        document.getElementById('cancelShare').addEventListener('click', () => this.hideShareModal());
+        document.getElementById('copyUrlBtn').addEventListener('click', () => this.copyShareUrl());
+        document.getElementById('shareWhatsApp').addEventListener('click', () => this.shareToWhatsApp());
+        document.getElementById('shareTwitter').addEventListener('click', () => this.shareToTwitter());
+        document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
 
         document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.hideSettingsModal());
@@ -69,6 +77,10 @@ class CuadernoDigital {
 
         document.querySelectorAll('#subjectPickerModal .modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.hideSubjectPickerModal());
+        });
+
+        document.querySelectorAll('#shareModal .modal-close').forEach(btn => {
+            btn.addEventListener('click', () => this.hideShareModal());
         });
 
         document.querySelectorAll('.color-option').forEach(option => {
@@ -80,6 +92,7 @@ class CuadernoDigital {
         document.getElementById('noteTypeSelect').addEventListener('change', () => this.saveCurrentNote());
         document.getElementById('deleteNoteBtn').addEventListener('click', () => this.deleteCurrentNote());
         document.getElementById('favoriteBtn').addEventListener('click', () => this.toggleFavorite());
+        document.getElementById('shareNoteBtn').addEventListener('click', () => this.showShareModal());
 
         document.querySelectorAll('.toolbar-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -109,6 +122,7 @@ class CuadernoDigital {
                 this.hideSubjectModal();
                 this.hideSettingsModal();
                 this.hideSubjectPickerModal();
+                this.hideShareModal();
             }
         });
 
@@ -252,6 +266,248 @@ class CuadernoDigital {
 
     hideSubjectPickerModal() {
         document.getElementById('subjectPickerModal').classList.remove('active');
+    }
+
+    showShareModal() {
+        if (!this.currentNoteId) {
+            this.showToast('No hay ningún apunte abierto para compartir', 'error');
+            return;
+        }
+
+        const shareUrl = this.generateShareUrl();
+        document.getElementById('shareUrl').value = shareUrl;
+        this.generateQRCode(shareUrl);
+        document.getElementById('shareModal').classList.add('active');
+    }
+
+    hideShareModal() {
+        document.getElementById('shareModal').classList.remove('active');
+    }
+
+    generateShareUrl() {
+        if (!this.currentNoteId) return '';
+
+        let note = null;
+        let subject = null;
+
+        for (const s of this.subjects) {
+            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
+            if (foundNote) {
+                note = foundNote;
+                subject = s;
+                break;
+            }
+        }
+
+        if (!note || !subject) return '';
+
+        const shareData = {
+            title: note.title,
+            content: note.content,
+            type: note.type,
+            subject: subject.name,
+            subjectColor: subject.color,
+            date: note.updatedAt
+        };
+
+        const encodedData = btoa(encodeURIComponent(JSON.stringify(shareData)));
+        return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+    }
+
+    generateQRCode(url) {
+        const canvas = document.getElementById('qrCanvas');
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, 200, 200);
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, 200, 200);
+
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Código QR', 100, 90);
+        ctx.fillText('(sin implementar)', 100, 110);
+    }
+
+    copyShareUrl() {
+        const shareUrl = document.getElementById('shareUrl');
+        shareUrl.select();
+        shareUrl.setSelectionRange(0, 99999);
+
+        try {
+            document.execCommand('copy');
+            this.showToast('Enlace copiado al portapapeles', 'success');
+        } catch (err) {
+            navigator.clipboard.writeText(shareUrl.value).then(() => {
+                this.showToast('Enlace copiado al portapapeles', 'success');
+            }).catch(() => {
+                this.showToast('No se pudo copiar el enlace', 'error');
+            });
+        }
+    }
+
+    shareToWhatsApp() {
+        const shareUrl = document.getElementById('shareUrl').value;
+        let note = null;
+        let subject = null;
+
+        for (const s of this.subjects) {
+            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
+            if (foundNote) {
+                note = foundNote;
+                subject = s;
+                break;
+            }
+        }
+
+        if (!note || !subject) return;
+
+        const message = `📚 Te comparto mis apuntes de ${subject.name}: "${note.title}"\n\n${shareUrl}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    }
+
+    shareToTwitter() {
+        const shareUrl = document.getElementById('shareUrl').value;
+        let note = null;
+        let subject = null;
+
+        for (const s of this.subjects) {
+            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
+            if (foundNote) {
+                note = foundNote;
+                subject = s;
+                break;
+            }
+        }
+
+        if (!note || !subject) return;
+
+        const message = `📚 Compartiendo mis apuntes de ${subject.name}: "${note.title}" #Estudios #Apuntes`;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(shareUrl)}`;
+        window.open(twitterUrl, '_blank');
+    }
+
+    shareToEmail() {
+        const shareUrl = document.getElementById('shareUrl').value;
+        let note = null;
+        let subject = null;
+
+        for (const s of this.subjects) {
+            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
+            if (foundNote) {
+                note = foundNote;
+                subject = s;
+                break;
+            }
+        }
+
+        if (!note || !subject) return;
+
+        const subject_line = `Apuntes de ${subject.name}: ${note.title}`;
+        const body = `Hola,\n\nTe comparto mis apuntes de ${subject.name} sobre "${note.title}".\n\nPodés verlos en este enlace: ${shareUrl}\n\nSaludos!`;
+
+        const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject_line)}&body=${encodeURIComponent(body)}`;
+        window.location.href = mailtoUrl;
+    }
+
+    checkForSharedNote() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedData = urlParams.get('share');
+
+        if (sharedData) {
+            try {
+                const decodedData = JSON.parse(decodeURIComponent(atob(sharedData)));
+                this.displaySharedNote(decodedData);
+                this.isViewingSharedNote = true;
+            } catch (error) {
+                console.error('Error loading shared note:', error);
+                this.showToast('Error al cargar el apunte compartido', 'error');
+            }
+        }
+    }
+
+    displaySharedNote(noteData) {
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('noteEditor').style.display = 'flex';
+
+        const noteContent = document.getElementById('noteContent');
+        noteContent.contentEditable = false;
+        noteContent.style.cursor = 'default';
+
+        document.getElementById('noteTitle').value = noteData.title;
+        document.getElementById('noteTitle').disabled = true;
+        document.getElementById('noteContent').innerHTML = noteData.content;
+        document.getElementById('noteTypeSelect').value = noteData.type || 'lecture';
+        document.getElementById('noteTypeSelect').disabled = true;
+        document.getElementById('noteDate').textContent = this.formatDate(noteData.date);
+
+        document.getElementById('noteSubject').textContent = noteData.subject;
+        document.getElementById('noteType').textContent = this.getNoteTypeLabel(noteData.type || 'lecture');
+
+        document.getElementById('favoriteBtn').style.display = 'none';
+        document.getElementById('shareNoteBtn').style.display = 'none';
+        document.getElementById('deleteNoteBtn').style.display = 'none';
+
+        document.querySelector('.editor-toolbar').style.display = 'none';
+
+        this.addSharedNoteBanner(noteData);
+    }
+
+    addSharedNoteBanner(noteData) {
+        const banner = document.createElement('div');
+        banner.className = 'shared-note-banner';
+        banner.innerHTML = `
+            <div class="shared-banner-content">
+                <i class="fas fa-share-alt"></i>
+                <span>Estás viendo un apunte compartido de <strong>${this.escapeHtml(noteData.subject)}</strong></span>
+                <button id="openInEscriba" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Agregar a mi Escriba
+                </button>
+            </div>
+        `;
+
+        const noteEditor = document.getElementById('noteEditor');
+        noteEditor.insertBefore(banner, noteEditor.firstChild);
+
+        document.getElementById('openInEscriba').addEventListener('click', () => {
+            this.importSharedNote(noteData);
+        });
+    }
+
+    importSharedNote(noteData) {
+        let subject = this.subjects.find(s => s.name === noteData.subject);
+
+        if (!subject) {
+            subject = {
+                id: Date.now().toString(),
+                name: noteData.subject,
+                code: '',
+                professor: '',
+                color: noteData.subjectColor || '#3b82f6',
+                notes: [],
+                createdAt: new Date().toISOString(),
+                expanded: true
+            };
+            this.subjects.unshift(subject);
+        }
+
+        const note = {
+            id: Date.now().toString(),
+            title: noteData.title + ' (Compartido)',
+            content: noteData.content,
+            type: noteData.type || 'lecture',
+            subjectId: subject.id,
+            favorite: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        subject.notes.unshift(note);
+        this.saveCarpeta();
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+        location.reload();
     }
 
     selectColor(color) {
@@ -523,11 +779,11 @@ class CuadernoDigital {
 
         const noteCount = subject.notes.length;
         let confirmMessage = `¿Estás seguro de que querés eliminar la materia "${subject.name}"?`;
-        
+
         if (noteCount > 0) {
             confirmMessage += `\n\nEsto también eliminará ${noteCount} apunte${noteCount > 1 ? 's' : ''} de esta materia.`;
         }
-        
+
         confirmMessage += '\n\nEsta acción no se puede deshacer.';
 
         if (confirm(confirmMessage)) {
@@ -869,24 +1125,24 @@ class CuadernoDigital {
     highlightText() {
         const content = document.getElementById('noteContent');
         content.focus();
-        
+
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return;
-        
+
         const range = selection.getRangeAt(0);
         if (range.collapsed) return;
-        
+
         let parentElement = range.commonAncestorContainer;
         if (parentElement.nodeType === Node.TEXT_NODE) {
             parentElement = parentElement.parentElement;
         }
-        
+
         if (parentElement.tagName === 'MARK' || parentElement.closest('mark')) {
             document.execCommand('removeFormat');
             this.saveCurrentNote();
             return;
         }
-        
+
         const selectedText = range.toString();
         if (selectedText.trim()) {
             document.execCommand('insertHTML', false, `<mark>${selectedText}</mark>`);

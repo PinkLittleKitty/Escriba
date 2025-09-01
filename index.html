@@ -123,6 +123,9 @@
                                 <button id="favoriteBtn" class="btn btn-icon" title="Marcar como favorito">
                                     <i class="fas fa-star"></i>
                                 </button>
+                                <button id="shareNoteBtn" class="btn btn-icon" title="Compartir apunte">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
                                 <span id="noteDate"></span>
                                 <button id="deleteNoteBtn" class="btn btn-danger-subtle" title="Eliminar apunte">
                                     <i class="fas fa-trash"></i>
@@ -397,6 +400,54 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="cancelSubjectPicker">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para compartir apunte -->
+        <div id="shareModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-share-alt"></i> Compartir Apunte</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="share-section">
+                        <h4><i class="fas fa-link"></i> Enlace para Compartir</h4>
+                        <p class="share-description">Copiá este enlace para compartir tu apunte. Cualquiera con el enlace podrá verlo en modo solo lectura.</p>
+                        <div class="share-url-container">
+                            <input type="text" id="shareUrl" class="share-url-input" readonly>
+                            <button id="copyUrlBtn" class="btn btn-primary" title="Copiar enlace">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="share-section">
+                        <h4><i class="fas fa-qrcode"></i> Código QR</h4>
+                        <p class="share-description">Escaneá este código QR para abrir el apunte en tu teléfono.</p>
+                        <div class="qr-container">
+                            <canvas id="qrCanvas" width="200" height="200"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="share-section">
+                        <h4><i class="fas fa-share"></i> Compartir en Redes</h4>
+                        <div class="social-share-buttons">
+                            <button id="shareWhatsApp" class="btn btn-social whatsapp">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                            <button id="shareTwitter" class="btn btn-social twitter">
+                                <i class="fab fa-twitter"></i> Twitter
+                            </button>
+                            <button id="shareEmail" class="btn btn-social email">
+                                <i class="fas fa-envelope"></i> Email
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelShare">Cerrar</button>
                 </div>
             </div>
         </div>

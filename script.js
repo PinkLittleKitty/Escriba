@@ -1595,7 +1595,11 @@ class CuadernoDigital {
         toggle.classList.remove('active');
         toggle.innerHTML = '<i class="fas fa-bars"></i>';
         
-        document.body.style.overflow = '';
+        if (window.innerWidth <= 768) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
     }
 }
 

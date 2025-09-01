@@ -68,7 +68,6 @@ class CuadernoDigital {
         document.getElementById('cancelShare').addEventListener('click', () => this.hideShareModal());
         document.getElementById('copyUrlBtn').addEventListener('click', () => this.copyShareUrl());
         document.getElementById('shareWhatsApp').addEventListener('click', () => this.shareToWhatsApp());
-        document.getElementById('shareTwitter').addEventListener('click', () => this.shareToTwitter());
         document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
 
         document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
@@ -302,31 +301,100 @@ class CuadernoDigital {
         if (!note || !subject) return '';
 
         const shareData = {
-            title: note.title,
-            content: note.content,
-            type: note.type,
-            subject: subject.name,
-            subjectColor: subject.color,
-            date: note.updatedAt
+            t: note.title,
+            c: note.content,
+            ty: note.type,
+            s: subject.name,
+            sc: subject.color,
+            d: note.updatedAt
         };
 
-        const encodedData = btoa(encodeURIComponent(JSON.stringify(shareData)));
-        return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+        let content = shareData.c;
+        if (content.length > 1000) {
+            content = content.substring(0, 1000) + '... [contenido truncado para QR]';
+            shareData.c = content;
+        }
+
+        try {
+            const jsonString = JSON.stringify(shareData);
+            const encodedData = btoa(encodeURIComponent(jsonString));
+            const fullUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+            
+            return fullUrl;
+        } catch (error) {
+            console.error('Error generating share URL:', error);
+            return '';
+        }
     }
 
     generateQRCode(url) {
         const canvas = document.getElementById('qrCanvas');
         const ctx = canvas.getContext('2d');
-
-        ctx.clearRect(0, 0, 200, 200);
-        ctx.fillStyle = '#f0f0f0';
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#f8f9fa';
         ctx.fillRect(0, 0, 200, 200);
-
-        ctx.fillStyle = '#333';
-        ctx.font = '12px Arial';
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '14px Inter, Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Código QR', 100, 90);
-        ctx.fillText('(sin implementar)', 100, 110);
+        ctx.fillText('Generando QR...', 100, 100);
+        
+        if (url.length > 2000) {
+            this.showQRError(ctx, 'URL muy larga para QR');
+            return;
+        }
+        
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&format=png&data=${encodeURIComponent(url)}`;
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = () => {
+            try {
+                ctx.clearRect(0, 0, 200, 200);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 200, 200);
+                
+                ctx.drawImage(img, 5, 5, 190, 190);
+                
+                ctx.strokeStyle = '#e9ecef';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(1, 1, 198, 198);
+                
+            } catch (error) {
+                console.error('Error drawing QR code:', error);
+                this.showQRError(ctx, 'Error al mostrar QR');
+            }
+        };
+        
+        img.onerror = () => {
+            this.showQRError(ctx, 'Error de conexión');
+        };
+        
+        setTimeout(() => {
+            if (!img.complete) {
+                this.showQRError(ctx, 'Tiempo agotado');
+            }
+        }, 10000);
+        
+        img.src = qrApiUrl;
+    }
+
+    showQRError(ctx, message) {
+        ctx.clearRect(0, 0, 200, 200);
+        ctx.fillStyle = '#fff3cd';
+        ctx.fillRect(0, 0, 200, 200);
+        ctx.fillStyle = '#856404';
+        ctx.font = '12px Inter, Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ ' + message, 100, 80);
+        ctx.fillText('Usa el enlace directo', 100, 100);
+        ctx.fillText('para compartir', 100, 120);
+        
+        ctx.strokeStyle = '#ffc107';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, 198, 198);
     }
 
     copyShareUrl() {
@@ -365,27 +433,6 @@ class CuadernoDigital {
         const message = `📚 Te comparto mis apuntes de ${subject.name}: "${note.title}"\n\n${shareUrl}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
-    }
-
-    shareToTwitter() {
-        const shareUrl = document.getElementById('shareUrl').value;
-        let note = null;
-        let subject = null;
-
-        for (const s of this.subjects) {
-            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
-            if (foundNote) {
-                note = foundNote;
-                subject = s;
-                break;
-            }
-        }
-
-        if (!note || !subject) return;
-
-        const message = `📚 Compartiendo mis apuntes de ${subject.name}: "${note.title}" #Estudios #Apuntes`;
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(shareUrl)}`;
-        window.open(twitterUrl, '_blank');
     }
 
     shareToEmail() {
@@ -435,15 +482,22 @@ class CuadernoDigital {
         noteContent.contentEditable = false;
         noteContent.style.cursor = 'default';
 
-        document.getElementById('noteTitle').value = noteData.title;
-        document.getElementById('noteTitle').disabled = true;
-        document.getElementById('noteContent').innerHTML = noteData.content;
-        document.getElementById('noteTypeSelect').value = noteData.type || 'lecture';
-        document.getElementById('noteTypeSelect').disabled = true;
-        document.getElementById('noteDate').textContent = this.formatDate(noteData.date);
+        const title = noteData.title || noteData.t || 'Apunte Compartido';
+        const content = noteData.content || noteData.c || '';
+        const type = noteData.type || noteData.ty || 'lecture';
+        const subject = noteData.subject || noteData.s || 'Materia';
+        const subjectColor = noteData.subjectColor || noteData.sc || '#3b82f6';
+        const date = noteData.date || noteData.d || new Date().toISOString();
 
-        document.getElementById('noteSubject').textContent = noteData.subject;
-        document.getElementById('noteType').textContent = this.getNoteTypeLabel(noteData.type || 'lecture');
+        document.getElementById('noteTitle').value = title;
+        document.getElementById('noteTitle').disabled = true;
+        document.getElementById('noteContent').innerHTML = content;
+        document.getElementById('noteTypeSelect').value = type;
+        document.getElementById('noteTypeSelect').disabled = true;
+        document.getElementById('noteDate').textContent = this.formatDate(date);
+
+        document.getElementById('noteSubject').textContent = subject;
+        document.getElementById('noteType').textContent = this.getNoteTypeLabel(type);
 
         document.getElementById('favoriteBtn').style.display = 'none';
         document.getElementById('shareNoteBtn').style.display = 'none';
@@ -451,7 +505,14 @@ class CuadernoDigital {
 
         document.querySelector('.editor-toolbar').style.display = 'none';
 
-        this.addSharedNoteBanner(noteData);
+        this.addSharedNoteBanner({
+            title: title,
+            content: content,
+            type: type,
+            subject: subject,
+            subjectColor: subjectColor,
+            date: date
+        });
     }
 
     addSharedNoteBanner(noteData) {

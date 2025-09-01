@@ -1495,14 +1495,31 @@ select:focus,
 
 .qr-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     padding: 1rem;
+    gap: 0.75rem;
 }
 
 #qrCanvas {
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 12px;
     background: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+#qrCanvas:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.qr-instructions {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 200px;
+    line-height: 1.4;
 }
 
 .social-share-buttons {

@@ -70,8 +70,7 @@ class CuadernoDigital {
         document.getElementById('shareWhatsApp').addEventListener('click', () => this.shareToWhatsApp());
         document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
 
-        document.getElementById('mobileNavToggle').addEventListener('click', () => this.toggleMobileNav());
-        document.getElementById('mobileOverlay').addEventListener('click', () => this.closeMobileNav());
+
 
         document.querySelectorAll('#settingsModal .modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.hideSettingsModal());
@@ -125,13 +124,6 @@ class CuadernoDigital {
                 this.hideSettingsModal();
                 this.hideSubjectPickerModal();
                 this.hideShareModal();
-                this.closeMobileNav();
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                this.closeMobileNav();
             }
         });
 
@@ -329,7 +321,7 @@ class CuadernoDigital {
             const jsonString = JSON.stringify(shareData);
             const encodedData = btoa(encodeURIComponent(jsonString));
             const fullUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
-            
+
             return fullUrl;
         } catch (error) {
             console.error('Error generating share URL:', error);
@@ -340,7 +332,7 @@ class CuadernoDigital {
     generateQRCode(url) {
         const canvas = document.getElementById('qrCanvas');
         const ctx = canvas.getContext('2d');
-        
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#f8f9fa';
         ctx.fillRect(0, 0, 200, 200);
@@ -348,46 +340,46 @@ class CuadernoDigital {
         ctx.font = '14px Inter, Arial';
         ctx.textAlign = 'center';
         ctx.fillText('Generando QR...', 100, 100);
-        
+
         if (url.length > 2000) {
             this.showQRError(ctx, 'URL muy larga para QR');
             return;
         }
-        
+
         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&format=png&data=${encodeURIComponent(url)}`;
-        
+
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        
+
         img.onload = () => {
             try {
                 ctx.clearRect(0, 0, 200, 200);
-                
+
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, 200, 200);
-                
+
                 ctx.drawImage(img, 5, 5, 190, 190);
-                
+
                 ctx.strokeStyle = '#e9ecef';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(1, 1, 198, 198);
-                
+
             } catch (error) {
                 console.error('Error drawing QR code:', error);
                 this.showQRError(ctx, 'Error al mostrar QR');
             }
         };
-        
+
         img.onerror = () => {
             this.showQRError(ctx, 'Error de conexión');
         };
-        
+
         setTimeout(() => {
             if (!img.complete) {
                 this.showQRError(ctx, 'Tiempo agotado');
             }
         }, 10000);
-        
+
         img.src = qrApiUrl;
     }
 
@@ -401,7 +393,7 @@ class CuadernoDigital {
         ctx.fillText('⚠️ ' + message, 100, 80);
         ctx.fillText('Usa el enlace directo', 100, 100);
         ctx.fillText('para compartir', 100, 120);
-        
+
         ctx.strokeStyle = '#ffc107';
         ctx.lineWidth = 2;
         ctx.strokeRect(1, 1, 198, 198);
@@ -468,43 +460,7 @@ class CuadernoDigital {
         window.location.href = mailtoUrl;
     }
 
-    toggleMobileNav() {
-        const sidebar = document.querySelector('.sidebar');
-        const overlay = document.getElementById('mobileOverlay');
-        const toggle = document.getElementById('mobileNavToggle');
-        
-        const isOpen = sidebar.classList.contains('mobile-open');
-        
-        if (isOpen) {
-            this.closeMobileNav();
-        } else {
-            this.openMobileNav();
-        }
-    }
 
-    openMobileNav() {
-        const sidebar = document.querySelector('.sidebar');
-        const overlay = document.getElementById('mobileOverlay');
-        const toggle = document.getElementById('mobileNavToggle');
-        
-        sidebar.classList.add('mobile-open');
-        overlay.classList.add('active');
-        toggle.innerHTML = '<i class="fas fa-times"></i>';
-        
-        document.body.style.overflow = 'hidden';
-    }
-
-    closeMobileNav() {
-        const sidebar = document.querySelector('.sidebar');
-        const overlay = document.getElementById('mobileOverlay');
-        const toggle = document.getElementById('mobileNavToggle');
-        
-        sidebar.classList.remove('mobile-open');
-        overlay.classList.remove('active');
-        toggle.innerHTML = '<i class="fas fa-bars"></i>';
-        
-        document.body.style.overflow = '';
-    }
 
     checkForSharedNote() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -993,12 +949,7 @@ class CuadernoDigital {
         });
 
         container.querySelectorAll('.note-item').forEach(item => {
-            item.addEventListener('click', () => {
-                this.openNote(item.dataset.noteId);
-                if (window.innerWidth <= 768) {
-                    this.closeMobileNav();
-                }
-            });
+            item.addEventListener('click', () => this.openNote(item.dataset.noteId));
         });
 
         container.querySelectorAll('.btn-add-note').forEach(btn => {

@@ -5,7 +5,6 @@ class CuadernoDigital {
         this.currentView = 'subjects';
         this.selectedColor = '#3b82f6';
         this.autoSaveInterval = null;
-        this.init();
     }
 
     init() {
@@ -1535,5 +1534,6 @@ class CuadernoDigital {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new CuadernoDigital();
+    const app = new CuadernoDigital();
+    app.init();
 });

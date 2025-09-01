@@ -33,6 +33,16 @@ class CuadernoDigital {
         document.getElementById('newNoteBtn').addEventListener('click', () => this.createNewNote());
         document.getElementById('welcomeNewSubject').addEventListener('click', () => this.showSubjectModal());
 
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', () => this.toggleMobileMenu());
+        }
+
+        const mobileOverlay = document.getElementById('mobileOverlay');
+        if (mobileOverlay) {
+            mobileOverlay.addEventListener('click', () => this.closeMobileMenu());
+        }
+
         document.querySelector('.dropdown-toggle').addEventListener('click', (e) => {
             e.stopPropagation();
             document.querySelector('.dropdown').classList.toggle('active');
@@ -123,6 +133,7 @@ class CuadernoDigital {
                 this.hideSettingsModal();
                 this.hideSubjectPickerModal();
                 this.hideShareModal();
+                this.closeMobileMenu();
             }
         });
 
@@ -679,6 +690,10 @@ class CuadernoDigital {
 
         if (!note || !subject) return;
 
+        if (window.innerWidth <= 768) {
+            this.closeMobileMenu();
+        }
+
         this.currentNoteId = noteId;
 
         document.getElementById('welcomeScreen').style.display = 'none';
@@ -948,7 +963,12 @@ class CuadernoDigital {
         });
 
         container.querySelectorAll('.note-item').forEach(item => {
-            item.addEventListener('click', () => this.openNote(item.dataset.noteId));
+            item.addEventListener('click', () => {
+                this.openNote(item.dataset.noteId);
+                if (window.innerWidth <= 768) {
+                    this.closeMobileMenu();
+                }
+            });
         });
 
         container.querySelectorAll('.btn-add-note').forEach(btn => {
@@ -1530,6 +1550,52 @@ class CuadernoDigital {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    toggleMobileMenu() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileMenuToggle');
+        
+        if (!sidebar || !overlay || !toggle) return;
+        
+        const isOpen = sidebar.classList.contains('mobile-open');
+        
+        if (isOpen) {
+            this.closeMobileMenu();
+        } else {
+            this.openMobileMenu();
+        }
+    }
+
+    openMobileMenu() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileMenuToggle');
+        
+        if (!sidebar || !overlay || !toggle) return;
+        
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+        toggle.classList.add('active');
+        toggle.innerHTML = '<i class="fas fa-times"></i>';
+        
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeMobileMenu() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileMenuToggle');
+        
+        if (!sidebar || !overlay || !toggle) return;
+        
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        toggle.classList.remove('active');
+        toggle.innerHTML = '<i class="fas fa-bars"></i>';
+        
+        document.body.style.overflow = '';
     }
 }
 

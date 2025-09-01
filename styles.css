@@ -4988,4 +4988,508 @@ ra Small Screens (480px and below) */
         width: auto;
         max-width: none;
     }
+}/* Mobile
+ Menu Styles */
+.mobile-menu-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 1001;
+}
+
+.mobile-menu-toggle:hover {
+    background: var(--bg-hover);
+    transform: scale(1.05);
+}
+
+.mobile-menu-toggle.active {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+.mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(2px);
+}
+
+.mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Show mobile menu toggle */
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    /* Header adjustments */
+    header {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .header-left {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .header-left h1 {
+        font-size: 1.25rem;
+    }
+
+    .semester-info {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+    }
+
+    /* Hide desktop header controls on mobile */
+    .header-controls {
+        display: none;
+    }
+
+    /* Sidebar becomes a slide-in menu */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    /* Editor area takes full width */
+    .editor-area {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    /* Main content adjustments */
+    .main-content {
+        position: relative;
+    }
+
+    /* Search section mobile */
+    .search-section {
+        padding: 1rem;
+    }
+
+    .search-box input {
+        font-size: 16px; /* Prevent iOS zoom */
+        padding: 0.75rem;
+    }
+
+    /* View buttons mobile */
+    .view-toggles {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .view-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        justify-content: flex-start;
+        gap: 0.75rem;
+        touch-action: manipulation;
+        min-height: 44px;
+    }
+
+    .view-btn i {
+        font-size: 1rem;
+        width: 20px;
+        text-align: center;
+    }
+
+    /* Subjects container mobile */
+    .subjects-container {
+        padding: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Note editor mobile */
+    .note-header {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .note-title-section {
+        width: 100%;
+    }
+
+    .title-input {
+        font-size: 16px; /* Prevent iOS zoom */
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .note-actions {
+        flex-direction: row;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .note-type-select {
+        font-size: 16px; /* Prevent iOS zoom */
+        padding: 0.75rem;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .note-meta {
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .note-meta .btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0.75rem;
+    }
+
+    #noteDate {
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    /* Editor toolbar mobile */
+    .editor-toolbar {
+        padding: 0.75rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 0.5rem;
+    }
+
+    .toolbar-group {
+        flex-shrink: 0;
+        gap: 0.25rem;
+    }
+
+    .toolbar-btn {
+        width: 44px;
+        height: 44px;
+        touch-action: manipulation;
+    }
+
+    .toolbar-separator {
+        height: 32px;
+        margin: 0 0.5rem;
+        flex-shrink: 0;
+    }
+
+    /* Note content mobile */
+    .note-content {
+        padding: 1rem;
+        font-size: 16px; /* Prevent iOS zoom */
+        line-height: 1.6;
+        -webkit-overflow-scrolling: touch;
+        min-height: 300px;
+    }
+
+    /* Subject and note items mobile */
+    .subject-header {
+        padding: 1rem;
+        min-height: 60px;
+        touch-action: manipulation;
+    }
+
+    .subject-info h3 {
+        font-size: 1rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .subject-details {
+        font-size: 0.8rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .subject-actions {
+        opacity: 1; /* Always visible on mobile */
+    }
+
+    .btn-add-note,
+    .btn-delete-subject,
+    .btn-toggle-subject {
+        width: 44px;
+        height: 44px;
+        touch-action: manipulation;
+    }
+
+    .note-item {
+        padding: 0.75rem;
+        min-height: 60px;
+        touch-action: manipulation;
+        gap: 0.75rem;
+    }
+
+    .note-icon {
+        font-size: 1.1rem;
+        width: 24px;
+        flex-shrink: 0;
+    }
+
+    .note-title {
+        font-size: 0.9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .note-meta-info {
+        font-size: 0.75rem;
+    }
+
+    .note-favorite {
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    /* Modal mobile */
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+        max-height: 85vh;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+
+    .modal-body {
+        max-height: 60vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-footer .btn {
+        flex: 1;
+        padding: 0.75rem;
+    }
+
+    /* Form mobile */
+    .form-group input,
+    .form-group select {
+        font-size: 16px; /* Prevent iOS zoom */
+        padding: 0.75rem;
+    }
+
+    .color-option {
+        width: 44px;
+        height: 44px;
+        touch-action: manipulation;
+    }
+
+    /* Theme options mobile */
+    .theme-options {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .theme-option {
+        padding: 0.75rem;
+        touch-action: manipulation;
+    }
+
+    /* Welcome screen mobile */
+    .welcome-content {
+        padding: 2rem 1rem;
+    }
+
+    .welcome-content h2 {
+        font-size: 1.5rem;
+    }
+
+    .welcome-stats {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .stat-item {
+        flex-direction: row;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .stat-item i {
+        font-size: 1.25rem;
+        width: 24px;
+    }
+
+    /* Toast mobile */
+    .toast {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+        width: auto;
+        max-width: none;
+    }
+}
+
+/* Small mobile screens */
+@media (max-width: 600px) {
+    .header-left h1 {
+        font-size: 1.1rem;
+    }
+
+    .sidebar {
+        width: 260px;
+    }
+
+    .note-header {
+        padding: 0.75rem;
+    }
+
+    .editor-toolbar {
+        padding: 0.5rem;
+    }
+
+    .toolbar-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .note-content {
+        padding: 0.75rem;
+    }
+
+    .subject-header {
+        padding: 0.75rem;
+        min-height: 56px;
+    }
+
+    .note-item {
+        padding: 0.6rem;
+        min-height: 56px;
+    }
+
+    .btn-add-note,
+    .btn-delete-subject,
+    .btn-toggle-subject {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .header-left h1 {
+        font-size: 1rem;
+    }
+
+    .sidebar {
+        width: 240px;
+    }
+
+    .toolbar-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .btn-add-note,
+    .btn-delete-subject,
+    .btn-toggle-subject {
+        width: 36px;
+        height: 36px;
+    }
+
+    .note-meta .btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
+
+/* Touch improvements for all mobile */
+@media (max-width: 768px) {
+    /* Prevent zoom on input focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* Touch improvements */
+    button, .btn, input, select, textarea {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Scrolling improvements */
+    .subjects-container,
+    .note-content,
+    .modal-body,
+    .editor-toolbar {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
+    /* Focus states */
+    input:focus,
+    select:focus,
+    textarea:focus,
+    .note-content:focus {
+        outline: 2px solid var(--accent-blue);
+        outline-offset: 2px;
+    }
+
+    /* Auto-close menu when clicking note items */
+    .note-item {
+        cursor: pointer;
+    }
+}
+
+/* Landscape mobile optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+    .sidebar {
+        width: 300px;
+    }
+
+    .note-content {
+        font-size: 15px;
+        line-height: 1.5;
+    }
+
+    .editor-toolbar {
+        padding: 0.5rem;
+    }
+
+    .toolbar-btn {
+        width: 36px;
+        height: 36px;
+    }
 }

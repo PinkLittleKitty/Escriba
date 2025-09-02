@@ -326,7 +326,11 @@ class CuadernoDigital {
             const shareUrl = await this.generateShareUrl();
             document.getElementById('shareUrl').value = shareUrl;
 
-            if (shareUrl.includes('?g=')) {
+            if (shareUrl.includes('?h=')) {
+                urlIndicator.innerHTML = '<i class="fas fa-cloud"></i> Enlace permanente';
+                urlIndicator.className = 'url-indicator shortened';
+                shortenBtn.style.display = 'none';
+            } else if (shareUrl.includes('?d=')) {
                 urlIndicator.innerHTML = '<i class="fas fa-cloud"></i> Enlace permanente';
                 urlIndicator.className = 'url-indicator shortened';
                 shortenBtn.style.display = 'none';
@@ -458,45 +462,77 @@ class CuadernoDigital {
 
             const noteData = JSON.parse(decodeURIComponent(atob(shareParam)));
 
-            const gistData = {
-                description: `Escriba Note: ${noteData.t || noteData.title || 'Untitled'}`,
-                public: true,
-                files: {
-                    "note.json": {
-                        content: JSON.stringify(noteData, null, 2)
+            this.showToast('Creando enlace corto...', 'info');
+
+            // Method 1: Try Hastebin
+            try {
+                const hastebinResponse = await fetch('https://hastebin.com/documents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
                     },
-                    "README.md": {
-                        content: `# ${noteData.t || noteData.title || 'Shared Note'}\n\nThis is a shared note from Escriba.\n\n**Content:**\n${noteData.c || noteData.content || 'No content'}\n\n---\n*Created: ${new Date().toISOString()}*`
-                    }
+                    body: JSON.stringify(noteData, null, 2)
+                });
+
+                if (hastebinResponse.ok) {
+                    const result = await hastebinResponse.json();
+                    const shortUrl = `${window.location.origin}${window.location.pathname}?h=${result.key}`;
+                    this.showToast('¡Enlace corto creado! Funciona en cualquier dispositivo', 'success');
+                    return shortUrl;
                 }
-            };
-
-            this.showToast('Creando enlace permanente...', 'info');
-
-            const response = await fetch('https://api.github.com/gists', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(gistData)
-            });
-
-            if (response.ok) {
-                const gist = await response.json();
-                const shortUrl = `${window.location.origin}${window.location.pathname}?g=${gist.id}`;
-                this.showToast('¡Enlace permanente creado! Funciona en cualquier dispositivo', 'success');
-                return shortUrl;
-            } else {
-                console.error('Failed to create gist:', response.status, await response.text());
-                this.showToast('Error al crear enlace permanente, usando compresión local', 'warning');
-
-                return this.createFallbackUrl(noteData);
+            } catch (e) {
+                console.log('Hastebin failed, trying next method...');
             }
+
+            // Method 2: Try dpaste.org
+            try {
+                const dpasteData = new FormData();
+                dpasteData.append('content', JSON.stringify(noteData, null, 2));
+                dpasteData.append('syntax', 'json');
+                dpasteData.append('expiry_days', '365');
+
+                const dpasteResponse = await fetch('https://dpaste.org/api/', {
+                    method: 'POST',
+                    body: dpasteData
+                });
+
+                if (dpasteResponse.ok) {
+                    const pasteUrl = await dpasteResponse.text();
+                    const pasteId = pasteUrl.split('/').pop().replace('.txt', '');
+                    const shortUrl = `${window.location.origin}${window.location.pathname}?d=${pasteId}`;
+                    this.showToast('¡Enlace corto creado! Funciona en cualquier dispositivo', 'success');
+                    return shortUrl;
+                }
+            } catch (e) {
+                console.log('dpaste failed, using compression...');
+            }
+
+            // Fallback
+            return this.createEnhancedCompressionUrl(noteData);
+
         } catch (error) {
             console.error('Error creating short URL:', error);
-            this.showToast('Error al crear enlace, usando compresión local', 'warning');
+            return this.createEnhancedCompressionUrl(noteData);
+        }
+    }
 
-            return this.createFallbackUrl(noteData);
+    createEnhancedCompressionUrl(noteData) {
+        try {
+            this.showToast('Usando compresión avanzada...', 'info');
+
+            const compressedData = this.compressData(noteData);
+            const shortUrl = `${window.location.origin}${window.location.pathname}?z=${compressedData}`;
+
+            if (shortUrl.length > 2000) {
+                this.showToast('Nota muy larga - URL comprimida', 'warning');
+            } else {
+                this.showToast('URL comprimida creada', 'success');
+            }
+
+            return shortUrl;
+        } catch (error) {
+            console.error('Compression failed:', error);
+            return longUrl;
         }
     }
 
@@ -739,7 +775,8 @@ class CuadernoDigital {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('share');
         const compressedData = urlParams.get('z');
-        const gistId = urlParams.get('g');
+        const hastebinId = urlParams.get('h');
+        const dpasteId = urlParams.get('d');
 
         if (sharedData) {
             try {
@@ -750,8 +787,10 @@ class CuadernoDigital {
                 console.error('Error loading shared note:', error);
                 this.showToast('Error al cargar el apunte compartido', 'error');
             }
-        } else if (gistId) {
-            this.loadFromGist(gistId);
+        } else if (hastebinId) {
+            this.loadFromHastebin(hastebinId);
+        } else if (dpasteId) {
+            this.loadFromDpaste(dpasteId);
         } else if (compressedData) {
             try {
                 const decodedData = this.decompressData(compressedData);
@@ -765,6 +804,46 @@ class CuadernoDigital {
                 console.error('Error loading compressed shared note:', error);
                 this.showToast('Error al cargar el apunte comprimido', 'error');
             }
+        }
+    }
+
+    async loadFromHastebin(hastebinId) {
+        try {
+            this.showToast('Cargando apunte completo...', 'info');
+
+            const response = await fetch(`https://hastebin.com/raw/${hastebinId}`);
+            if (response.ok) {
+                const content = await response.text();
+                const noteData = JSON.parse(content);
+                this.displaySharedNote(noteData);
+                this.isViewingSharedNote = true;
+                this.showToast('¡Apunte completo cargado exitosamente!', 'success');
+            } else {
+                this.showToast('Apunte no encontrado - El enlace puede haber expirado', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading from Hastebin:', error);
+            this.showToast('Error al cargar el apunte - Verifica tu conexión', 'error');
+        }
+    }
+
+    async loadFromDpaste(dpasteId) {
+        try {
+            this.showToast('Cargando apunte completo...', 'info');
+
+            const response = await fetch(`https://dpaste.org/${dpasteId}.txt`);
+            if (response.ok) {
+                const content = await response.text();
+                const noteData = JSON.parse(content);
+                this.displaySharedNote(noteData);
+                this.isViewingSharedNote = true;
+                this.showToast('¡Apunte completo cargado exitosamente!', 'success');
+            } else {
+                this.showToast('Apunte no encontrado - El enlace puede haber expirado', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading from dpaste:', error);
+            this.showToast('Error al cargar el apunte - Verifica tu conexión', 'error');
         }
     }
 

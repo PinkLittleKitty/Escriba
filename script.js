@@ -317,16 +317,22 @@ class CuadernoDigital {
         const urlIndicator = document.getElementById('urlTypeIndicator');
         const shortenBtn = document.getElementById('shortenUrlBtn');
 
-        if (shareUrl.includes('?s=')) {
-            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL acortada automáticamente';
+        if (shareUrl.includes('?c=')) {
+            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL ultra-comprimida';
             urlIndicator.className = 'url-indicator shortened';
             urlIndicator.style.display = 'block';
             shortenBtn.style.display = 'none';
-        } else {
-            urlIndicator.innerHTML = '<i class="fas fa-link"></i> URL completa';
+        } else if (shareUrl.length > 200) {
+            urlIndicator.innerHTML = '<i class="fas fa-link"></i> URL larga - Podés comprimirla';
             urlIndicator.className = 'url-indicator full';
             urlIndicator.style.display = 'block';
             shortenBtn.style.display = 'flex';
+            shortenBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Comprimir';
+        } else {
+            urlIndicator.innerHTML = '<i class="fas fa-check-circle"></i> URL optimizada';
+            urlIndicator.className = 'url-indicator shortened';
+            urlIndicator.style.display = 'block';
+            shortenBtn.style.display = 'none';
         }
 
         this.generateQRCode(shareUrl);
@@ -369,7 +375,7 @@ class CuadernoDigital {
             const fullUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
 
             if (fullUrl.length > 150) {
-                return this.createShortUrl(encodedData);
+                return this.generateCompressedUrl(shareData);
             }
 
             return fullUrl;
@@ -379,41 +385,55 @@ class CuadernoDigital {
         }
     }
 
-    createShortUrl(encodedData) {
-        const shortUrls = JSON.parse(localStorage.getItem('escribaShortUrls')) || {};
+    generateCompressedUrl(shareData) {
+        try {
+            let cleanContent = shareData.c;
 
-        const shortCode = this.generateShortCode();
+            cleanContent = cleanContent.replace(/<[^>]*>/g, '');
 
-        shortUrls[shortCode] = {
-            data: encodedData,
-            created: new Date().toISOString(),
-            accessed: 0
-        };
+            cleanContent = cleanContent.replace(/\s+/g, ' ').trim();
 
-        const entries = Object.entries(shortUrls);
-        if (entries.length > 50) {
-            entries.sort((a, b) => new Date(b[1].created) - new Date(a[1].created));
-            const keepEntries = entries.slice(0, 50);
-            const cleanedUrls = {};
-            keepEntries.forEach(([code, data]) => {
-                cleanedUrls[code] = data;
-            });
-            localStorage.setItem('escribaShortUrls', JSON.stringify(cleanedUrls));
-        } else {
-            localStorage.setItem('escribaShortUrls', JSON.stringify(shortUrls));
+            if (cleanContent.length > 200) {
+                cleanContent = cleanContent.substring(0, 200) + '...';
+            }
+
+            const compactData = {
+                t: shareData.t.substring(0, 40),
+                c: cleanContent,
+                ty: shareData.ty,
+                s: shareData.s.substring(0, 20),
+                sc: shareData.sc,
+                d: shareData.d
+            };
+
+            const jsonString = JSON.stringify(compactData);
+            const encodedData = btoa(encodeURIComponent(jsonString));
+            const compressedUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+
+            if (compressedUrl.length > 300) {
+                const ultraCompactData = {
+                    t: shareData.t.substring(0, 25),
+                    c: cleanContent.substring(0, 100) + '...',
+                    ty: shareData.ty,
+                    s: shareData.s.substring(0, 15),
+                    sc: shareData.sc
+                };
+
+                const ultraJsonString = JSON.stringify(ultraCompactData);
+                const ultraEncodedData = btoa(encodeURIComponent(ultraJsonString));
+                return `${window.location.origin}${window.location.pathname}?c=${ultraEncodedData}`;
+            }
+
+            return compressedUrl;
+        } catch (error) {
+            console.error('Error generating compressed URL:', error);
+            const jsonString = JSON.stringify(shareData);
+            const encodedData = btoa(encodeURIComponent(jsonString));
+            return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
         }
-
-        return `${window.location.origin}${window.location.pathname}?s=${shortCode}`;
     }
 
-    generateShortCode() {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < 8; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    }
+
 
     shortenCurrentUrl() {
         if (!this.currentNoteId) return;
@@ -442,24 +462,22 @@ class CuadernoDigital {
         };
 
         try {
-            const jsonString = JSON.stringify(shareData);
-            const encodedData = btoa(encodeURIComponent(jsonString));
-            const shortUrl = this.createShortUrl(encodedData);
+            const compressedUrl = this.generateCompressedUrl(shareData);
 
-            document.getElementById('shareUrl').value = shortUrl;
+            document.getElementById('shareUrl').value = compressedUrl;
 
             const urlIndicator = document.getElementById('urlTypeIndicator');
             const shortenBtn = document.getElementById('shortenUrlBtn');
 
-            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL acortada - Perfecto para Discord';
+            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL comprimida - Funciona en todos los dispositivos';
             urlIndicator.className = 'url-indicator shortened';
             shortenBtn.style.display = 'none';
 
-            this.generateQRCode(shortUrl);
-            this.showToast('URL acortada exitosamente', 'success');
+            this.generateQRCode(compressedUrl);
+            this.showToast('URL comprimida exitosamente', 'success');
         } catch (error) {
-            console.error('Error shortening URL:', error);
-            this.showToast('Error al acortar la URL', 'error');
+            console.error('Error compressing URL:', error);
+            this.showToast('Error al comprimir la URL', 'error');
         }
     }
 
@@ -599,7 +617,7 @@ class CuadernoDigital {
     checkForSharedNote() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('share');
-        const shortCode = urlParams.get('s');
+        const compressedData = urlParams.get('c');
 
         if (sharedData) {
             try {
@@ -610,24 +628,14 @@ class CuadernoDigital {
                 console.error('Error loading shared note:', error);
                 this.showToast('Error al cargar el apunte compartido', 'error');
             }
-        } else if (shortCode) {
+        } else if (compressedData) {
             try {
-                const shortUrls = JSON.parse(localStorage.getItem('escribaShortUrls')) || {};
-                const shortUrlData = shortUrls[shortCode];
-
-                if (shortUrlData) {
-                    shortUrlData.accessed = (shortUrlData.accessed || 0) + 1;
-                    localStorage.setItem('escribaShortUrls', JSON.stringify(shortUrls));
-
-                    const decodedData = JSON.parse(decodeURIComponent(atob(shortUrlData.data)));
-                    this.displaySharedNote(decodedData);
-                    this.isViewingSharedNote = true;
-                } else {
-                    this.showToast('Enlace corto no encontrado o expirado', 'error');
-                }
+                const decodedData = JSON.parse(decodeURIComponent(atob(compressedData)));
+                this.displaySharedNote(decodedData);
+                this.isViewingSharedNote = true;
             } catch (error) {
-                console.error('Error loading short URL:', error);
-                this.showToast('Error al cargar el enlace corto', 'error');
+                console.error('Error loading compressed shared note:', error);
+                this.showToast('Error al cargar el apunte comprimido', 'error');
             }
         }
     }
@@ -649,7 +657,13 @@ class CuadernoDigital {
 
         document.getElementById('noteTitle').value = title;
         document.getElementById('noteTitle').disabled = true;
-        document.getElementById('noteContent').innerHTML = content;
+
+        let displayContent = content;
+        if (content.endsWith('...')) {
+            displayContent = content + '<br><br><div style="background: rgba(255, 193, 7, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid #ffc107; margin-top: 1rem;"><i class="fas fa-info-circle" style="color: #ffc107;"></i> <strong>Contenido comprimido:</strong> Este apunte fue comprimido para generar una URL más corta. El contenido completo está disponible en el dispositivo original.</div>';
+        }
+
+        document.getElementById('noteContent').innerHTML = displayContent;
         document.getElementById('noteTypeSelect').value = type;
         document.getElementById('noteTypeSelect').disabled = true;
         document.getElementById('noteDate').textContent = this.formatDate(date);

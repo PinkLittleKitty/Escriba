@@ -1459,6 +1459,138 @@ header h1 i {
     margin-bottom: 1rem;
 }
 
+/* Share Modal Styles */
+.share-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.share-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.share-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.share-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.share-info {
+    margin-bottom: 1rem;
+}
+
+.share-method {
+    background: var(--bg-card);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.share-method i {
+    color: var(--accent-blue);
+}
+
+.share-method i.text-warning {
+    color: var(--accent-orange);
+}
+
+.share-url-container {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.share-url-input {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: monospace;
+}
+
+.share-url-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--accent-focus);
+}
+
+.share-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.qr-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+#qrCanvas {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+}
+
+.qr-instructions {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 0;
+}
+
+.social-share-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-social {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-social.whatsapp {
+    background: #25d366;
+    color: white;
+}
+
+.btn-social.whatsapp:hover {
+    background: #128c7e;
+}
+
+.btn-social.email {
+    background: #ea4335;
+    color: white;
+}
+
+.btn-social.email:hover {
+    background: #d33b2c;
+}
+
 /* Event Modal Styles */
 .date-input,
 .time-input {

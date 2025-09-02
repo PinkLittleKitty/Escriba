@@ -10,13 +10,13 @@ class CuadernoDigital {
         this.currentEventId = null;
     }
 
-    init() {
+    async init() {
         document.body.classList.add('loading');
 
         this.bindEvents();
         this.loadSettings();
 
-        this.checkForSharedNote();
+        await this.checkForSharedNote();
 
         this.renderSubjects();
 
@@ -57,9 +57,11 @@ class CuadernoDigital {
 
         document.getElementById('exportBtn').addEventListener('click', () => this.exportCarpeta());
         document.getElementById('importBtn').addEventListener('click', () => this.importCarpeta());
+        document.getElementById('importJsonBtn').addEventListener('click', () => this.importJsonNote());
         document.getElementById('settingsBtn').addEventListener('click', () => this.showSettingsModal());
         document.getElementById('printBtn').addEventListener('click', () => this.printCurrentNote());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImport(e));
+        document.getElementById('importJsonFile').addEventListener('change', (e) => this.handleJsonImport(e));
 
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.switchView(e.target.closest('.view-btn').dataset.view));
@@ -81,6 +83,7 @@ class CuadernoDigital {
         document.getElementById('copyUrlBtn').addEventListener('click', () => this.copyShareUrl());
         document.getElementById('shareWhatsApp').addEventListener('click', () => this.shareToWhatsApp());
         document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
+        document.getElementById('exportJsonBtn').addEventListener('click', () => this.exportCurrentNoteAsJson());
 
         document.getElementById('addEventBtn').addEventListener('click', () => this.showEventModal());
         document.getElementById('saveEvent').addEventListener('click', () => this.saveEvent());
@@ -304,23 +307,59 @@ class CuadernoDigital {
         document.getElementById('subjectPickerModal').classList.remove('active');
     }
 
-    showShareModal() {
+    async showShareModal() {
         if (!this.currentNoteId) {
             this.showToast('No hay ningún apunte abierto para compartir', 'error');
             return;
         }
 
-        const shareUrl = this.generateShareUrl();
-        document.getElementById('shareUrl').value = shareUrl;
-        this.generateQRCode(shareUrl);
         document.getElementById('shareModal').classList.add('active');
+        document.getElementById('shareUrl').value = 'Generando enlace...';
+        document.getElementById('shareMethodInfo').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando enlace...';
+        
+        const canvas = document.getElementById('qrCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, 200, 200);
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, 200, 200);
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '14px Inter, Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Generando enlace...', 100, 100);
+
+        try {
+            const result = await this.generateShareUrlWithInfo();
+            document.getElementById('shareUrl').value = result.url;
+            document.getElementById('shareMethodInfo').innerHTML = result.methodInfo;
+            this.generateQRCode(result.url);
+        } catch (error) {
+            console.error('Error generating share URL:', error);
+            document.getElementById('shareUrl').value = 'Error al generar enlace';
+            document.getElementById('shareMethodInfo').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error al generar enlace';
+            this.showToast('Error al generar enlace para compartir', 'error');
+        }
     }
 
     hideShareModal() {
         document.getElementById('shareModal').classList.remove('active');
     }
 
-    generateShareUrl() {
+    async generateShareUrlWithInfo() {
+        const url = await this.generateShareUrl();
+        let methodInfo = '';
+        
+        if (url.includes('gist=')) {
+            methodInfo = '<i class="fas fa-github"></i> Enlace optimizado via GitHub Gist';
+        } else if (url.includes('truncated')) {
+            methodInfo = '<i class="fas fa-exclamation-triangle text-warning"></i> Contenido truncado para URL - Usá "Exportar como JSON" para el contenido completo';
+        } else {
+            methodInfo = '<i class="fas fa-link"></i> Enlace directo (Si el apunte es largo no va a funcar, Usá "Exportar como JSON" para el contenido completo)';
+        }
+        
+        return { url, methodInfo };
+    }
+
+    async generateShareUrl() {
         if (!this.currentNoteId) return '';
 
         let note = null;
@@ -343,25 +382,191 @@ class CuadernoDigital {
             ty: note.type,
             s: subject.name,
             sc: subject.color,
-            d: note.updatedAt
+            d: note.updatedAt,
+            app: 'escriba',
+            version: '1.0'
         };
 
-        let content = shareData.c;
-        if (content.length > 1000) {
-            content = content.substring(0, 1000) + '... [contenido truncado para QR]';
-            shareData.c = content;
-        }
-
         try {
-            const jsonString = JSON.stringify(shareData);
-            const encodedData = btoa(encodeURIComponent(jsonString));
-            const fullUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+            const gistUrl = await this.createGist(shareData);
+            if (gistUrl) {
+                return gistUrl;
+            }
 
-            return fullUrl;
+            const jsonString = JSON.stringify(shareData);
+            if (jsonString.length < 1500) {
+                const encodedData = btoa(encodeURIComponent(jsonString));
+                return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+            }
+
+            const truncatedData = {
+                ...shareData,
+                c: shareData.c.substring(0, 800) + '\n\n[Nota: Contenido truncado para compartir. Para el contenido completo, exporta como JSON.]',
+                truncated: true
+            };
+            
+            const truncatedJson = JSON.stringify(truncatedData);
+            const encodedData = btoa(encodeURIComponent(truncatedJson));
+            return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+
         } catch (error) {
             console.error('Error generating share URL:', error);
             return '';
         }
+    }
+
+    async createGist(shareData) {
+        try {
+            const gistData = {
+                description: `Escriba Note: ${shareData.t} (${shareData.s})`,
+                public: true,
+                files: {
+                    "escriba-note.json": {
+                        content: JSON.stringify(shareData, null, 2)
+                    }
+                }
+            };
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(gistData),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                const gist = await response.json();
+                return `${window.location.origin}${window.location.pathname}?gist=${gist.id}`;
+            } else if (response.status === 403) {
+                console.warn('GitHub API rate limit reached, falling back to URL encoding');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.warn('GitHub API request timed out, falling back to URL encoding');
+            } else {
+                console.warn('Could not create Gist, falling back to URL encoding:', error);
+            }
+        }
+        return null;
+    }
+
+    exportCurrentNoteAsJson() {
+        if (!this.currentNoteId) {
+            this.showToast('No hay ningún apunte abierto para exportar', 'error');
+            return;
+        }
+
+        let note = null;
+        let subject = null;
+
+        for (const s of this.subjects) {
+            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
+            if (foundNote) {
+                note = foundNote;
+                subject = s;
+                break;
+            }
+        }
+
+        if (!note || !subject) return;
+
+        const shareData = {
+            t: note.title,
+            c: note.content,
+            ty: note.type,
+            s: subject.name,
+            sc: subject.color,
+            d: note.updatedAt,
+            app: 'escriba',
+            version: '1.0',
+            exported: new Date().toISOString()
+        };
+
+        const jsonString = JSON.stringify(shareData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_escriba.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.showToast('Apunte exportado como JSON', 'success');
+    }
+
+    importJsonNote() {
+        document.getElementById('importJsonFile').click();
+    }
+
+    handleJsonImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const noteData = JSON.parse(e.target.result);
+                
+                if (!noteData.app || noteData.app !== 'escriba') {
+                    this.showToast('Este archivo no es un apunte válido de Escriba', 'error');
+                    return;
+                }
+
+                this.importNoteFromJson(noteData);
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                this.showToast('Error al leer el archivo JSON', 'error');
+            }
+        };
+        reader.readAsText(file);
+        
+        event.target.value = '';
+    }
+
+    importNoteFromJson(noteData) {
+        let subject = this.subjects.find(s => s.name === noteData.s);
+
+        if (!subject) {
+            subject = {
+                id: Date.now().toString(),
+                name: noteData.s,
+                code: '',
+                professor: '',
+                color: noteData.sc || '#3b82f6',
+                notes: [],
+                createdAt: new Date().toISOString(),
+                expanded: true
+            };
+            this.subjects.unshift(subject);
+        }
+
+        const note = {
+            id: Date.now().toString(),
+            title: (noteData.title || noteData.t) + ' (Importado)',
+            content: noteData.content || noteData.c,
+            type: noteData.type || noteData.ty || 'lecture',
+            subjectId: subject.id,
+            favorite: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        subject.notes.unshift(note);
+        this.saveCarpeta();
+        this.renderSubjects();
+        this.openNote(note.id);
+
+        this.showToast(`Apunte "${note.title}" importado exitosamente`, 'success');
     }
 
     generateQRCode(url) {
@@ -497,11 +702,20 @@ class CuadernoDigital {
 
 
 
-    checkForSharedNote() {
+    async checkForSharedNote() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('share');
+        const gistId = urlParams.get('gist');
 
-        if (sharedData) {
+        if (gistId) {
+            try {
+                await this.loadFromGist(gistId);
+                this.isViewingSharedNote = true;
+            } catch (error) {
+                console.error('Error loading shared note from Gist:', error);
+                this.showToast('Error al cargar el apunte compartido desde Gist', 'error');
+            }
+        } else if (sharedData) {
             try {
                 const decodedData = JSON.parse(decodeURIComponent(atob(sharedData)));
                 this.displaySharedNote(decodedData);
@@ -510,6 +724,41 @@ class CuadernoDigital {
                 console.error('Error loading shared note:', error);
                 this.showToast('Error al cargar el apunte compartido', 'error');
             }
+        }
+    }
+
+    async loadFromGist(gistId) {
+        try {
+            const response = await fetch(`https://api.github.com/gists/${gistId}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const gist = await response.json();
+            const files = Object.values(gist.files);
+            
+            if (files.length === 0) {
+                throw new Error('No files found in Gist');
+            }
+
+            const jsonFile = files.find(file => 
+                file.filename.includes('.json') || 
+                file.filename.includes('escriba')
+            ) || files[0];
+
+            const noteData = JSON.parse(jsonFile.content);
+            
+            if (!noteData.app || noteData.app !== 'escriba') {
+                throw new Error('This Gist does not contain a valid Escriba note');
+            }
+
+            this.displaySharedNote(noteData);
+            
+        } catch (error) {
+            console.error('Error loading from Gist:', error);
+            this.showToast('No se pudo cargar el apunte desde GitHub Gist', 'error');
+            throw error;
         }
     }
 

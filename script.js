@@ -317,8 +317,8 @@ class CuadernoDigital {
         const urlIndicator = document.getElementById('urlTypeIndicator');
         const shortenBtn = document.getElementById('shortenUrlBtn');
 
-        if (shareUrl.includes('?z=')) {
-            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL comprimida';
+        if (shareUrl.includes('?c=')) {
+            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL ultra-comprimida';
             urlIndicator.className = 'url-indicator shortened';
             urlIndicator.style.display = 'block';
             shortenBtn.style.display = 'none';
@@ -329,7 +329,7 @@ class CuadernoDigital {
             shortenBtn.style.display = 'flex';
             shortenBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Comprimir';
         } else {
-            urlIndicator.innerHTML = '<i class="fas fa-check-circle"></i> URL optimizada - Lista para compartir';
+            urlIndicator.innerHTML = '<i class="fas fa-check-circle"></i> URL optimizada';
             urlIndicator.className = 'url-indicator shortened';
             urlIndicator.style.display = 'block';
             shortenBtn.style.display = 'none';
@@ -385,69 +385,46 @@ class CuadernoDigital {
         }
     }
 
-    compressData(data) {
-        try {
-            const json = JSON.stringify(data);
-            
-            let compressed = '';
-            let count = 1;
-            let current = json[0];
-            
-            for (let i = 1; i < json.length; i++) {
-                if (json[i] === current && count < 9) {
-                    count++;
-                } else {
-                    compressed += count > 1 ? count + current : current;
-                    current = json[i];
-                    count = 1;
-                }
-            }
-            compressed += count > 1 ? count + current : current;
-            
-            return btoa(compressed);
-        } catch (error) {
-            console.error('Compression error:', error);
-            return btoa(JSON.stringify(data));
-        }
-    }
-
-    decompressData(compressed) {
-        try {
-            const decoded = atob(compressed);
-            let decompressed = '';
-            
-            for (let i = 0; i < decoded.length; i++) {
-                const char = decoded[i];
-                if (char >= '2' && char <= '9' && i + 1 < decoded.length) {
-                    const count = parseInt(char);
-                    const repeatChar = decoded[i + 1];
-                    decompressed += repeatChar.repeat(count);
-                    i++;
-                } else {
-                    decompressed += char;
-                }
-            }
-            
-            return JSON.parse(decompressed);
-        } catch (error) {
-            console.error('Decompression error:', error);
-            return null;
-        }
-    }
-
     generateCompressedUrl(shareData) {
         try {
-            const compressed = this.compressData(shareData);
-            const compressedUrl = `${window.location.origin}${window.location.pathname}?z=${compressed}`;
-            
-            const originalEncoded = btoa(encodeURIComponent(JSON.stringify(shareData)));
-            const originalUrl = `${window.location.origin}${window.location.pathname}?share=${originalEncoded}`;
-            
-            if (compressedUrl.length < originalUrl.length * 0.85) {
-                return compressedUrl;
-            } else {
-                return originalUrl;
+            let cleanContent = shareData.c;
+
+            cleanContent = cleanContent.replace(/<[^>]*>/g, '');
+
+            cleanContent = cleanContent.replace(/\s+/g, ' ').trim();
+
+            if (cleanContent.length > 200) {
+                cleanContent = cleanContent.substring(0, 200) + '...';
             }
+
+            const compactData = {
+                t: shareData.t.substring(0, 40),
+                c: cleanContent,
+                ty: shareData.ty,
+                s: shareData.s.substring(0, 20),
+                sc: shareData.sc,
+                d: shareData.d
+            };
+
+            const jsonString = JSON.stringify(compactData);
+            const encodedData = btoa(encodeURIComponent(jsonString));
+            const compressedUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+
+            if (compressedUrl.length > 300) {
+                const ultraCompactData = {
+                    t: shareData.t.substring(0, 25),
+                    c: cleanContent.substring(0, 100) + '...',
+                    ty: shareData.ty,
+                    s: shareData.s.substring(0, 15),
+                    sc: shareData.sc
+                };
+
+                const ultraJsonString = JSON.stringify(ultraCompactData);
+                const ultraEncodedData = btoa(encodeURIComponent(ultraJsonString));
+                return `${window.location.origin}${window.location.pathname}?c=${ultraEncodedData}`;
+            }
+
+            return compressedUrl;
         } catch (error) {
             console.error('Error generating compressed URL:', error);
             const jsonString = JSON.stringify(shareData);
@@ -640,7 +617,7 @@ class CuadernoDigital {
     checkForSharedNote() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('share');
-        const compressedData = urlParams.get('z');
+        const compressedData = urlParams.get('c');
 
         if (sharedData) {
             try {
@@ -653,19 +630,15 @@ class CuadernoDigital {
             }
         } else if (compressedData) {
             try {
-                const decodedData = this.decompressData(compressedData);
-                if (decodedData) {
-                    this.displaySharedNote(decodedData);
-                    this.isViewingSharedNote = true;
-                } else {
-                    this.showToast('Error al descomprimir el apunte', 'error');
-                }
+                const decodedData = JSON.parse(decodeURIComponent(atob(compressedData)));
+                this.displaySharedNote(decodedData);
+                this.isViewingSharedNote = true;
             } catch (error) {
-                
-    }ole.error('Error loading compressed shared note:', error);
+                console.error('Error loading compressed shared note:', error);
                 this.showToast('Error al cargar el apunte comprimido', 'error');
             }
         }
+    }
 
     displaySharedNote(noteData) {
         document.getElementById('welcomeScreen').style.display = 'none';
@@ -684,7 +657,13 @@ class CuadernoDigital {
 
         document.getElementById('noteTitle').value = title;
         document.getElementById('noteTitle').disabled = true;
-        document.getElementById('noteContent').innerHTML = content;
+
+        let displayContent = content;
+        if (content.endsWith('...')) {
+            displayContent = content + '<br><br><div style="background: rgba(255, 193, 7, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid #ffc107; margin-top: 1rem;"><i class="fas fa-info-circle" style="color: #ffc107;"></i> <strong>Contenido comprimido:</strong> Este apunte fue comprimido para generar una URL más corta. El contenido completo está disponible en el dispositivo original.</div>';
+        }
+
+        document.getElementById('noteContent').innerHTML = displayContent;
         document.getElementById('noteTypeSelect').value = type;
         document.getElementById('noteTypeSelect').disabled = true;
         document.getElementById('noteDate').textContent = this.formatDate(date);

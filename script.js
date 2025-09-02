@@ -305,45 +305,56 @@ class CuadernoDigital {
         document.getElementById('subjectPickerModal').classList.remove('active');
     }
 
-    showShareModal() {
+    async showShareModal() {
         if (!this.currentNoteId) {
             this.showToast('No hay ningún apunte abierto para compartir', 'error');
             return;
         }
 
-        const shareUrl = this.generateShareUrl();
-        document.getElementById('shareUrl').value = shareUrl;
+        document.getElementById('shareModal').classList.add('active');
+        document.getElementById('shareUrl').value = 'Generando URL...';
 
         const urlIndicator = document.getElementById('urlTypeIndicator');
         const shortenBtn = document.getElementById('shortenUrlBtn');
 
-        if (shareUrl.includes('?z=')) {
-            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL comprimida';
-            urlIndicator.className = 'url-indicator shortened';
-            urlIndicator.style.display = 'block';
-            shortenBtn.style.display = 'none';
-        } else if (shareUrl.length > 200) {
-            urlIndicator.innerHTML = '<i class="fas fa-link"></i> URL larga - Podés comprimirla';
-            urlIndicator.className = 'url-indicator full';
-            urlIndicator.style.display = 'block';
-            shortenBtn.style.display = 'flex';
-            shortenBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Comprimir';
-        } else {
-            urlIndicator.innerHTML = '<i class="fas fa-check-circle"></i> URL optimizada - Lista para compartir';
-            urlIndicator.className = 'url-indicator shortened';
-            urlIndicator.style.display = 'block';
-            shortenBtn.style.display = 'none';
-        }
+        urlIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando URL para compartir...';
+        urlIndicator.className = 'url-indicator full';
+        urlIndicator.style.display = 'block';
+        shortenBtn.style.display = 'none';
 
-        this.generateQRCode(shareUrl);
-        document.getElementById('shareModal').classList.add('active');
+        try {
+            const shareUrl = await this.generateShareUrl();
+            document.getElementById('shareUrl').value = shareUrl;
+
+            if (shareUrl.includes('tinyurl.com') || shareUrl.includes('is.gd')) {
+                urlIndicator.innerHTML = '<i class="fas fa-link"></i> URL acortada';
+                urlIndicator.className = 'url-indicator shortened';
+                shortenBtn.style.display = 'none';
+            } else if (shareUrl.length > 200) {
+                urlIndicator.innerHTML = '<i class="fas fa-link"></i> URL larga';
+                urlIndicator.className = 'url-indicator full';
+                shortenBtn.style.display = 'flex';
+                shortenBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Acortar';
+            } else {
+                urlIndicator.innerHTML = '<i class="fas fa-check-circle"></i> URL optimizada';
+                urlIndicator.className = 'url-indicator shortened';
+                shortenBtn.style.display = 'none';
+            }
+
+            this.generateQRCode(shareUrl);
+        } catch (error) {
+            console.error('Error generating share URL:', error);
+            document.getElementById('shareUrl').value = 'Error al generar URL';
+            urlIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error al generar URL';
+            urlIndicator.className = 'url-indicator full';
+        }
     }
 
     hideShareModal() {
         document.getElementById('shareModal').classList.remove('active');
     }
 
-    generateShareUrl() {
+    async generateShareUrl() {
         if (!this.currentNoteId) return '';
 
         let note = null;
@@ -375,7 +386,7 @@ class CuadernoDigital {
             const fullUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
 
             if (fullUrl.length > 150) {
-                return this.generateCompressedUrl(shareData);
+                return await this.generateCompressedUrl(shareData);
             }
 
             return fullUrl;
@@ -388,11 +399,11 @@ class CuadernoDigital {
     compressData(data) {
         try {
             const json = JSON.stringify(data);
-            
+
             let compressed = '';
             let count = 1;
             let current = json[0];
-            
+
             for (let i = 1; i < json.length; i++) {
                 if (json[i] === current && count < 9) {
                     count++;
@@ -403,7 +414,7 @@ class CuadernoDigital {
                 }
             }
             compressed += count > 1 ? count + current : current;
-            
+
             return btoa(compressed);
         } catch (error) {
             console.error('Compression error:', error);
@@ -415,7 +426,7 @@ class CuadernoDigital {
         try {
             const decoded = atob(compressed);
             let decompressed = '';
-            
+
             for (let i = 0; i < decoded.length; i++) {
                 const char = decoded[i];
                 if (char >= '2' && char <= '9' && i + 1 < decoded.length) {
@@ -427,7 +438,7 @@ class CuadernoDigital {
                     decompressed += char;
                 }
             }
-            
+
             return JSON.parse(decompressed);
         } catch (error) {
             console.error('Decompression error:', error);
@@ -435,19 +446,59 @@ class CuadernoDigital {
         }
     }
 
-    generateCompressedUrl(shareData) {
+    async generateShortUrl(longUrl) {
         try {
-            const compressed = this.compressData(shareData);
-            const compressedUrl = `${window.location.origin}${window.location.pathname}?z=${compressed}`;
-            
-            const originalEncoded = btoa(encodeURIComponent(JSON.stringify(shareData)));
-            const originalUrl = `${window.location.origin}${window.location.pathname}?share=${originalEncoded}`;
-            
-            if (compressedUrl.length < originalUrl.length * 0.85) {
-                return compressedUrl;
-            } else {
-                return originalUrl;
+            const tinyUrlResponse = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+            if (tinyUrlResponse.ok) {
+                const shortUrl = await tinyUrlResponse.text();
+                if (shortUrl.startsWith('https://tinyurl.com/')) {
+                    return shortUrl;
+                }
             }
+        } catch (error) {
+            console.log('TinyURL failed, trying is.gd...', error);
+        }
+
+        try {
+            const isGdResponse = await fetch('https://is.gd/create.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `format=simple&url=${encodeURIComponent(longUrl)}`
+            });
+
+            if (isGdResponse.ok) {
+                const shortUrl = await isGdResponse.text();
+                if (shortUrl.startsWith('https://is.gd/')) {
+                    return shortUrl;
+                }
+            }
+        } catch (error) {
+            console.log('is.gd also failed:', error);
+        }
+
+        return longUrl;
+    }
+
+    async generateCompressedUrl(shareData) {
+        try {
+            const originalEncoded = btoa(encodeURIComponent(JSON.stringify(shareData)));
+            const fullUrl = `${window.location.origin}${window.location.pathname}?share=${originalEncoded}`;
+
+            if (fullUrl.length > 200) {
+                this.showToast('Creando URL corta...', 'info');
+                const shortUrl = await this.generateShortUrl(fullUrl);
+
+                if (shortUrl !== fullUrl) {
+                    this.showToast('URL acortada exitosamente', 'success');
+                    return shortUrl;
+                } else {
+                    this.showToast('No se pudo acortar la URL, usando URL completa', 'info');
+                }
+            }
+
+            return fullUrl;
         } catch (error) {
             console.error('Error generating compressed URL:', error);
             const jsonString = JSON.stringify(shareData);
@@ -458,49 +509,38 @@ class CuadernoDigital {
 
 
 
-    shortenCurrentUrl() {
-        if (!this.currentNoteId) return;
+    async shortenCurrentUrl() {
+        const currentUrl = document.getElementById('shareUrl').value;
+        if (!currentUrl || currentUrl === 'Generando URL...') return;
 
-        let note = null;
-        let subject = null;
+        const urlIndicator = document.getElementById('urlTypeIndicator');
+        const shortenBtn = document.getElementById('shortenUrlBtn');
 
-        for (const s of this.subjects) {
-            const foundNote = s.notes.find(n => n.id === this.currentNoteId);
-            if (foundNote) {
-                note = foundNote;
-                subject = s;
-                break;
-            }
-        }
-
-        if (!note || !subject) return;
-
-        const shareData = {
-            t: note.title,
-            c: note.content,
-            ty: note.type,
-            s: subject.name,
-            sc: subject.color,
-            d: note.updatedAt
-        };
+        urlIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Acortando URL...';
+        shortenBtn.disabled = true;
 
         try {
-            const compressedUrl = this.generateCompressedUrl(shareData);
+            const shortUrl = await this.generateShortUrl(currentUrl);
 
-            document.getElementById('shareUrl').value = compressedUrl;
-
-            const urlIndicator = document.getElementById('urlTypeIndicator');
-            const shortenBtn = document.getElementById('shortenUrlBtn');
-
-            urlIndicator.innerHTML = '<i class="fas fa-compress-alt"></i> URL comprimida - Funciona en todos los dispositivos';
-            urlIndicator.className = 'url-indicator shortened';
-            shortenBtn.style.display = 'none';
-
-            this.generateQRCode(compressedUrl);
-            this.showToast('URL comprimida exitosamente', 'success');
+            if (shortUrl !== currentUrl) {
+                document.getElementById('shareUrl').value = shortUrl;
+                urlIndicator.innerHTML = '<i class="fas fa-link"></i> URL acortada';
+                urlIndicator.className = 'url-indicator shortened';
+                shortenBtn.style.display = 'none';
+                this.generateQRCode(shortUrl);
+                this.showToast('URL acortada exitosamente', 'success');
+            } else {
+                urlIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No se pudo acortar la URL';
+                urlIndicator.className = 'url-indicator full';
+                this.showToast('No se pudo acortar la URL', 'error');
+            }
         } catch (error) {
-            console.error('Error compressing URL:', error);
-            this.showToast('Error al comprimir la URL', 'error');
+            console.error('Error shortening URL:', error);
+            urlIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error al acortar URL';
+            urlIndicator.className = 'url-indicator full';
+            this.showToast('Error al acortar la URL', 'error');
+        } finally {
+            shortenBtn.disabled = false;
         }
     }
 
@@ -661,11 +701,11 @@ class CuadernoDigital {
                     this.showToast('Error al descomprimir el apunte', 'error');
                 }
             } catch (error) {
-                
-    }ole.error('Error loading compressed shared note:', error);
-                this.showToast('Error al cargar el apunte comprimido', 'error');
-            }
+
+            } ole.error('Error loading compressed shared note:', error);
+            this.showToast('Error al cargar el apunte comprimido', 'error');
         }
+    }
 
     displaySharedNote(noteData) {
         document.getElementById('welcomeScreen').style.display = 'none';

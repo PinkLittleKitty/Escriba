@@ -806,6 +806,10 @@ header h1 i {
         min-height: 70px;
     }
 
+    .mobile-menu-toggle {
+        display: block;
+    }
+
     .header-left {
         flex: 1;
         min-width: 200px;

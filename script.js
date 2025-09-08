@@ -1773,7 +1773,30 @@ class CuadernoDigital {
     }
 
     handleKeyboardShortcuts(e) {
-        if (!document.getElementById('noteContent').contains(document.activeElement)) return;
+        const noteContent = document.getElementById('noteContent');
+        const activeElement = document.activeElement;
+        
+        const focusedEditor = noteContent.currentFocusedEditor;
+        
+        if (focusedEditor && (e.ctrlKey || e.metaKey)) {
+            switch (e.key) {
+                case 'z':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        focusedEditor.redo();
+                    } else {
+                        focusedEditor.undo();
+                    }
+                    break;
+                case 'y':
+                    e.preventDefault();
+                    focusedEditor.redo();
+                    break;
+            }
+            return;
+        }
+        
+        if (!noteContent.contains(activeElement)) return;
 
         if (e.ctrlKey || e.metaKey) {
             switch (e.key) {
@@ -1792,6 +1815,16 @@ class CuadernoDigital {
                 case 's':
                     e.preventDefault();
                     this.saveCurrentNote();
+                    break;
+                case 'z':
+                    if (!focusedEditor) {
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            document.execCommand('redo');
+                        } else {
+                            document.execCommand('undo');
+                        }
+                    }
                     break;
             }
         }

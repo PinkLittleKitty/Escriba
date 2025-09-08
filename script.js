@@ -311,7 +311,12 @@ class CuadernoDigital {
     }
 
     setupAutoResize(editor, editorContainer) {
+        let resizeTimeout = null;
+        let isResizing = false;
+        
         const updateHeight = () => {
+            if (isResizing) return;
+            
             const session = editor.getSession();
             const lines = session.getLength();
             const lineHeight = editor.renderer.lineHeight || 18;
@@ -321,27 +326,35 @@ class CuadernoDigital {
             let newHeight = Math.max(minHeight, lines * lineHeight + 20);
             newHeight = Math.min(newHeight, maxHeight);
             
-            if (Math.abs(editorContainer.offsetHeight - newHeight) > 5) {
+            const currentHeight = editorContainer.offsetHeight;
+            if (Math.abs(currentHeight - newHeight) > 5) {
+                isResizing = true;
                 editorContainer.style.height = newHeight + 'px';
-                editor.resize(true);
+                
+                setTimeout(() => {
+                    editor.resize(true);
+                    isResizing = false;
+                }, 10);
             }
         };
         
-        editor.session.on('change', () => {
-            updateHeight();
-            setTimeout(updateHeight, 10);
-        });
+        const debouncedUpdateHeight = () => {
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = setTimeout(updateHeight, 50);
+        };
         
-        editor.renderer.on('afterRender', updateHeight);
+        editor.session.on('change', debouncedUpdateHeight);
+        editor.selection.on('changeCursor', debouncedUpdateHeight);
         
-        editor.selection.on('changeCursor', () => {
-            setTimeout(updateHeight, 5);
+        editor.renderer.on('afterRender', () => {
+            if (!isResizing) updateHeight();
         });
         
         setTimeout(() => {
             updateHeight();
-            setTimeout(updateHeight, 300);
-        }, 50);
+        }, 100);
     }
 
     serializeNoteContent() {

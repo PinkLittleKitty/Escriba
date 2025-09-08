@@ -8,6 +8,7 @@ class CuadernoDigital {
         this.autoSaveInterval = null;
         this.currentDate = new Date();
         this.currentEventId = null;
+        this.codeEditor = null;
     }
 
     async init() {
@@ -125,6 +126,7 @@ class CuadernoDigital {
         document.getElementById('noteTitle').addEventListener('input', () => this.debouncedSave());
         document.getElementById('noteContent').addEventListener('input', () => this.debouncedSave());
         document.getElementById('noteTypeSelect').addEventListener('change', () => this.saveCurrentNote());
+        document.getElementById('noteLanguageSelect').addEventListener('change', (e) => this.setNoteLanguage(e.target.value));
         document.getElementById('deleteNoteBtn').addEventListener('click', () => this.deleteCurrentNote());
         document.getElementById('favoriteBtn').addEventListener('click', () => this.toggleFavorite());
         document.getElementById('shareNoteBtn').addEventListener('click', () => this.showShareModal());
@@ -177,38 +179,277 @@ class CuadernoDigital {
         document.getElementById('fontFamily').addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--font-family', e.target.value);
         });
+    }
 
-        document.getElementById('noteContent').addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const selection = window.getSelection();
-                if (!selection.rangeCount) return;
-                const range = selection.getRangeAt(0);
-                let node = range.startContainer;
-                let inCodeBlock = false;
-                while (node && node !== document.getElementById('noteContent')) {
-                    if (node.nodeName === 'CODE' && node.parentNode.nodeName === 'PRE') {
-                        inCodeBlock = true;
-                        break;
+    insertCodeBlock() {
+        const noteContent = document.getElementById('noteContent');
+        noteContent.focus();
+        
+        const editorContainer = document.createElement('div');
+        editorContainer.className = 'inline-ace-editor';
+        editorContainer.id = `aceEditor-${Date.now()}`;
+        
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.insertNode(editorContainer);
+            range.collapse(false);
+        } else {
+            noteContent.appendChild(editorContainer);
+        }
+        
+        this.initializeAceEditor(editorContainer);
+        this.saveCurrentNote();
+    }
+
+    initializeAceEditor(editorContainer, initialCode = '') {
+        const editor = ace.edit(editorContainer.id);
+        const currentLanguage = this.getCurrentNoteLanguage();
+        
+        editor.setTheme(this.getCurrentTheme());
+        editor.session.setMode(this.getAceModeForLanguage(currentLanguage));
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            fontSize: 14,
+            fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+            showPrintMargin: false,
+            wrap: true,
+            useWorker: false,
+            maxLines: Infinity,
+            minLines: 3,
+            autoScrollEditorIntoView: true,
+            scrollPastEnd: 0.1,
+            behavioursEnabled: true,
+            wrapBehavioursEnabled: true,
+            highlightActiveLine: true,
+            showGutter: true,
+            displayIndentGuides: true,
+            cursorStyle: 'ace',
+            mergeUndoDeltas: true
+        });
+        
+        if (initialCode) {
+            editor.setValue(initialCode);
+            editor.clearSelection();
+        } else {
+            editor.selectAll();
+        }
+        
+        editorContainer.aceEditor = editor;
+        editorContainer.setAttribute('data-language', currentLanguage);
+        
+        this.setupAutoResize(editor, editorContainer);
+
+        editor.session.on('change', () => {
+            this.debouncedSave();
+        });
+        
+        this.setupCodeEditorKeyboard(editor, editorContainer);
+        
+        setTimeout(() => {
+            editor.focus();
+            if (initialCode) {
+                editor.navigateFileEnd();
+            } else {
+                editor.selectAll();
+            }
+            editor.resize(true);
+        }, 150);
+        
+        return editor;
+    }
+
+    setupCodeEditorKeyboard(editor, editorContainer) {
+        editor.commands.addCommand({
+            name: 'deleteCodeBlock',
+            bindKey: { win: 'Ctrl-Backspace', mac: 'Cmd-Backspace' },
+            exec: () => {
+                this.deleteCodeBlock(editorContainer);
+            }
+        });
+        
+        editor.commands.addCommand({
+            name: 'smartBackspace',
+            bindKey: { win: 'Backspace', mac: 'Backspace' },
+            exec: (editor) => {
+                const cursor = editor.getCursorPosition();
+                const session = editor.getSession();
+                
+                if (cursor.row === 0 && cursor.column === 0) {
+                    const content = session.getValue().trim();
+                    if (content === '') {
+                        this.deleteCodeBlock(editorContainer);
+                        return;
                     }
-                    node = node.parentNode;
                 }
-                if (inCodeBlock) {
-                    document.execCommand('insertText', false, '    ');
-                } else {
-                    document.execCommand('insertText', false, '\u00A0\u00A0\u00A0\u00A0');
-                }
+                
+                editor.execCommand('backspace');
+            }
+        });
+        
+        const noteContent = document.getElementById('noteContent');
+        editor.on('focus', () => {
+            noteContent.currentFocusedEditor = editor;
+        });
+        
+        editor.on('blur', () => {
+            if (noteContent.currentFocusedEditor === editor) {
+                noteContent.currentFocusedEditor = null;
+            }
+        });
+    }
+    
+    deleteCodeBlock(editorContainer) {
+        if (confirm('¿Eliminar este bloque de código?')) {
+            editorContainer.remove();
+            this.saveCurrentNote();
+            this.showToast('Bloque de código eliminado', 'success');
+            document.getElementById('noteContent').focus();
+        }
+    }
+
+    setupAutoResize(editor, editorContainer) {
+        const updateHeight = () => {
+            const session = editor.getSession();
+            const lines = session.getLength();
+            const lineHeight = editor.renderer.lineHeight || 18;
+            const minHeight = 3 * lineHeight + 20;
+            const maxHeight = Math.min(600, window.innerHeight * 0.5);
+            
+            let newHeight = Math.max(minHeight, lines * lineHeight + 20);
+            newHeight = Math.min(newHeight, maxHeight);
+            
+            if (Math.abs(editorContainer.offsetHeight - newHeight) > 5) {
+                editorContainer.style.height = newHeight + 'px';
+                editor.resize(true);
+            }
+        };
+        
+        editor.session.on('change', () => {
+            updateHeight();
+            setTimeout(updateHeight, 10);
+        });
+        
+        editor.renderer.on('afterRender', updateHeight);
+        
+        editor.selection.on('changeCursor', () => {
+            setTimeout(updateHeight, 5);
+        });
+        
+        setTimeout(() => {
+            updateHeight();
+            setTimeout(updateHeight, 300);
+        }, 50);
+    }
+
+    serializeNoteContent() {
+        const noteContent = document.getElementById('noteContent');
+        const clone = noteContent.cloneNode(true);
+        
+        const aceEditors = clone.querySelectorAll('.inline-ace-editor');
+        aceEditors.forEach(editorContainer => {
+            const originalEditor = document.getElementById(editorContainer.id);
+            if (originalEditor && originalEditor.aceEditor) {
+                const code = originalEditor.aceEditor.getValue();
+                const language = originalEditor.getAttribute('data-language') || 'javascript';
+                
+                const placeholder = document.createElement('div');
+                placeholder.className = 'ace-editor-placeholder';
+                placeholder.setAttribute('data-code', code);
+                placeholder.setAttribute('data-language', language);
+                placeholder.textContent = `[Code Editor: ${language}]`;
+                
+                editorContainer.parentNode.replaceChild(placeholder, editorContainer);
+            }
+        });
+        
+        return clone.innerHTML;
+    }
+
+    restoreNoteContent(content) {
+        const noteContent = document.getElementById('noteContent');
+        noteContent.innerHTML = content;
+        
+        const placeholders = noteContent.querySelectorAll('.ace-editor-placeholder');
+        placeholders.forEach(placeholder => {
+            const code = placeholder.getAttribute('data-code') || '';
+            const language = placeholder.getAttribute('data-language') || 'javascript';
+            
+            const editorContainer = document.createElement('div');
+            editorContainer.className = 'inline-ace-editor';
+            editorContainer.id = `aceEditor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
+            placeholder.parentNode.replaceChild(editorContainer, placeholder);
+            
+            this.initializeAceEditor(editorContainer, code);
+            
+            if (editorContainer.aceEditor) {
+                editorContainer.aceEditor.session.setMode(this.getAceModeForLanguage(language));
+                editorContainer.setAttribute('data-language', language);
             }
         });
     }
 
-    insertCodeBlock() {
-        document.getElementById('noteContent').focus();
-        document.execCommand(
-            'insertHTML',
-            false,
-            '<pre><code></code></pre>'
-        );
+    getCurrentNoteLanguage() {
+        if (this.currentNoteId) {
+            let note = null;
+            for (const subject of this.subjects) {
+                const foundNote = subject.notes.find(n => n.id === this.currentNoteId);
+                if (foundNote) {
+                    note = foundNote;
+                    break;
+                }
+            }
+            if (note && note.codeLanguage) {
+                return note.codeLanguage;
+            }
+        }
+        return 'javascript';
+    }
+
+    setNoteLanguage(language) {
+        if (!this.currentNoteId) return;
+        
+        let note = null;
+        for (const subject of this.subjects) {
+            const foundNote = subject.notes.find(n => n.id === this.currentNoteId);
+            if (foundNote) {
+                note = foundNote;
+                break;
+            }
+        }
+        
+        if (note) {
+            note.codeLanguage = language;
+            this.saveCarpeta();
+            
+            const languageSelect = document.getElementById('noteLanguageSelect');
+            if (languageSelect) {
+                languageSelect.value = language;
+            }
+            
+            this.showToast(`Lenguaje de código cambiado a ${language}`, 'success');
+        }
+    }
+
+    getCurrentTheme() {
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        return theme === 'light' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
+    }
+
+    getAceModeForLanguage(language) {
+        const modes = {
+            'javascript': 'ace/mode/javascript',
+            'python': 'ace/mode/python',
+            'html': 'ace/mode/html',
+            'css': 'ace/mode/css',
+            'json': 'ace/mode/json',
+            'markdown': 'ace/mode/markdown',
+            'text': 'ace/mode/text'
+        };
+        return modes[language] || 'ace/mode/text';
     }
 
     updateSemesterInfo() {

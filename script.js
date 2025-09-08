@@ -1966,8 +1966,10 @@ class CuadernoDigital {
             showWelcome: true
         };
 
+        const currentTheme = document.documentElement.getAttribute('data-theme') || settings.theme;
+
         document.querySelectorAll('.theme-option').forEach(option => {
-            option.classList.toggle('active', option.dataset.theme === settings.theme);
+            option.classList.toggle('active', option.dataset.theme === currentTheme);
         });
 
         const fontFamilyEl = document.getElementById('fontFamily');

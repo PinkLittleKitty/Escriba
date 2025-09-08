@@ -217,18 +217,21 @@ class CuadernoDigital {
             showPrintMargin: false,
             wrap: true,
             useWorker: false,
-            maxLines: Infinity,
+            maxLines: 25,
             minLines: 3,
-            autoScrollEditorIntoView: true,
-            scrollPastEnd: 0.1,
+            autoScrollEditorIntoView: false,
+            scrollPastEnd: 0,
             behavioursEnabled: true,
             wrapBehavioursEnabled: true,
             highlightActiveLine: true,
             showGutter: true,
             displayIndentGuides: true,
             cursorStyle: 'ace',
-            mergeUndoDeltas: true
+            mergeUndoDeltas: true,
+            animatedScroll: false
         });
+        
+        editorContainer.style.height = '80px';
         
         if (initialCode) {
             editor.setValue(initialCode);
@@ -240,7 +243,9 @@ class CuadernoDigital {
         editorContainer.aceEditor = editor;
         editorContainer.setAttribute('data-language', currentLanguage);
         
-        this.setupAutoResize(editor, editorContainer);
+        setTimeout(() => {
+            this.setupAutoResize(editor, editorContainer);
+        }, 100);
 
         editor.session.on('change', () => {
             this.debouncedSave();
@@ -313,48 +318,55 @@ class CuadernoDigital {
     setupAutoResize(editor, editorContainer) {
         let resizeTimeout = null;
         let isResizing = false;
+        let lastHeight = 0;
         
         const updateHeight = () => {
             if (isResizing) return;
             
-            const session = editor.getSession();
-            const lines = session.getLength();
-            const lineHeight = editor.renderer.lineHeight || 18;
-            const minHeight = 3 * lineHeight + 20;
-            const maxHeight = Math.min(600, window.innerHeight * 0.5);
-            
-            let newHeight = Math.max(minHeight, lines * lineHeight + 20);
-            newHeight = Math.min(newHeight, maxHeight);
-            
-            const currentHeight = editorContainer.offsetHeight;
-            if (Math.abs(currentHeight - newHeight) > 5) {
+            try {
                 isResizing = true;
-                editorContainer.style.height = newHeight + 'px';
+                editorContainer.classList.add('ace-resizing');
                 
+                const session = editor.getSession();
+                const lines = session.getLength();
+                const lineHeight = editor.renderer.lineHeight || 18;
+                const minHeight = 3 * lineHeight + 20; 
+                const maxHeight = Math.min(500, window.innerHeight * 0.4);
+                
+                let desiredHeight = Math.max(minHeight, lines * lineHeight + 30);
+                desiredHeight = Math.min(desiredHeight, maxHeight);
+                
+                if (Math.abs(lastHeight - desiredHeight) > 15) {
+                    lastHeight = desiredHeight;
+                    editorContainer.style.height = desiredHeight + 'px';
+                    
+                    setTimeout(() => {
+                        if (editor.renderer) {
+                            editor.resize(true);
+                        }
+                    }, 16);
+                }
+                
+            } catch (error) {
+                console.warn('Error in ACE editor resize:', error);
+            } finally {
                 setTimeout(() => {
-                    editor.resize(true);
                     isResizing = false;
-                }, 10);
+                    editorContainer.classList.remove('ace-resizing');
+                }, 150);
             }
         };
         
         const debouncedUpdateHeight = () => {
-            if (resizeTimeout) {
-                clearTimeout(resizeTimeout);
-            }
-            resizeTimeout = setTimeout(updateHeight, 50);
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateHeight, 200);
         };
         
         editor.session.on('change', debouncedUpdateHeight);
-        editor.selection.on('changeCursor', debouncedUpdateHeight);
-        
-        editor.renderer.on('afterRender', () => {
-            if (!isResizing) updateHeight();
-        });
         
         setTimeout(() => {
             updateHeight();
-        }, 100);
+        }, 300);
     }
 
     serializeNoteContent() {
@@ -1263,6 +1275,18 @@ class CuadernoDigital {
         return types[type] || '📝 Apuntes de Clase';
     }
 
+    extractTextPreview(html) {
+        if (!html) return 'Sin contenido';
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        const preview = textContent.trim().replace(/\s+/g, ' ');
+        return preview.length > 150 ? preview.substring(0, 150) + '...' : preview;
+    }
+
     toggleFavorite() {
         if (!this.currentNoteId) return;
 
@@ -1426,16 +1450,6 @@ class CuadernoDigital {
             return;
         }
 
-        if (this.currentView === 'recent') {
-            this.renderRecentNotes();
-            return;
-        }
-
-        if (this.currentView === 'favorites') {
-            this.renderFavoriteNotes();
-            return;
-        }
-
         container.innerHTML = this.subjects.map(subject => `
             <div class="subject-folder ${subject.expanded ? 'expanded' : ''}" data-subject-id="${subject.id}">
                 <div class="subject-header">
@@ -1519,7 +1533,11 @@ class CuadernoDigital {
     }
 
     renderFavoriteNotes() {
-        const container = document.getElementById('subjectsContainer');
+        const container = document.querySelector('#favoritesContainer .favorites-notes-list');
+
+        if (!container) {
+            return;
+        }
 
         const favoriteNotes = [];
         this.subjects.forEach(subject => {
@@ -1537,47 +1555,49 @@ class CuadernoDigital {
         favoriteNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
         if (favoriteNotes.length === 0) {
-            container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No tenés apuntes favoritos todavía</div>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-star"></i>
+                    <h3>Sin favoritos</h3>
+                    <p>No tenés apuntes marcados como favoritos todavía.<br>Hacé click en la estrella de cualquier apunte para agregarlo a favoritos.</p>
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = `
-            <div class="favorites-section">
-                <div class="section-header">
-                    <i class="fas fa-star"></i>
-                    <span>Apuntes Favoritos (${favoriteNotes.length})</span>
+        container.innerHTML = favoriteNotes.map(note => `
+            <div class="favorite-note-item ${this.currentNoteId === note.id ? 'active' : ''}" 
+                 data-note-id="${note.id}" data-subject-id="${note.subjectId}">
+                <div class="note-item-header">
+                    <span class="note-item-title">${this.escapeHtml(note.title || 'Sin título')}</span>
+                    <span class="note-item-type">${this.getNoteTypeLabel(note.type)}</span>
                 </div>
-                <div class="favorites-content">
-                    ${favoriteNotes.map(note => `
-                        <div class="note-item-compact favorite" data-note-id="${note.id}">
-                            <div class="compact-note-header">
-                                <div class="note-type-icon" data-tooltip="${this.escapeHtml(note.title)}">${this.getNoteTypeIcon(note.type)}</div>
-                                <div class="note-title-compact">${this.escapeHtml(note.title)}</div>
-                                <i class="fas fa-star favorite-star"></i>
-                                <button class="expand-btn" onclick="event.stopPropagation(); this.parentElement.parentElement.classList.toggle('expanded')">
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                            </div>
-                            <div class="note-details-expanded">
-                                <p class="note-preview">${this.getPreview(note.content)}</p>
-                                <div class="note-meta-row">
-                                    <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
-                                    <span class="note-date">${this.formatDate(note.updatedAt)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="note-item-meta">
+                    <span class="note-item-subject" style="color: ${note.subjectColor}">${this.escapeHtml(note.subjectName)}</span>
+                    <span class="note-item-date">
+                        <i class="fas fa-clock"></i>
+                        ${this.formatDate(note.updatedAt)}
+                    </span>
+                    <i class="fas fa-star" style="color: var(--accent-yellow);"></i>
                 </div>
+                <div class="note-item-preview">${this.extractTextPreview(note.content)}</div>
             </div>
-        `;
+        `).join('');
 
-        container.querySelectorAll('.note-item-compact').forEach(item => {
-            item.addEventListener('click', () => this.openNote(item.dataset.noteId));
+        container.querySelectorAll('.favorite-note-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const noteId = item.dataset.noteId;
+                this.openNote(noteId);
+            });
         });
     }
 
     renderRecentNotes() {
-        const container = document.getElementById('subjectsContainer');
+        const container = document.querySelector('#recentContainer .recent-notes-list');
+
+        if (!container) {
+            return;
+        }
 
         const allNotes = [];
         this.subjects.forEach(subject => {
@@ -1594,42 +1614,40 @@ class CuadernoDigital {
         const recentNotes = allNotes.slice(0, 20);
 
         if (recentNotes.length === 0) {
-            container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No hay apuntes recientes</div>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-clock"></i>
+                    <h3>Sin apuntes recientes</h3>
+                    <p>No hay apuntes recientes para mostrar.<br>Creá tu primera materia y apunte para comenzar.</p>
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = `
-            <div class="recent-notes">
-                <div class="section-header">
-                    <i class="fas fa-clock"></i>
-                    <span>Apuntes Recientes</span>
+        container.innerHTML = recentNotes.map(note => `
+            <div class="recent-note-item ${this.currentNoteId === note.id ? 'active' : ''}" 
+                 data-note-id="${note.id}" data-subject-id="${note.subjectId}">
+                <div class="note-item-header">
+                    <span class="note-item-title">${this.escapeHtml(note.title || 'Sin título')}</span>
+                    <span class="note-item-type">${this.getNoteTypeLabel(note.type)}</span>
                 </div>
-                <div class="recent-content">
-                    ${recentNotes.map(note => `
-                        <div class="note-item-compact ${note.favorite ? 'favorite' : ''}" data-note-id="${note.id}">
-                            <div class="compact-note-header">
-                                <div class="note-type-icon" data-tooltip="${this.escapeHtml(note.title)}">${this.getNoteTypeIcon(note.type)}</div>
-                                <div class="note-title-compact">${this.escapeHtml(note.title)}</div>
-                                ${note.favorite ? '<i class="fas fa-star favorite-star"></i>' : ''}
-                                <button class="expand-btn" onclick="event.stopPropagation(); this.parentElement.parentElement.classList.toggle('expanded')">
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                            </div>
-                            <div class="note-details-expanded">
-                                <p class="note-preview">${this.getPreview(note.content)}</p>
-                                <div class="note-meta-row">
-                                    <span class="note-subject" style="color: ${note.subjectColor}">${note.subjectName}</span>
-                                    <span class="note-date">${this.formatDate(note.updatedAt)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="note-item-meta">
+                    <span class="note-item-subject" style="color: ${note.subjectColor}">${this.escapeHtml(note.subjectName)}</span>
+                    <span class="note-item-date">
+                        <i class="fas fa-clock"></i>
+                        ${this.formatDate(note.updatedAt)}
+                    </span>
+                    ${note.favorite ? '<i class="fas fa-star" style="color: var(--accent-yellow);"></i>' : ''}
                 </div>
+                <div class="note-item-preview">${this.extractTextPreview(note.content)}</div>
             </div>
-        `;
+        `).join('');
 
-        container.querySelectorAll('.note-item-compact').forEach(item => {
-            item.addEventListener('click', () => this.openNote(item.dataset.noteId));
+        container.querySelectorAll('.recent-note-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const noteId = item.dataset.noteId;
+                this.openNote(noteId);
+            });
         });
     }
 
@@ -1655,16 +1673,36 @@ class CuadernoDigital {
         });
 
         const subjectsContainer = document.getElementById('subjectsContainer');
+        const recentContainer = document.getElementById('recentContainer');
+        const favoritesContainer = document.getElementById('favoritesContainer');
         const calendarContainer = document.getElementById('calendarContainer');
 
-        if (view === 'calendar') {
-            subjectsContainer.style.display = 'none';
-            calendarContainer.style.display = 'flex';
-            this.renderCalendar();
-        } else {
-            subjectsContainer.style.display = 'block';
-            calendarContainer.style.display = 'none';
-            this.renderSubjects();
+        subjectsContainer.style.display = 'none';
+        recentContainer.style.display = 'none';
+        favoritesContainer.style.display = 'none';
+        calendarContainer.style.display = 'none';
+
+        switch (view) {
+            case 'subjects':
+                subjectsContainer.style.display = 'block';
+                this.renderSubjects();
+                break;
+            case 'recent':
+                recentContainer.style.display = 'block';
+                this.renderRecentNotes();
+                break;
+            case 'favorites':
+                favoritesContainer.style.display = 'block';
+                this.renderFavoriteNotes();
+                break;
+            case 'calendar':
+                calendarContainer.style.display = 'flex';
+                this.renderCalendar();
+                break;
+            default:
+                subjectsContainer.style.display = 'block';
+                this.renderSubjects();
+                break;
         }
     }
 
@@ -1908,7 +1946,9 @@ class CuadernoDigital {
             document.getElementById('noteEditor').style.display = 'none';
         } else {
             document.getElementById('welcomeScreen').style.display = 'none';
-            document.getElementById('noteEditor').style.display = 'none';
+            if (!this.currentNoteId) {
+                document.getElementById('noteEditor').style.display = 'none';
+            }
         }
     }
 

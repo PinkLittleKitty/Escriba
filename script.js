@@ -1215,8 +1215,9 @@ class CuadernoDigital {
         document.getElementById('noteEditor').style.display = 'flex';
 
         document.getElementById('noteTitle').value = note.title;
-        document.getElementById('noteContent').innerHTML = note.content;
+        this.restoreNoteContent(note.content);
         document.getElementById('noteTypeSelect').value = note.type || 'lecture';
+        document.getElementById('noteLanguageSelect').value = note.codeLanguage || 'javascript';
         document.getElementById('noteDate').textContent = this.formatDate(note.updatedAt);
 
         document.getElementById('noteSubject').textContent = subject.name;
@@ -1324,7 +1325,7 @@ class CuadernoDigital {
         if (!note) return;
 
         const title = document.getElementById('noteTitle').value.trim() || 'Apunte sin título';
-        const content = document.getElementById('noteContent').innerHTML;
+        const content = this.serializeNoteContent();
         const type = document.getElementById('noteTypeSelect').value;
 
         const hasChanges = note.title !== title || note.content !== content || note.type !== type;

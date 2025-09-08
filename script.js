@@ -1992,6 +1992,26 @@ class CuadernoDigital {
             option.classList.toggle('active', option.dataset.theme === theme);
         });
         document.documentElement.setAttribute('data-theme', theme);
+        
+        const currentSettings = JSON.parse(localStorage.getItem('escribaSettings')) || {};
+        currentSettings.theme = theme;
+        localStorage.setItem('escribaSettings', JSON.stringify(currentSettings));
+        
+        this.showToast(`Tema "${this.getThemeName(theme)}" aplicado`, 'success');
+    }
+
+    getThemeName(theme) {
+        const themeNames = {
+            'dark': 'Oscuro',
+            'light': 'Claro',
+            'blue': 'Azul',
+            'unq': 'UNQ',
+            'forest': 'Bosque',
+            'sunset': 'Atardecer',
+            'aurora': 'Aurora',
+            'cyberpunk': 'Matrix'
+        };
+        return themeNames[theme] || theme;
     }
 
     saveSettings() {

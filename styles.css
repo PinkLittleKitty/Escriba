@@ -442,7 +442,6 @@ header h1 i {
     scroll-behavior: smooth;
 }
 
-/* Custom scrollbar for notes list */
 .notes-list::-webkit-scrollbar {
     width: 6px;
 }
@@ -462,7 +461,6 @@ header h1 i {
     background: var(--border-light);
 }
 
-/* Subtle fade effect at bottom when scrollable */
 .subject-folder.expanded .notes-list {
     position: relative;
 }
@@ -480,7 +478,6 @@ header h1 i {
     transition: opacity 0.2s ease;
 }
 
-/* Show fade effect when content is scrollable */
 .subject-folder.expanded .notes-list:hover::after {
     opacity: 0.7;
 }
@@ -3180,10 +3177,12 @@ textarea::placeholder {
     background: var(--bg-secondary);
     overflow: hidden;
     min-height: 80px;
+    max-height: 400px;
     height: auto;
     position: relative;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    contain: layout;
 }
 
 .inline-ace-editor:focus-within {
@@ -3212,7 +3211,6 @@ textarea::placeholder {
     margin-right: 0.5rem;
 }
 
-/* Ace Editor Theme Adjustments for Inline Editor */
 .inline-ace-editor .ace_editor {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
     font-size: 14px !important;
@@ -3263,7 +3261,6 @@ textarea::placeholder {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
 }
 
-/* Fix for cursor positioning issues */
 .inline-ace-editor .ace_cursor-layer {
     z-index: 2 !important;
 }
@@ -3274,7 +3271,6 @@ textarea::placeholder {
     margin-left: -1px !important;
 }
 
-/* Light theme adjustments */
 [data-theme="light"] .inline-ace-editor .ace_editor {
     background: #f8f9fa !important;
     color: #333 !important;

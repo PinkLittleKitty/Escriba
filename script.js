@@ -2681,5 +2681,6 @@ let cuaderno;
 
 document.addEventListener('DOMContentLoaded', () => {
     cuaderno = new CuadernoDigital();
+    window.cuaderno = cuaderno;
     cuaderno.init();
 });

@@ -43,6 +43,10 @@
                 </div>
             </div>
             <div class="header-controls">
+                <div id="githubStatus" class="github-status">
+                    <i class="fab fa-github"></i>
+                    <span id="githubStatusText">No conectado</span>
+                </div>
                 <button id="newSubjectBtn" class="btn btn-accent" title="Crear nueva materia">
                     <i class="fas fa-folder-plus"></i> Nueva Materia
                 </button>
@@ -73,12 +77,6 @@
         <div class="main-content">
             <aside class="sidebar">
                 <div class="search-section">
-                    <div class="sync-status-section">
-                        <div class="sync-status-info">
-                            <i class="fab fa-github"></i>
-                            <span id="syncStatus">No conectado</span>
-                        </div>
-                    </div>
                     <div class="search-box">
                         <input type="text" id="searchInput" placeholder="Buscá en tu carpeta..." autocomplete="off">
                         <i class="fas fa-search"></i>

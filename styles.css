@@ -363,6 +363,67 @@ header h1 i {
     align-items: center;
 }
 
+.github-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.github-status:hover {
+    background: var(--bg-card);
+    border-color: var(--accent-blue);
+}
+
+.github-status i {
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+
+.github-status.connected {
+    color: var(--accent-green);
+    border-color: var(--accent-green);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.github-status.connected i {
+    color: var(--accent-green);
+}
+
+.github-status.syncing {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.github-status.syncing i {
+    color: var(--accent-blue);
+    animation: spin 1s linear infinite;
+}
+
+.github-status.error {
+    color: var(--accent-red);
+    border-color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.github-status.error i {
+    color: var(--accent-red);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .btn {
     padding: 0.625rem 1.25rem;
     border: none;
@@ -472,27 +533,6 @@ header h1 i {
     padding: 1.5rem;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-tertiary);
-}
-
-.sync-status-section {
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-    background: var(--bg-card);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-.sync-status-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.sync-status-info i {
-    color: var(--accent-blue);
-    font-size: 1rem;
 }
 
 .sync-settings {
@@ -2117,6 +2157,14 @@ header h1 i {
         justify-content: space-between;
     }
 
+    .github-status {
+        order: -1;
+        flex: 1 1 100%;
+        min-width: unset;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+
     .header-controls .btn {
         flex: 1;
         min-width: 120px;
@@ -3163,4 +3211,17 @@ header h1 i {
 [data-theme="cyberpunk"] .favorite-note-item:hover {
     border-color: rgba(0, 255, 65, 0.6);
     box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+/* Estilos adicionales para el estado de GitHub en móvil */
+@media (max-width: 480px) {
+    .github-status {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+        min-width: 100px;
+    }
+
+    .github-status i {
+        font-size: 0.8rem;
+    }
 }

@@ -523,26 +523,39 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
 
     updateSyncUI() {
         const syncButton = document.getElementById('syncButton');
-        const syncStatus = document.getElementById('syncStatus');
+        const githubStatus = document.getElementById('githubStatus');
+        const githubStatusText = document.getElementById('githubStatusText');
 
-        if (!syncButton) return;
+        if (!githubStatus || !githubStatusText) return;
+
+        githubStatus.className = 'github-status';
 
         if (!this.isAuthenticated) {
-            syncButton.innerHTML = '<i class="fab fa-github"></i> Conectar GitHub';
-            syncButton.disabled = false;
-            if (syncStatus) syncStatus.textContent = 'No conectado';
+            githubStatus.classList.add('disconnected');
+            githubStatusText.textContent = 'No conectado';
+            githubStatus.title = 'Conectá GitHub para sincronizar tus apuntes';
+            if (syncButton) {
+                syncButton.innerHTML = '<i class="fab fa-github"></i> Conectar GitHub';
+                syncButton.disabled = false;
+            }
         } else if (this.syncInProgress) {
-            syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
-            syncButton.disabled = true;
+            githubStatus.classList.add('syncing');
+            githubStatusText.textContent = 'Sincronizando...';
+            githubStatus.title = 'Sincronizando datos con GitHub...';
+            if (syncButton) {
+                syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+                syncButton.disabled = true;
+            }
         } else {
-            syncButton.innerHTML = '<i class="fas fa-sync"></i> Sincronizar';
-            syncButton.disabled = false;
-
-            if (syncStatus) {
-                const lastSync = this.lastSyncTime ?
-                    new Date(this.lastSyncTime).toLocaleString() :
-                    'Nunca';
-                syncStatus.textContent = `Conectado como ${this.username} • Última sync: ${lastSync}`;
+            githubStatus.classList.add('connected');
+            githubStatusText.textContent = `${this.username}`;
+            const lastSync = this.lastSyncTime ?
+                new Date(this.lastSyncTime).toLocaleString() :
+                'Nunca';
+            githubStatus.title = `Conectado como ${this.username}\nÚltima sincronización: ${lastSync}`;
+            if (syncButton) {
+                syncButton.innerHTML = '<i class="fas fa-sync"></i> Sincronizar';
+                syncButton.disabled = false;
             }
         }
     }
@@ -659,6 +672,15 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
     showError(message) {
         if (window.cuadernoDigital && window.cuadernoDigital.showToast) {
             window.cuadernoDigital.showToast(message, 'error');
+        }
+        
+        const githubStatus = document.getElementById('githubStatus');
+        const githubStatusText = document.getElementById('githubStatusText');
+        
+        if (githubStatus && githubStatusText) {
+            githubStatus.className = 'github-status error';
+            githubStatusText.textContent = 'Error de conexión';
+            githubStatus.title = `Error: ${message}\nHaz click para reintentar`;
         }
     }
 }

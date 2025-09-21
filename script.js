@@ -137,6 +137,13 @@ class CuadernoDigital {
                 this.handleGitHubAuth();
             });
         }
+        
+        if (document.getElementById('githubStatus')) {
+            document.getElementById('githubStatus').addEventListener('click', () => {
+                this.handleGitHubAuth();
+            });
+        }
+        
         if (document.getElementById('settingsSyncButton')) {
             document.getElementById('settingsSyncButton').addEventListener('click', () => this.handleGitHubAuth());
         }

@@ -673,6 +673,14 @@ class CuadernoDigital {
         };
     }
 
+    utf8ToBase64(str) {
+        return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    base64ToUtf8(str) {
+        return decodeURIComponent(escape(atob(str)));
+    }
+
     showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
         const icon = toast.querySelector('.toast-icon');
@@ -840,7 +848,7 @@ class CuadernoDigital {
 
             const jsonString = JSON.stringify(shareData);
             if (jsonString.length < 1500) {
-                const encodedData = btoa(encodeURIComponent(jsonString));
+                const encodedData = this.utf8ToBase64(jsonString);
                 return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
             }
 
@@ -851,7 +859,7 @@ class CuadernoDigital {
             };
 
             const truncatedJson = JSON.stringify(truncatedData);
-            const encodedData = btoa(encodeURIComponent(truncatedJson));
+            const encodedData = this.utf8ToBase64(truncatedJson);
             return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
 
         } catch (error) {
@@ -1162,7 +1170,7 @@ class CuadernoDigital {
             }
         } else if (sharedData) {
             try {
-                const decodedData = JSON.parse(decodeURIComponent(atob(sharedData)));
+                const decodedData = JSON.parse(this.base64ToUtf8(sharedData));
                 this.displaySharedNote(decodedData);
                 this.isViewingSharedNote = true;
             } catch (error) {

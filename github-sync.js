@@ -410,7 +410,7 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
 
         const data = await response.json();
         return {
-            content: atob(data.content),
+            content: this.base64ToUtf8(data.content),
             sha: data.sha
         };
     }
@@ -420,7 +420,7 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
 
         const body = {
             message,
-            content: btoa(encodeURIComponent(content).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16))))
+            content: this.utf8ToBase64(content)
         };
 
         if (existingFile) {
@@ -508,6 +508,14 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
             fontSize: getComputedStyle(document.documentElement).getPropertyValue('--font-size') || '16px',
             fontFamily: getComputedStyle(document.documentElement).getPropertyValue('--font-family') || 'Inter'
         };
+    }
+
+    utf8ToBase64(str) {
+        return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    base64ToUtf8(str) {
+        return decodeURIComponent(escape(atob(str)));
     }
 
     generateRandomString(length) {

@@ -467,7 +467,7 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
 
         if (!this.isAuthenticated) {
             syncButton.innerHTML = '<i class="fab fa-github"></i> Conectar GitHub';
-            syncButton.onclick = () => this.authenticate();
+            syncButton.disabled = false;
             if (syncStatus) syncStatus.textContent = 'No conectado';
         } else if (this.syncInProgress) {
             syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
@@ -475,7 +475,6 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
         } else {
             syncButton.innerHTML = '<i class="fas fa-sync"></i> Sincronizar';
             syncButton.disabled = false;
-            syncButton.onclick = () => this.triggerSync();
 
             if (syncStatus) {
                 const lastSync = this.lastSyncTime ?

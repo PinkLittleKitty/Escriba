@@ -56,15 +56,32 @@ class CuadernoDigital {
             document.querySelector('.dropdown').classList.toggle('active');
         });
 
-        document.addEventListener('click', () => {
-            document.querySelector('.dropdown').classList.remove('active');
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropdown-menu')) {
+                document.querySelector('.dropdown').classList.remove('active');
+            }
         });
 
-        document.getElementById('exportBtn').addEventListener('click', () => this.exportCarpeta());
-        document.getElementById('importBtn').addEventListener('click', () => this.importCarpeta());
-        document.getElementById('importJsonBtn').addEventListener('click', () => this.importJsonNote());
-        document.getElementById('settingsBtn').addEventListener('click', () => this.showSettingsModal());
-        document.getElementById('printBtn').addEventListener('click', () => this.printCurrentNote());
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            document.querySelector('.dropdown').classList.remove('active');
+            this.exportCarpeta();
+        });
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.querySelector('.dropdown').classList.remove('active');
+            this.importCarpeta();
+        });
+        document.getElementById('importJsonBtn').addEventListener('click', () => {
+            document.querySelector('.dropdown').classList.remove('active');
+            this.importJsonNote();
+        });
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            document.querySelector('.dropdown').classList.remove('active');
+            this.showSettingsModal();
+        });
+        document.getElementById('printBtn').addEventListener('click', () => {
+            document.querySelector('.dropdown').classList.remove('active');
+            this.printCurrentNote();
+        });
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImport(e));
         document.getElementById('importJsonFile').addEventListener('change', (e) => this.handleJsonImport(e));
 
@@ -83,6 +100,13 @@ class CuadernoDigital {
         document.getElementById('clearAllData').addEventListener('click', () => this.clearAllData());
         document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
 
+        if (document.getElementById('syncButton')) {
+            document.getElementById('syncButton').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelector('.dropdown').classList.remove('active');
+                this.handleGitHubAuth();
+            });
+        }
         if (document.getElementById('settingsSyncButton')) {
             document.getElementById('settingsSyncButton').addEventListener('click', () => this.handleGitHubAuth());
         }
@@ -195,11 +219,11 @@ class CuadernoDigital {
     insertCodeBlock() {
         const noteContent = document.getElementById('noteContent');
         noteContent.focus();
-        
+
         const editorContainer = document.createElement('div');
         editorContainer.className = 'inline-ace-editor';
         editorContainer.id = `aceEditor-${Date.now()}`;
-        
+
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
@@ -208,7 +232,7 @@ class CuadernoDigital {
         } else {
             noteContent.appendChild(editorContainer);
         }
-        
+
         this.initializeAceEditor(editorContainer);
         this.saveCurrentNote();
     }
@@ -216,7 +240,7 @@ class CuadernoDigital {
     initializeAceEditor(editorContainer, initialCode = '') {
         const editor = ace.edit(editorContainer.id);
         const currentLanguage = this.getCurrentNoteLanguage();
-        
+
         editor.setTheme(this.getCurrentTheme());
         editor.session.setMode(this.getAceModeForLanguage(currentLanguage));
         editor.setOptions({
@@ -241,19 +265,19 @@ class CuadernoDigital {
             mergeUndoDeltas: true,
             animatedScroll: false
         });
-        
+
         editorContainer.style.height = '80px';
-        
+
         if (initialCode) {
             editor.setValue(initialCode);
             editor.clearSelection();
         } else {
             editor.selectAll();
         }
-        
+
         editorContainer.aceEditor = editor;
         editorContainer.setAttribute('data-language', currentLanguage);
-        
+
         setTimeout(() => {
             this.setupAutoResize(editor, editorContainer);
         }, 100);
@@ -261,9 +285,9 @@ class CuadernoDigital {
         editor.session.on('change', () => {
             this.debouncedSave();
         });
-        
+
         this.setupCodeEditorKeyboard(editor, editorContainer);
-        
+
         setTimeout(() => {
             editor.focus();
             if (initialCode) {
@@ -273,7 +297,7 @@ class CuadernoDigital {
             }
             editor.resize(true);
         }, 150);
-        
+
         return editor;
     }
 
@@ -285,14 +309,14 @@ class CuadernoDigital {
                 this.deleteCodeBlock(editorContainer);
             }
         });
-        
+
         editor.commands.addCommand({
             name: 'smartBackspace',
             bindKey: { win: 'Backspace', mac: 'Backspace' },
             exec: (editor) => {
                 const cursor = editor.getCursorPosition();
                 const session = editor.getSession();
-                
+
                 if (cursor.row === 0 && cursor.column === 0) {
                     const content = session.getValue().trim();
                     if (content === '') {
@@ -300,23 +324,23 @@ class CuadernoDigital {
                         return;
                     }
                 }
-                
+
                 editor.execCommand('backspace');
             }
         });
-        
+
         const noteContent = document.getElementById('noteContent');
         editor.on('focus', () => {
             noteContent.currentFocusedEditor = editor;
         });
-        
+
         editor.on('blur', () => {
             if (noteContent.currentFocusedEditor === editor) {
                 noteContent.currentFocusedEditor = null;
             }
         });
     }
-    
+
     deleteCodeBlock(editorContainer) {
         if (confirm('¿Eliminar este bloque de código?')) {
             editorContainer.remove();
@@ -330,34 +354,34 @@ class CuadernoDigital {
         let resizeTimeout = null;
         let isResizing = false;
         let lastHeight = 0;
-        
+
         const updateHeight = () => {
             if (isResizing) return;
-            
+
             try {
                 isResizing = true;
                 editorContainer.classList.add('ace-resizing');
-                
+
                 const session = editor.getSession();
                 const lines = session.getLength();
                 const lineHeight = editor.renderer.lineHeight || 18;
-                const minHeight = 3 * lineHeight + 20; 
+                const minHeight = 3 * lineHeight + 20;
                 const maxHeight = Math.min(500, window.innerHeight * 0.4);
-                
+
                 let desiredHeight = Math.max(minHeight, lines * lineHeight + 30);
                 desiredHeight = Math.min(desiredHeight, maxHeight);
-                
+
                 if (Math.abs(lastHeight - desiredHeight) > 15) {
                     lastHeight = desiredHeight;
                     editorContainer.style.height = desiredHeight + 'px';
-                    
+
                     setTimeout(() => {
                         if (editor.renderer) {
                             editor.resize(true);
                         }
                     }, 16);
                 }
-                
+
             } catch (error) {
                 console.warn('Error in ACE editor resize:', error);
             } finally {
@@ -367,14 +391,14 @@ class CuadernoDigital {
                 }, 150);
             }
         };
-        
+
         const debouncedUpdateHeight = () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(updateHeight, 200);
         };
-        
+
         editor.session.on('change', debouncedUpdateHeight);
-        
+
         setTimeout(() => {
             updateHeight();
         }, 300);
@@ -383,44 +407,44 @@ class CuadernoDigital {
     serializeNoteContent() {
         const noteContent = document.getElementById('noteContent');
         const clone = noteContent.cloneNode(true);
-        
+
         const aceEditors = clone.querySelectorAll('.inline-ace-editor');
         aceEditors.forEach(editorContainer => {
             const originalEditor = document.getElementById(editorContainer.id);
             if (originalEditor && originalEditor.aceEditor) {
                 const code = originalEditor.aceEditor.getValue();
                 const language = originalEditor.getAttribute('data-language') || 'javascript';
-                
+
                 const placeholder = document.createElement('div');
                 placeholder.className = 'ace-editor-placeholder';
                 placeholder.setAttribute('data-code', code);
                 placeholder.setAttribute('data-language', language);
                 placeholder.textContent = `[Code Editor: ${language}]`;
-                
+
                 editorContainer.parentNode.replaceChild(placeholder, editorContainer);
             }
         });
-        
+
         return clone.innerHTML;
     }
 
     restoreNoteContent(content) {
         const noteContent = document.getElementById('noteContent');
         noteContent.innerHTML = content;
-        
+
         const placeholders = noteContent.querySelectorAll('.ace-editor-placeholder');
         placeholders.forEach(placeholder => {
             const code = placeholder.getAttribute('data-code') || '';
             const language = placeholder.getAttribute('data-language') || 'javascript';
-            
+
             const editorContainer = document.createElement('div');
             editorContainer.className = 'inline-ace-editor';
             editorContainer.id = `aceEditor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            
+
             placeholder.parentNode.replaceChild(editorContainer, placeholder);
-            
+
             this.initializeAceEditor(editorContainer, code);
-            
+
             if (editorContainer.aceEditor) {
                 editorContainer.aceEditor.session.setMode(this.getAceModeForLanguage(language));
                 editorContainer.setAttribute('data-language', language);
@@ -447,7 +471,7 @@ class CuadernoDigital {
 
     setNoteLanguage(language) {
         if (!this.currentNoteId) return;
-        
+
         let note = null;
         for (const subject of this.subjects) {
             const foundNote = subject.notes.find(n => n.id === this.currentNoteId);
@@ -456,16 +480,16 @@ class CuadernoDigital {
                 break;
             }
         }
-        
+
         if (note) {
             note.codeLanguage = language;
             this.saveCarpeta();
-            
+
             const languageSelect = document.getElementById('noteLanguageSelect');
             if (languageSelect) {
                 languageSelect.value = language;
             }
-            
+
             this.showToast(`Lenguaje de código cambiado a ${language}`, 'success');
         }
     }
@@ -545,33 +569,33 @@ class CuadernoDigital {
         const disconnectButton = document.getElementById('disconnectGitHub');
 
         if (window.githubSync.isAuthenticated) {
-            const lastSync = window.githubSync.lastSyncTime ? 
-                new Date(window.githubSync.lastSyncTime).toLocaleString() : 
+            const lastSync = window.githubSync.lastSyncTime ?
+                new Date(window.githubSync.lastSyncTime).toLocaleString() :
                 'Nunca';
-            
+
             const statusText = `Conectado como ${window.githubSync.username}`;
             const fullStatusText = `${statusText} • Última sync: ${lastSync}`;
 
             if (syncStatus) syncStatus.textContent = fullStatusText;
             if (settingsSyncStatus) settingsSyncStatus.textContent = statusText;
-            
+
             if (settingsSyncButton) {
                 settingsSyncButton.innerHTML = '<i class="fas fa-sync"></i> Sincronizar Ahora';
                 settingsSyncButton.onclick = () => this.triggerManualSync();
             }
-            
+
             if (disconnectButton) {
                 disconnectButton.style.display = 'block';
             }
         } else {
             if (syncStatus) syncStatus.textContent = 'No conectado';
             if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
-            
+
             if (settingsSyncButton) {
                 settingsSyncButton.innerHTML = '<i class="fab fa-github"></i> Conectar GitHub';
                 settingsSyncButton.onclick = () => this.handleGitHubAuth();
             }
-            
+
             if (disconnectButton) {
                 disconnectButton.style.display = 'none';
             }
@@ -627,7 +651,7 @@ class CuadernoDigital {
 
     setupAutoSync() {
         const autoSyncEnabled = localStorage.getItem('autoSync') !== 'false';
-        
+
         if (autoSyncEnabled && window.githubSync && window.githubSync.isAuthenticated) {
             setInterval(() => {
                 if (window.githubSync.isAuthenticated && !window.githubSync.syncInProgress) {
@@ -737,7 +761,7 @@ class CuadernoDigital {
         document.getElementById('shareModal').classList.add('active');
         document.getElementById('shareUrl').value = 'Generando enlace...';
         document.getElementById('shareMethodInfo').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando enlace...';
-        
+
         const canvas = document.getElementById('qrCanvas');
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, 200, 200);
@@ -768,7 +792,7 @@ class CuadernoDigital {
     async generateShareUrlWithInfo() {
         const url = await this.generateShareUrl();
         let methodInfo = '';
-        
+
         if (url.includes('gist=')) {
             methodInfo = '<i class="fas fa-github"></i> Enlace optimizado via GitHub Gist';
         } else if (url.includes('truncated')) {
@@ -776,7 +800,7 @@ class CuadernoDigital {
         } else {
             methodInfo = '<i class="fas fa-link"></i> Enlace directo (Si el apunte es largo no va a funcar, Usá "Exportar como JSON" para el contenido completo)';
         }
-        
+
         return { url, methodInfo };
     }
 
@@ -825,7 +849,7 @@ class CuadernoDigital {
                 c: shareData.c.substring(0, 800) + '\n\n[Nota: Contenido truncado para compartir. Para el contenido completo, exporta como JSON.]',
                 truncated: true
             };
-            
+
             const truncatedJson = JSON.stringify(truncatedData);
             const encodedData = btoa(encodeURIComponent(truncatedJson));
             return `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
@@ -913,7 +937,7 @@ class CuadernoDigital {
         const jsonString = JSON.stringify(shareData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_escriba.json`;
@@ -937,7 +961,7 @@ class CuadernoDigital {
         reader.onload = (e) => {
             try {
                 const noteData = JSON.parse(e.target.result);
-                
+
                 if (!noteData.app || noteData.app !== 'escriba') {
                     this.showToast('Este archivo no es un apunte válido de Escriba', 'error');
                     return;
@@ -950,7 +974,7 @@ class CuadernoDigital {
             }
         };
         reader.readAsText(file);
-        
+
         event.target.value = '';
     }
 
@@ -1151,31 +1175,31 @@ class CuadernoDigital {
     async loadFromGist(gistId) {
         try {
             const response = await fetch(`https://api.github.com/gists/${gistId}`);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const gist = await response.json();
             const files = Object.values(gist.files);
-            
+
             if (files.length === 0) {
                 throw new Error('No files found in Gist');
             }
 
-            const jsonFile = files.find(file => 
-                file.filename.includes('.json') || 
+            const jsonFile = files.find(file =>
+                file.filename.includes('.json') ||
                 file.filename.includes('escriba')
             ) || files[0];
 
             const noteData = JSON.parse(jsonFile.content);
-            
+
             if (!noteData.app || noteData.app !== 'escriba') {
                 throw new Error('This Gist does not contain a valid Escriba note');
             }
 
             this.displaySharedNote(noteData);
-            
+
         } catch (error) {
             console.error('Error loading from Gist:', error);
             this.showToast('No se pudo cargar el apunte desde GitHub Gist', 'error');
@@ -1432,12 +1456,12 @@ class CuadernoDigital {
 
     extractTextPreview(html) {
         if (!html) return 'Sin contenido';
-        
+
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
-        
+
         const textContent = tempDiv.textContent || tempDiv.innerText || '';
-        
+
         const preview = textContent.trim().replace(/\s+/g, ' ');
         return preview.length > 150 ? preview.substring(0, 150) + '...' : preview;
     }
@@ -1981,9 +2005,9 @@ class CuadernoDigital {
     handleKeyboardShortcuts(e) {
         const noteContent = document.getElementById('noteContent');
         const activeElement = document.activeElement;
-        
+
         const focusedEditor = noteContent.currentFocusedEditor;
-        
+
         if (focusedEditor && (e.ctrlKey || e.metaKey)) {
             switch (e.key) {
                 case 'z':
@@ -2001,7 +2025,7 @@ class CuadernoDigital {
             }
             return;
         }
-        
+
         if (!noteContent.contains(activeElement)) return;
 
         if (e.ctrlKey || e.metaKey) {
@@ -2109,7 +2133,7 @@ class CuadernoDigital {
 
     saveCarpeta() {
         localStorage.setItem('cuadernoDigital', JSON.stringify(this.subjects));
-        
+
         if (window.githubSync && window.githubSync.isAuthenticated && !window.githubSync.syncInProgress) {
             clearTimeout(this.syncTimeout);
             this.syncTimeout = setTimeout(() => {
@@ -2211,11 +2235,11 @@ class CuadernoDigital {
             option.classList.toggle('active', option.dataset.theme === theme);
         });
         document.documentElement.setAttribute('data-theme', theme);
-        
+
         const currentSettings = JSON.parse(localStorage.getItem('escribaSettings')) || {};
         currentSettings.theme = theme;
         localStorage.setItem('escribaSettings', JSON.stringify(currentSettings));
-        
+
         this.showToast(`Tema "${this.getThemeName(theme)}" aplicado`, 'success');
     }
 

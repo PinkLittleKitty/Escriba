@@ -10,6 +10,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- GitHub Sync -->
+    <script src="github-sync.js"></script>
+
     <!-- Ace Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-markdown.min.js"></script>
@@ -51,6 +54,7 @@
                         <i class="fas fa-cog"></i> Opciones
                     </button>
                     <div class="dropdown-menu">
+                        <button id="syncButton"><i class="fab fa-github"></i> Conectar GitHub</button>
                         <button id="exportBtn"><i class="fas fa-download"></i> Exportar Carpeta</button>
                         <button id="importBtn"><i class="fas fa-upload"></i> Importar Carpeta</button>
                         <button id="importJsonBtn"><i class="fas fa-file-import"></i> Importar Apunte JSON</button>
@@ -69,6 +73,12 @@
         <div class="main-content">
             <aside class="sidebar">
                 <div class="search-section">
+                    <div class="sync-status-section">
+                        <div class="sync-status-info">
+                            <i class="fab fa-github"></i>
+                            <span id="syncStatus">No conectado</span>
+                        </div>
+                    </div>
                     <div class="search-box">
                         <input type="text" id="searchInput" placeholder="Buscá en tu carpeta..." autocomplete="off">
                         <i class="fas fa-search"></i>
@@ -150,6 +160,10 @@
                                 <span>Buscá rápidamente</span>
                             </div>
                             <div class="stat-item">
+                                <i class="fab fa-github"></i>
+                                <span>Sincronizá con GitHub</span>
+                            </div>
+                            <div class="stat-item">
                                 <i class="fas fa-cloud"></i>
                                 <span>Guardado automático</span>
                             </div>
@@ -174,7 +188,8 @@
                             </div>
                         </div>
                         <div class="note-actions">
-                            <select id="noteLanguageSelect" class="note-language-select" title="Lenguaje para bloques de código">
+                            <select id="noteLanguageSelect" class="note-language-select"
+                                title="Lenguaje para bloques de código">
                                 <option value="javascript">JavaScript</option>
                                 <option value="python">Python</option>
                                 <option value="html">HTML</option>
@@ -427,6 +442,34 @@
                     </div>
 
                     <div class="settings-section">
+                        <h4><i class="fab fa-github"></i> Sincronización</h4>
+                        <div class="sync-settings">
+                            <div class="form-group">
+                                <div class="sync-info" id="syncInfo">
+                                    <div class="sync-status-display">
+                                        <span id="settingsSyncStatus">No conectado a GitHub</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="autoSync" checked>
+                                    <span class="checkmark"></span>
+                                    Sincronización automática cada 5 minutos
+                                </label>
+                            </div>
+                            <div class="sync-actions">
+                                <button class="btn btn-primary" id="settingsSyncButton">
+                                    <i class="fab fa-github"></i> Conectar GitHub
+                                </button>
+                                <button class="btn btn-secondary" id="disconnectGitHub" style="display: none;">
+                                    <i class="fas fa-unlink"></i> Desconectar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
                         <h4><i class="fas fa-database"></i> Datos</h4>
                         <div class="data-stats">
                             <div class="stat">
@@ -490,12 +533,14 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="linkText">Texto del enlace</label>
-                        <input type="text" id="linkText" placeholder="ej: como vimos la semana pasada" autocomplete="off">
+                        <input type="text" id="linkText" placeholder="ej: como vimos la semana pasada"
+                            autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Buscar apunte para enlazar:</label>
                         <div class="search-box">
-                            <input type="text" id="linkSearchInput" placeholder="Buscar por título o materia..." autocomplete="off">
+                            <input type="text" id="linkSearchInput" placeholder="Buscar por título o materia..."
+                                autocomplete="off">
                             <i class="fas fa-search"></i>
                         </div>
                     </div>
@@ -523,7 +568,8 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="eventTitle">Título del Examen</label>
-                        <input type="text" id="eventTitle" placeholder="ej: Parcial de Análisis Matemático" autocomplete="off">
+                        <input type="text" id="eventTitle" placeholder="ej: Parcial de Análisis Matemático"
+                            autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label for="eventSubject">Materia</label>

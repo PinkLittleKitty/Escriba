@@ -17,6 +17,10 @@ class CuadernoDigital {
         this.bindEvents();
         this.loadSettings();
 
+        if (window.githubSync) {
+            await this.initializeGitHubSync();
+        }
+
         await this.checkForSharedNote();
 
         this.renderSubjects();
@@ -78,6 +82,13 @@ class CuadernoDigital {
         document.getElementById('cancelSettings').addEventListener('click', () => this.hideSettingsModal());
         document.getElementById('clearAllData').addEventListener('click', () => this.clearAllData());
         document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
+
+        if (document.getElementById('settingsSyncButton')) {
+            document.getElementById('settingsSyncButton').addEventListener('click', () => this.handleGitHubAuth());
+        }
+        if (document.getElementById('disconnectGitHub')) {
+            document.getElementById('disconnectGitHub').addEventListener('click', () => this.disconnectGitHub());
+        }
 
         document.getElementById('cancelSubjectPicker').addEventListener('click', () => this.hideSubjectPickerModal());
         document.getElementById('cancelShare').addEventListener('click', () => this.hideShareModal());
@@ -492,6 +503,150 @@ class CuadernoDigital {
         }
 
         document.getElementById('currentSemester').textContent = semester;
+    }
+
+    async initializeGitHubSync() {
+        if (!window.githubSync) return;
+
+        this.updateGitHubSyncUI();
+
+        this.setupAutoSync();
+    }
+
+    async performInitialSync() {
+        if (!window.githubSync || !window.githubSync.isAuthenticated) return;
+
+        try {
+            const result = await window.githubSync.syncData(
+                this.subjects,
+                this.events,
+                this.getAppSettings()
+            );
+
+            if (result) {
+                this.subjects = result.subjects;
+                this.events = result.events;
+                this.saveCarpeta();
+                this.renderSubjects();
+                this.showToast('Datos sincronizados desde GitHub', 'success');
+            }
+        } catch (error) {
+            console.error('Initial sync failed:', error);
+            this.showToast('Error en la sincronización inicial', 'error');
+        }
+    }
+
+    updateGitHubSyncUI() {
+        if (!window.githubSync) return;
+
+        const syncStatus = document.getElementById('syncStatus');
+        const settingsSyncStatus = document.getElementById('settingsSyncStatus');
+        const settingsSyncButton = document.getElementById('settingsSyncButton');
+        const disconnectButton = document.getElementById('disconnectGitHub');
+
+        if (window.githubSync.isAuthenticated) {
+            const lastSync = window.githubSync.lastSyncTime ? 
+                new Date(window.githubSync.lastSyncTime).toLocaleString() : 
+                'Nunca';
+            
+            const statusText = `Conectado como ${window.githubSync.username}`;
+            const fullStatusText = `${statusText} • Última sync: ${lastSync}`;
+
+            if (syncStatus) syncStatus.textContent = fullStatusText;
+            if (settingsSyncStatus) settingsSyncStatus.textContent = statusText;
+            
+            if (settingsSyncButton) {
+                settingsSyncButton.innerHTML = '<i class="fas fa-sync"></i> Sincronizar Ahora';
+                settingsSyncButton.onclick = () => this.triggerManualSync();
+            }
+            
+            if (disconnectButton) {
+                disconnectButton.style.display = 'block';
+            }
+        } else {
+            if (syncStatus) syncStatus.textContent = 'No conectado';
+            if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
+            
+            if (settingsSyncButton) {
+                settingsSyncButton.innerHTML = '<i class="fab fa-github"></i> Conectar GitHub';
+                settingsSyncButton.onclick = () => this.handleGitHubAuth();
+            }
+            
+            if (disconnectButton) {
+                disconnectButton.style.display = 'none';
+            }
+        }
+
+        window.githubSync.updateSyncUI();
+    }
+
+    handleGitHubAuth() {
+        if (!window.githubSync) return;
+
+        if (window.githubSync.isAuthenticated) {
+            this.triggerManualSync();
+        } else {
+            window.githubSync.authenticate();
+        }
+    }
+
+    async triggerManualSync() {
+        if (!window.githubSync || !window.githubSync.isAuthenticated) {
+            this.showToast('No estás conectado a GitHub', 'error');
+            return;
+        }
+
+        try {
+            const result = await window.githubSync.syncData(
+                this.subjects,
+                this.events,
+                this.getAppSettings()
+            );
+
+            if (result) {
+                this.subjects = result.subjects;
+                this.events = result.events;
+                this.saveCarpeta();
+                this.renderSubjects();
+                this.updateGitHubSyncUI();
+            }
+        } catch (error) {
+            console.error('Manual sync failed:', error);
+        }
+    }
+
+    disconnectGitHub() {
+        if (!window.githubSync) return;
+
+        if (confirm('¿Estás seguro de que querés desconectar GitHub? Los datos locales se mantendrán.')) {
+            window.githubSync.logout();
+            this.updateGitHubSyncUI();
+            this.showToast('Desconectado de GitHub', 'success');
+        }
+    }
+
+    setupAutoSync() {
+        const autoSyncEnabled = localStorage.getItem('autoSync') !== 'false';
+        
+        if (autoSyncEnabled && window.githubSync && window.githubSync.isAuthenticated) {
+            setInterval(() => {
+                if (window.githubSync.isAuthenticated && !window.githubSync.syncInProgress) {
+                    this.triggerManualSync();
+                }
+            }, 5 * 60 * 1000);
+        }
+    }
+
+    getAppSettings() {
+        return {
+            theme: document.documentElement.getAttribute('data-theme') || 'dark',
+            fontSize: getComputedStyle(document.documentElement).getPropertyValue('--font-size') || '16px',
+            fontFamily: getComputedStyle(document.documentElement).getPropertyValue('--font-family') || 'Inter',
+            autoSave: document.getElementById('autoSave')?.checked ?? true,
+            expandSubjects: document.getElementById('expandSubjects')?.checked ?? true,
+            showWelcome: document.getElementById('showWelcome')?.checked ?? true,
+            autoSync: document.getElementById('autoSync')?.checked ?? true
+        };
     }
 
     showToast(message, type = 'success') {
@@ -1954,6 +2109,30 @@ class CuadernoDigital {
 
     saveCarpeta() {
         localStorage.setItem('cuadernoDigital', JSON.stringify(this.subjects));
+        
+        if (window.githubSync && window.githubSync.isAuthenticated && !window.githubSync.syncInProgress) {
+            clearTimeout(this.syncTimeout);
+            this.syncTimeout = setTimeout(() => {
+                this.triggerBackgroundSync();
+            }, 10000);
+        }
+    }
+
+    async triggerBackgroundSync() {
+        if (!window.githubSync || !window.githubSync.isAuthenticated || window.githubSync.syncInProgress) {
+            return;
+        }
+
+        try {
+            await window.githubSync.syncData(
+                this.subjects,
+                this.events,
+                this.getAppSettings()
+            );
+            this.updateGitHubSyncUI();
+        } catch (error) {
+            console.warn('Background sync failed:', error);
+        }
     }
 
     showSettingsModal() {

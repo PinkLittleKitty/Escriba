@@ -1597,34 +1597,23 @@ class CuadernoDigital {
         const subject = this.subjects.find(s => s.id === subjectId);
         if (!subject) return;
 
-        const noteCount = subject.notes.length;
-        let confirmMessage = `¿Estás seguro de que querés eliminar la materia "${subject.name}"?`;
-
-        if (noteCount > 0) {
-            confirmMessage += `\n\nEsto también eliminará ${noteCount} apunte${noteCount > 1 ? 's' : ''} de esta materia.`;
+        if (this.currentNoteId) {
+            const currentNote = subject.notes.find(n => n.id === this.currentNoteId);
+            if (currentNote) {
+                this.currentNoteId = null;
+                this.showWelcomeScreen(true);
+            }
         }
 
-        confirmMessage += '\n\nEsta acción no se puede deshacer.';
+        const subjectIndex = this.subjects.findIndex(s => s.id === subjectId);
+        if (subjectIndex !== -1) {
+            this.subjects.splice(subjectIndex, 1);
+            this.saveCarpeta();
+            this.renderSubjects();
+            this.showToast(`Materia "${subject.name}" eliminada`, 'success');
 
-        if (confirm(confirmMessage)) {
-            if (this.currentNoteId) {
-                const currentNote = subject.notes.find(n => n.id === this.currentNoteId);
-                if (currentNote) {
-                    this.currentNoteId = null;
-                    this.showWelcomeScreen();
-                }
-            }
-
-            const subjectIndex = this.subjects.findIndex(s => s.id === subjectId);
-            if (subjectIndex !== -1) {
-                this.subjects.splice(subjectIndex, 1);
-                this.saveCarpeta();
-                this.renderSubjects();
-                this.showToast(`Materia "${subject.name}" eliminada`, 'success');
-
-                if (this.subjects.length === 0) {
-                    this.showWelcomeScreen();
-                }
+            if (this.subjects.length === 0) {
+                this.showWelcomeScreen(true);
             }
         }
     }
@@ -1633,7 +1622,15 @@ class CuadernoDigital {
         const container = document.getElementById('subjectsContainer');
 
         if (this.subjects.length === 0) {
-            container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">Todavía no tenés materias</div>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No tenés materias creadas todavía.</p>
+                    <button class="btn btn-primary" onclick="cuaderno.showSubjectModal()">
+                        <i class="fas fa-folder-plus"></i> Crear Primera Materia
+                    </button>
+                </div>
+            `;
             return;
         }
 
@@ -1661,8 +1658,8 @@ class CuadernoDigital {
                 </div>
                 <div class="notes-list">
                     ${subject.notes.length === 0 ?
-                '<div class="empty-subject">No hay apuntes todavía</div>' :
-                subject.notes.map(note => `
+                        '<div class="empty-subject">No hay apuntes todavía</div>' :
+                        subject.notes.map(note => `
                             <div class="note-item ${note.favorite ? 'favorite' : ''}" data-note-id="${note.id}">
                                 <div class="note-type-icon">${this.getNoteTypeIcon(note.type)}</div>
                                 <div class="note-details">
@@ -1675,13 +1672,15 @@ class CuadernoDigital {
                                 </div>
                             </div>
                         `).join('')
-            }
+                    }
                 </div>
             </div>
         `).join('');
 
         container.querySelectorAll('.subject-header').forEach(header => {
-            header.addEventListener('click', () => {
+            header.addEventListener('click', (e) => {
+                if (e.target.closest('.subject-actions')) return;
+                
                 const folder = header.closest('.subject-folder');
                 folder.classList.toggle('expanded');
                 const subjectId = folder.dataset.subjectId;
@@ -1714,9 +1713,27 @@ class CuadernoDigital {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const subjectId = btn.dataset.subjectId;
-                this.deleteSubject(subjectId);
+                this.confirmDeleteSubject(subjectId);
             });
         });
+    }
+
+    confirmDeleteSubject(subjectId) {
+        const subject = this.subjects.find(s => s.id === subjectId);
+        if (!subject) return;
+
+        const noteCount = subject.notes.length;
+        let message = `¿Estás seguro de que querés eliminar la materia "${subject.name}"?`;
+        
+        if (noteCount > 0) {
+            message += `\n\nEsto también eliminará ${noteCount} apunte${noteCount !== 1 ? 's' : ''} asociado${noteCount !== 1 ? 's' : ''}.`;
+        }
+
+        message += '\n\nEsta acción no se puede deshacer.';
+
+        if (confirm(message)) {
+            this.deleteSubject(subjectId);
+        }
     }
 
     renderFavoriteNotes() {

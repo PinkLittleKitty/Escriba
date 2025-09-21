@@ -696,14 +696,17 @@ header h1 i {
 }
 
 .subject-header {
-    padding: 1rem 1.25rem;
-    background: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+    cursor: pointer;
     transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    min-height: 60px;
 }
 
 .subject-header:hover {
@@ -714,6 +717,9 @@ header h1 i {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .subject-icon {
@@ -724,9 +730,14 @@ header h1 i {
 }
 
 .subject-name {
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 1rem;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
 }
 
 .subject-count {
@@ -2351,8 +2362,9 @@ header h1 i {
     }
 
     .subject-details {
-        font-size: 0.85rem;
-        opacity: 0.8;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
     }
 
     .subject-actions {

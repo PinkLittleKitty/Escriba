@@ -259,40 +259,78 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
         try {
             const subjectsResponse = await this.getFile('data/subjects.json');
             if (subjectsResponse) {
-                data.subjects = JSON.parse(subjectsResponse.content);
+                try {
+                    data.subjects = JSON.parse(subjectsResponse.content);
+                    data.subjects = data.subjects.map(subject => ({
+                        ...subject,
+                        name: this.sanitizeText(subject.name),
+                        code: subject.code ? this.sanitizeText(subject.code) : subject.code,
+                        professor: subject.professor ? this.sanitizeText(subject.professor) : subject.professor,
+                        notes: subject.notes ? subject.notes.map(note => ({
+                            ...note,
+                            title: this.sanitizeText(note.title),
+                            content: this.cleanNoteContent(note.content)
+                        })) : []
+                    }));
+                } catch (parseError) {
+                    console.error('Error parsing subjects data:', parseError);
+                }
             }
 
             const eventsResponse = await this.getFile('data/events.json');
             if (eventsResponse) {
-                data.events = JSON.parse(eventsResponse.content);
+                try {
+                    data.events = JSON.parse(eventsResponse.content);
+                    data.events = data.events.map(event => ({
+                        ...event,
+                        title: this.sanitizeText(event.title),
+                        notes: event.notes ? this.sanitizeText(event.notes) : event.notes
+                    }));
+                } catch (parseError) {
+                    console.error('Error parsing events data:', parseError);
+                }
             }
 
             const settingsResponse = await this.getFile('data/settings.json');
             if (settingsResponse) {
-                data.settings = JSON.parse(settingsResponse.content);
+                try {
+                    data.settings = JSON.parse(settingsResponse.content);
+                } catch (parseError) {
+                    console.error('Error parsing settings data:', parseError);
+                }
             }
 
             const notesListResponse = await this.getFile('data/notes-index.json');
             if (notesListResponse) {
-                const notesList = JSON.parse(notesListResponse.content);
+                try {
+                    const notesList = JSON.parse(notesListResponse.content);
 
-                for (const noteId of notesList) {
-                    try {
-                        const noteResponse = await this.getFile(`data/notes/${noteId}.json`);
-                        if (noteResponse) {
-                            const noteData = JSON.parse(noteResponse.content);
+                    for (const noteId of notesList) {
+                        try {
+                            const noteResponse = await this.getFile(`data/notes/${noteId}.json`);
+                            if (noteResponse) {
+                                const noteData = JSON.parse(noteResponse.content);
+                                
+                                const cleanNote = {
+                                    ...noteData,
+                                    title: this.sanitizeText(noteData.title),
+                                    content: this.cleanNoteContent(noteData.content)
+                                };
 
-                            const subject = data.subjects.find(s => s.id === noteData.subjectId);
-                            if (subject) {
-                                const existingNote = subject.notes.find(n => n.id === noteData.id);
-                                if (!existingNote) {
-                                    subject.notes.push(noteData);
+                                const subject = data.subjects.find(s => s.id === cleanNote.subjectId);
+                                if (subject) {
+                                    const existingNote = subject.notes.find(n => n.id === cleanNote.id);
+                                    if (!existingNote) {
+                                        subject.notes.push(cleanNote);
+                                    }
                                 }
                             }
+                        } catch (error) {
+                            console.warn(`Failed to load note ${noteId}:`, error);
                         }
-                    } catch (error) {
-                        console.warn(`Failed to load note ${noteId}:`, error);
                     }
+                } catch (parseError) {
+                    console.error('Error parsing notes index:', parseError);
                 }
             }
 
@@ -348,27 +386,29 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
     }
 
     async uploadData(data) {
+        const cleanData = this.validateAndCleanData(data);
+        
         await this.createOrUpdateFile(
             'data/subjects.json',
-            JSON.stringify(data.subjects, null, 2),
+            JSON.stringify(cleanData.subjects, null, 2),
             `Sync subjects - ${new Date().toISOString()}`
         );
 
         await this.createOrUpdateFile(
             'data/events.json',
-            JSON.stringify(data.events, null, 2),
+            JSON.stringify(cleanData.events, null, 2),
             `Sync events - ${new Date().toISOString()}`
         );
 
         await this.createOrUpdateFile(
             'data/settings.json',
-            JSON.stringify(data.settings, null, 2),
+            JSON.stringify(cleanData.settings, null, 2),
             `Sync settings - ${new Date().toISOString()}`
         );
 
         const noteIds = [];
 
-        for (const subject of data.subjects) {
+        for (const subject of cleanData.subjects) {
             for (const note of subject.notes) {
                 noteIds.push(note.id);
 
@@ -418,9 +458,21 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
     async createOrUpdateFile(path, content, message) {
         const existingFile = await this.getFile(path);
 
+        let cleanContent = content;
+        try {
+            cleanContent = this.sanitizeFileContent(content);
+            
+            if (path.endsWith('.json')) {
+                const parsed = JSON.parse(cleanContent);
+                cleanContent = JSON.stringify(parsed, null, 2);
+            }
+        } catch (error) {
+            console.warn('Content validation failed, using original:', error);
+        }
+
         const body = {
             message,
-            content: this.utf8ToBase64(content)
+            content: this.utf8ToBase64(cleanContent)
         };
 
         if (existingFile) {
@@ -442,6 +494,16 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
         }
 
         return await response.json();
+    }
+
+    sanitizeFileContent(content) {
+        if (!content || typeof content !== 'string') return content;
+        
+        let cleaned = content.normalize('NFC');
+        
+        cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+        
+        return cleaned;
     }
 
     async getUserInfo() {
@@ -511,11 +573,34 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
     }
 
     utf8ToBase64(str) {
-        return btoa(unescape(encodeURIComponent(str)));
+        try {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            bytes.forEach(byte => binary += String.fromCharCode(byte));
+            return btoa(binary);
+        } catch (error) {
+            console.error('Error encoding to base64:', error);
+            return btoa(unescape(encodeURIComponent(str)));
+        }
     }
 
     base64ToUtf8(str) {
-        return decodeURIComponent(escape(atob(str)));
+        try {
+            const binary = atob(str);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return new TextDecoder().decode(bytes);
+        } catch (error) {
+            console.error('Error decoding from base64:', error);
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (fallbackError) {
+                console.error('Fallback decoding also failed:', fallbackError);
+                return str;
+            }
+        }
     }
 
     generateRandomString(length) {
@@ -525,6 +610,44 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
+    }
+
+    validateAndCleanData(data) {
+        return {
+            subjects: data.subjects.map(subject => ({
+                ...subject,
+                name: this.sanitizeText(subject.name),
+                code: subject.code ? this.sanitizeText(subject.code) : subject.code,
+                professor: subject.professor ? this.sanitizeText(subject.professor) : subject.professor,
+                notes: subject.notes.map(note => ({
+                    ...note,
+                    title: this.sanitizeText(note.title),
+                    content: this.cleanNoteContent(note.content)
+                }))
+            })),
+            events: data.events.map(event => ({
+                ...event,
+                title: this.sanitizeText(event.title),
+                notes: event.notes ? this.sanitizeText(event.notes) : event.notes
+            })),
+            settings: data.settings
+        };
+    }
+
+    sanitizeText(text) {
+        if (!text || typeof text !== 'string') return text;
+        
+        return text.normalize('NFC');
+    }
+
+    cleanNoteContent(content) {
+        if (!content || typeof content !== 'string') return content;
+        
+        let cleaned = content.normalize('NFC');
+        
+        cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+        
+        return cleaned;
     }
 
     showSuccess(message) {

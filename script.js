@@ -1,7 +1,11 @@
 class CuadernoDigital {
     constructor() {
-        this.subjects = JSON.parse(localStorage.getItem('cuadernoDigital')) || [];
-        this.events = JSON.parse(localStorage.getItem('cuadernoEvents')) || [];
+        const rawSubjects = localStorage.getItem('cuadernoDigital');
+        const rawEvents = localStorage.getItem('cuadernoEvents');
+        
+        this.subjects = rawSubjects ? this.validateAndCleanStoredData(JSON.parse(rawSubjects)) : [];
+        this.events = rawEvents ? this.validateAndCleanStoredEvents(JSON.parse(rawEvents)) : [];
+        
         this.currentNoteId = null;
         this.currentView = 'subjects';
         this.selectedColor = '#3b82f6';
@@ -9,6 +13,32 @@ class CuadernoDigital {
         this.currentDate = new Date();
         this.currentEventId = null;
         this.codeEditor = null;
+    }
+
+    validateAndCleanStoredData(subjects) {
+        if (!Array.isArray(subjects)) return [];
+        
+        return subjects.map(subject => ({
+            ...subject,
+            name: this.sanitizeText(subject.name || 'Materia sin nombre'),
+            code: subject.code ? this.sanitizeText(subject.code) : subject.code,
+            professor: subject.professor ? this.sanitizeText(subject.professor) : subject.professor,
+            notes: Array.isArray(subject.notes) ? subject.notes.map(note => ({
+                ...note,
+                title: this.sanitizeText(note.title || 'Apunte sin título'),
+                content: this.cleanNoteContent(note.content || '')
+            })) : []
+        }));
+    }
+
+    validateAndCleanStoredEvents(events) {
+        if (!Array.isArray(events)) return [];
+        
+        return events.map(event => ({
+            ...event,
+            title: this.sanitizeText(event.title || 'Evento sin título'),
+            notes: event.notes ? this.sanitizeText(event.notes) : event.notes
+        }));
     }
 
     async init() {
@@ -674,11 +704,34 @@ class CuadernoDigital {
     }
 
     utf8ToBase64(str) {
-        return btoa(unescape(encodeURIComponent(str)));
+        try {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            bytes.forEach(byte => binary += String.fromCharCode(byte));
+            return btoa(binary);
+        } catch (error) {
+            console.error('Error encoding to base64:', error);
+            return btoa(unescape(encodeURIComponent(str)));
+        }
     }
 
     base64ToUtf8(str) {
-        return decodeURIComponent(escape(atob(str)));
+        try {
+            const binary = atob(str);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return new TextDecoder().decode(bytes);
+        } catch (error) {
+            console.error('Error decoding from base64:', error);
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (fallbackError) {
+                console.error('Fallback decoding also failed:', fallbackError);
+                return str;
+            }
+        }
     }
 
     showToast(message, type = 'success') {
@@ -2157,7 +2210,8 @@ class CuadernoDigital {
     }
 
     saveCarpeta() {
-        localStorage.setItem('cuadernoDigital', JSON.stringify(this.subjects));
+        const cleanSubjects = this.cleanDataForStorage(this.subjects);
+        localStorage.setItem('cuadernoDigital', JSON.stringify(cleanSubjects));
 
         if (window.githubSync && window.githubSync.isAuthenticated && !window.githubSync.syncInProgress) {
             clearTimeout(this.syncTimeout);
@@ -2165,6 +2219,36 @@ class CuadernoDigital {
                 this.triggerBackgroundSync();
             }, 10000);
         }
+    }
+
+    cleanDataForStorage(subjects) {
+        return subjects.map(subject => ({
+            ...subject,
+            name: this.sanitizeText(subject.name),
+            code: subject.code ? this.sanitizeText(subject.code) : subject.code,
+            professor: subject.professor ? this.sanitizeText(subject.professor) : subject.professor,
+            notes: subject.notes.map(note => ({
+                ...note,
+                title: this.sanitizeText(note.title),
+                content: this.cleanNoteContent(note.content)
+            }))
+        }));
+    }
+
+    sanitizeText(text) {
+        if (!text || typeof text !== 'string') return text;
+        
+        return text.normalize('NFC');
+    }
+
+    cleanNoteContent(content) {
+        if (!content || typeof content !== 'string') return content;
+        
+        let cleaned = content.normalize('NFC');
+        
+        cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+        
+        return cleaned;
     }
 
     async triggerBackgroundSync() {
@@ -2976,7 +3060,13 @@ class CuadernoDigital {
     }
 
     saveEvents() {
-        localStorage.setItem('cuadernoEvents', JSON.stringify(this.events));
+        const cleanEvents = this.events.map(event => ({
+            ...event,
+            title: this.sanitizeText(event.title),
+            notes: event.notes ? this.sanitizeText(event.notes) : event.notes
+        }));
+        
+        localStorage.setItem('cuadernoEvents', JSON.stringify(cleanEvents));
     }
 }
 

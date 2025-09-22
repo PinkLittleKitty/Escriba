@@ -148,7 +148,6 @@ class CuadernoDigital {
             document.getElementById('settingsSyncButton').addEventListener('click', () => this.handleGitHubAuth());
         }
         
-        // Event listeners para botones de push/pull
         if (document.getElementById('pullButton')) {
             document.getElementById('pullButton').addEventListener('click', () => this.handleForcePull());
         }
@@ -650,7 +649,6 @@ class CuadernoDigital {
 
         window.githubSync.updateSyncUI();
         
-        // Actualizar botones de push/pull
         if (window.githubSync.updateSyncButtons) {
             window.githubSync.updateSyncButtons();
         }
@@ -718,10 +716,18 @@ class CuadernoDigital {
         try {
             const success = await window.githubSync.forcePull();
             if (success) {
-                // Recargar datos después del pull exitoso
-                this.loadData();
-                this.render();
+                const rawSubjects = localStorage.getItem('cuadernoDigital');
+                const rawEvents = localStorage.getItem('cuadernoEvents');
+                
+                this.subjects = rawSubjects ? this.validateAndCleanStoredData(JSON.parse(rawSubjects)) : [];
+                this.events = rawEvents ? this.validateAndCleanStoredEvents(JSON.parse(rawEvents)) : [];
+                
+                this.renderSubjects();
                 this.updateGitHubSyncUI();
+                
+                if (this.currentView !== 'subjects') {
+                    this.switchView(this.currentView);
+                }
             }
         } catch (error) {
             console.error('Force pull failed:', error);

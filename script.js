@@ -147,6 +147,16 @@ class CuadernoDigital {
         if (document.getElementById('settingsSyncButton')) {
             document.getElementById('settingsSyncButton').addEventListener('click', () => this.handleGitHubAuth());
         }
+        
+        // Event listeners para botones de push/pull
+        if (document.getElementById('pullButton')) {
+            document.getElementById('pullButton').addEventListener('click', () => this.handleForcePull());
+        }
+        
+        if (document.getElementById('pushButton')) {
+            document.getElementById('pushButton').addEventListener('click', () => this.handleForcePush());
+        }
+        
         if (document.getElementById('disconnectGitHub')) {
             document.getElementById('disconnectGitHub').addEventListener('click', () => this.disconnectGitHub());
         }
@@ -639,6 +649,11 @@ class CuadernoDigital {
         }
 
         window.githubSync.updateSyncUI();
+        
+        // Actualizar botones de push/pull
+        if (window.githubSync.updateSyncButtons) {
+            window.githubSync.updateSyncButtons();
+        }
     }
 
     handleGitHubAuth() {
@@ -683,6 +698,59 @@ class CuadernoDigital {
             window.githubSync.logout();
             this.updateGitHubSyncUI();
             this.showToast('Desconectado de GitHub', 'success');
+        }
+    }
+
+    async handleForcePull() {
+        if (!window.githubSync || !window.githubSync.isAuthenticated) {
+            this.showToast('No estás conectado a GitHub', 'error');
+            return;
+        }
+
+        const confirmMessage = '¿Estás seguro de que querés descargar los datos desde GitHub?\n\n' +
+                              '⚠️ ATENCIÓN: Esto sobrescribirá todos tus datos locales con los datos de GitHub.\n' +
+                              'Los datos locales actuales se perderán permanentemente.';
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const success = await window.githubSync.forcePull();
+            if (success) {
+                // Recargar datos después del pull exitoso
+                this.loadData();
+                this.render();
+                this.updateGitHubSyncUI();
+            }
+        } catch (error) {
+            console.error('Force pull failed:', error);
+            this.showToast('Error al descargar datos desde GitHub', 'error');
+        }
+    }
+
+    async handleForcePush() {
+        if (!window.githubSync || !window.githubSync.isAuthenticated) {
+            this.showToast('No estás conectado a GitHub', 'error');
+            return;
+        }
+
+        const confirmMessage = '¿Estás seguro de que querés subir tus datos locales a GitHub?\n\n' +
+                              '⚠️ ATENCIÓN: Esto sobrescribirá todos los datos en GitHub con tus datos locales.\n' +
+                              'Los datos remotos actuales se perderán permanentemente.';
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const success = await window.githubSync.forcePush();
+            if (success) {
+                this.updateGitHubSyncUI();
+            }
+        } catch (error) {
+            console.error('Force push failed:', error);
+            this.showToast('Error al subir datos a GitHub', 'error');
         }
     }
 

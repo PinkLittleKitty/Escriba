@@ -43,9 +43,19 @@
                 </div>
             </div>
             <div class="header-controls">
-                <div id="githubStatus" class="github-status">
-                    <i class="fab fa-github"></i>
-                    <span id="githubStatusText">No conectado</span>
+                <div class="github-controls">
+                    <div id="githubStatus" class="github-status">
+                        <i class="fab fa-github"></i>
+                        <span id="githubStatusText">No conectado</span>
+                    </div>
+                    <div class="sync-buttons" id="syncButtons" style="display: none;">
+                        <button id="pullButton" class="btn btn-sync" title="Pull: Descargar cambios desde GitHub">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button id="pushButton" class="btn btn-sync" title="Push: Subir cambios a GitHub (forzado)">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                    </div>
                 </div>
                 <button id="newSubjectBtn" class="btn btn-accent" title="Crear nueva materia">
                     <i class="fas fa-folder-plus"></i> Nueva Materia

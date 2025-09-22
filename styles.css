@@ -424,6 +424,61 @@ header h1 i {
     to { transform: rotate(360deg); }
 }
 
+.github-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sync-buttons {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.btn-sync {
+    padding: 0.4rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-sync:hover {
+    background: var(--bg-card);
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+.btn-sync:active {
+    transform: scale(0.95);
+}
+
+.btn-sync:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-sync i {
+    font-size: 0.85rem;
+}
+
+.btn-sync#pullButton:hover {
+    color: var(--accent-green);
+    border-color: var(--accent-green);
+}
+
+.btn-sync#pushButton:hover {
+    color: var(--accent-orange);
+    border-color: var(--accent-orange);
+}
+
 .btn {
     padding: 0.625rem 1.25rem;
     border: none;
@@ -3223,5 +3278,23 @@ header h1 i {
 
     .github-status i {
         font-size: 0.8rem;
+    }
+
+    .github-controls {
+        gap: 0.25rem;
+    }
+
+    .sync-buttons {
+        gap: 0.15rem;
+    }
+
+    .btn-sync {
+        min-width: 28px;
+        height: 28px;
+        padding: 0.3rem;
+    }
+
+    .btn-sync i {
+        font-size: 0.75rem;
     }
 }

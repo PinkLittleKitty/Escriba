@@ -74,7 +74,7 @@ class GitHubSync {
         const toggleBtn = modal.querySelector('#toggleTokenVisibility');
         
         tokenInput.addEventListener('input', () => {
-            connectBtn.disabled = !tokenInput.value.trim();
+            connectBtn.disabled = !tokenInput.value || !tokenInput.value.startsWith('ghp_');
         });
         
         toggleBtn.addEventListener('click', () => {
@@ -84,7 +84,7 @@ class GitHubSync {
         });
         
         connectBtn.addEventListener('click', () => {
-            this.connectWithToken(tokenInput.value.trim());
+            this.connectWithToken(tokenInput.value);
         });
         
         tokenInput.focus();
@@ -92,7 +92,7 @@ class GitHubSync {
 
     async connectWithToken(token) {
         if (!token || !token.startsWith('ghp_')) {
-            this.showError('Token inválido. Debe empezar con "ghp_"');
+            alert('Por favor, ingresa un token válido que comience con "ghp_"');
             return;
         }
 
@@ -100,38 +100,29 @@ class GitHubSync {
             this.accessToken = token;
             const userInfo = await this.getUserInfo();
             
-            localStorage.setItem('github_access_token', this.accessToken);
             this.username = userInfo.login;
-            localStorage.setItem('github_username', this.username);
-            
             this.isAuthenticated = true;
+            
+            localStorage.setItem('github_access_token', this.accessToken);
+            localStorage.setItem('github_username', this.username);
             
             if (this.tokenModal) {
                 this.tokenModal.remove();
             }
             
-            this.showSuccess('¡Conectado a GitHub exitosamente!');
             this.updateSyncUI();
-            
-            if (window.cuadernoDigital) {
-                await window.cuadernoDigital.performInitialSync();
-            }
+            this.showSuccess(`Conectado exitosamente como ${this.username}`);
             
         } catch (error) {
-            console.error('Token authentication failed:', error);
+            console.error('Error connecting with token:', error);
+            this.showError('Error al conectar con GitHub. Verifica que el token sea válido.');
             this.accessToken = null;
-            
-            if (error.message.includes('401')) {
-                this.showError('Token inválido o expirado');
-            } else if (error.message.includes('403')) {
-                this.showError('Token sin permisos suficientes. Asegurate de seleccionar "repo"');
-            } else {
-                this.showError('Error al conectar con GitHub');
-            }
+            this.username = null;
+            this.isAuthenticated = false;
+            localStorage.removeItem('github_access_token');
+            localStorage.removeItem('github_username');
         }
     }
-
-
 
     logout() {
         this.accessToken = null;
@@ -156,15 +147,17 @@ class GitHubSync {
 
             if (response.status === 404) {
                 await this.createRepository();
-            } else if (!response.ok) {
-                throw new Error(`GitHub API error: ${response.status}`);
+                return true;
+            }
+
+            if (!response.ok) {
+                throw new Error(`Error checking repository: ${response.status}`);
             }
 
             return true;
         } catch (error) {
             console.error('Error ensuring repository:', error);
-            this.showError('Error al acceder al repositorio de GitHub');
-            return false;
+            throw error;
         }
     }
 
@@ -209,7 +202,6 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
 `;
 
         await this.createOrUpdateFile('README.md', readmeContent, 'Configuración inicial de Escriba');
-
         await this.createOrUpdateFile('data/.gitkeep', '', 'Crear estructura de directorios');
     }
 
@@ -222,26 +214,21 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
         this.updateSyncUI();
 
         try {
-            await this.ensureRepository();
-
+            const localData = { subjects: cuadernoData, events, settings };
             const remoteData = await this.getRemoteData();
-
-            const mergedData = await this.mergeData(
-                { subjects: cuadernoData, events, settings },
-                remoteData
-            );
+            const mergedData = await this.mergeData(localData, remoteData);
 
             await this.uploadData(mergedData);
 
             this.lastSyncTime = new Date().toISOString();
             localStorage.setItem('last_sync_time', this.lastSyncTime);
 
-            this.showSuccess('Datos sincronizados correctamente');
+            this.showSuccess('Sincronización completada');
             return mergedData;
 
         } catch (error) {
             console.error('Sync failed:', error);
-            this.showError('Error al sincronizar con GitHub');
+            this.showError(`Error de sincronización: ${error.message}`);
             return false;
         } finally {
             this.syncInProgress = false;
@@ -257,85 +244,35 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
         };
 
         try {
-            const subjectsResponse = await this.getFile('data/subjects.json');
-            if (subjectsResponse) {
-                try {
-                    data.subjects = JSON.parse(subjectsResponse.content);
-                    data.subjects = data.subjects.map(subject => ({
-                        ...subject,
-                        name: this.sanitizeText(subject.name),
-                        code: subject.code ? this.sanitizeText(subject.code) : subject.code,
-                        professor: subject.professor ? this.sanitizeText(subject.professor) : subject.professor,
-                        notes: subject.notes ? subject.notes.map(note => ({
-                            ...note,
-                            title: this.sanitizeText(note.title),
-                            content: this.cleanNoteContent(note.content)
-                        })) : []
-                    }));
-                } catch (parseError) {
-                    console.error('Error parsing subjects data:', parseError);
+            try {
+                const subjectsFile = await this.getFile('data/subjects.json');
+                if (subjectsFile && subjectsFile.content) {
+                    data.subjects = JSON.parse(subjectsFile.content);
                 }
+            } catch (error) {
+                console.log('No subjects file found, using empty array');
             }
 
-            const eventsResponse = await this.getFile('data/events.json');
-            if (eventsResponse) {
-                try {
-                    data.events = JSON.parse(eventsResponse.content);
-                    data.events = data.events.map(event => ({
-                        ...event,
-                        title: this.sanitizeText(event.title),
-                        notes: event.notes ? this.sanitizeText(event.notes) : event.notes
-                    }));
-                } catch (parseError) {
-                    console.error('Error parsing events data:', parseError);
+            try {
+                const eventsFile = await this.getFile('data/events.json');
+                if (eventsFile && eventsFile.content) {
+                    data.events = JSON.parse(eventsFile.content);
                 }
+            } catch (error) {
+                console.log('No events file found, using empty array');
             }
 
-            const settingsResponse = await this.getFile('data/settings.json');
-            if (settingsResponse) {
-                try {
-                    data.settings = JSON.parse(settingsResponse.content);
-                } catch (parseError) {
-                    console.error('Error parsing settings data:', parseError);
+            try {
+                const settingsFile = await this.getFile('data/settings.json');
+                if (settingsFile && settingsFile.content) {
+                    data.settings = JSON.parse(settingsFile.content);
                 }
-            }
-
-            const notesListResponse = await this.getFile('data/notes-index.json');
-            if (notesListResponse) {
-                try {
-                    const notesList = JSON.parse(notesListResponse.content);
-
-                    for (const noteId of notesList) {
-                        try {
-                            const noteResponse = await this.getFile(`data/notes/${noteId}.json`);
-                            if (noteResponse) {
-                                const noteData = JSON.parse(noteResponse.content);
-                                
-                                const cleanNote = {
-                                    ...noteData,
-                                    title: this.sanitizeText(noteData.title),
-                                    content: this.cleanNoteContent(noteData.content)
-                                };
-
-                                const subject = data.subjects.find(s => s.id === cleanNote.subjectId);
-                                if (subject) {
-                                    const existingNote = subject.notes.find(n => n.id === cleanNote.id);
-                                    if (!existingNote) {
-                                        subject.notes.push(cleanNote);
-                                    }
-                                }
-                            }
-                        } catch (error) {
-                            console.warn(`Failed to load note ${noteId}:`, error);
-                        }
-                    }
-                } catch (parseError) {
-                    console.error('Error parsing notes index:', parseError);
-                }
+            } catch (error) {
+                console.log('No settings file found, using empty object');
             }
 
         } catch (error) {
-            console.warn('No remote data found or error loading:', error);
+            console.error('Error getting remote data:', error);
         }
 
         return data;
@@ -349,87 +286,109 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
         };
 
         for (const localSubject of localData.subjects) {
-            const remoteSubject = merged.subjects.find(s => s.id === localSubject.id);
-
-            if (!remoteSubject) {
-                merged.subjects.push(localSubject);
+            const existingIndex = merged.subjects.findIndex(s => s.id === localSubject.id);
+            if (existingIndex >= 0) {
+                const existing = merged.subjects[existingIndex];
+                if (new Date(localSubject.lastModified || 0) > new Date(existing.lastModified || 0)) {
+                    merged.subjects[existingIndex] = localSubject;
+                }
             } else {
-                if (new Date(localSubject.updatedAt || 0) > new Date(remoteSubject.updatedAt || 0)) {
-                    Object.assign(remoteSubject, localSubject);
-                }
-
-                for (const localNote of localSubject.notes) {
-                    const remoteNote = remoteSubject.notes.find(n => n.id === localNote.id);
-
-                    if (!remoteNote) {
-                        remoteSubject.notes.push(localNote);
-                    } else {
-                        if (new Date(localNote.updatedAt || 0) > new Date(remoteNote.updatedAt || 0)) {
-                            Object.assign(remoteNote, localNote);
-                        }
-                    }
-                }
+                merged.subjects.push(localSubject);
             }
         }
 
         for (const localEvent of localData.events) {
-            const remoteEvent = merged.events.find(e => e.id === localEvent.id);
-
-            if (!remoteEvent) {
+            const existingIndex = merged.events.findIndex(e => e.id === localEvent.id);
+            if (existingIndex >= 0) {
+                merged.events[existingIndex] = localEvent;
+            } else {
                 merged.events.push(localEvent);
-            } else if (new Date(localEvent.updatedAt || 0) > new Date(remoteEvent.updatedAt || 0)) {
-                Object.assign(remoteEvent, localEvent);
             }
         }
 
         return merged;
     }
 
-    async uploadData(data) {
+    async uploadData(data, forceUpdate = false) {
         const cleanData = this.validateAndCleanData(data);
         
-        await this.createOrUpdateFile(
-            'data/subjects.json',
-            JSON.stringify(cleanData.subjects, null, 2),
-            `Sync subjects - ${new Date().toISOString()}`
-        );
-
-        await this.createOrUpdateFile(
-            'data/events.json',
-            JSON.stringify(cleanData.events, null, 2),
-            `Sync events - ${new Date().toISOString()}`
-        );
-
-        await this.createOrUpdateFile(
-            'data/settings.json',
-            JSON.stringify(cleanData.settings, null, 2),
-            `Sync settings - ${new Date().toISOString()}`
-        );
-
-        const noteIds = [];
-
-        for (const subject of cleanData.subjects) {
-            for (const note of subject.notes) {
-                noteIds.push(note.id);
-
-                const noteData = {
-                    ...note,
-                    subjectId: subject.id
-                };
-
-                await this.createOrUpdateFile(
-                    `data/notes/${note.id}.json`,
-                    JSON.stringify(noteData, null, 2),
-                    `Update note: ${note.title}`
-                );
+        await this.ensureRepository();
+        
+        const updateFile = async (path, content, message, retries = 2) => {
+            for (let attempt = 1; attempt <= retries + 1; attempt++) {
+                try {
+                    if (forceUpdate) {
+                        await this.createOrUpdateFile(path, content, true);
+                    } else {
+                        await this.createOrUpdateFile(path, content, message);
+                    }
+                    return;
+                } catch (error) {
+                    console.log(`Intento ${attempt} falló para ${path}:`, error.message);
+                    
+                    if (attempt <= retries && error.message.includes('409')) {
+                        console.log(`Reintentando ${path} en 1 segundo...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        continue;
+                    }
+                    
+                    throw error;
+                }
             }
-        }
+        };
+        
+        try {
+            console.log('Iniciando upload de datos...');
+            
+            await updateFile(
+                'data/subjects.json',
+                JSON.stringify(cleanData.subjects, null, 2),
+                `Sync subjects - ${new Date().toISOString()}`
+            );
 
-        await this.createOrUpdateFile(
-            'data/notes-index.json',
-            JSON.stringify(noteIds, null, 2),
-            'Update notes index'
-        );
+            await updateFile(
+                'data/events.json',
+                JSON.stringify(cleanData.events, null, 2),
+                `Sync events - ${new Date().toISOString()}`
+            );
+
+            await updateFile(
+                'data/settings.json',
+                JSON.stringify(cleanData.settings, null, 2),
+                `Sync settings - ${new Date().toISOString()}`
+            );
+
+            const noteIds = [];
+
+            for (const subject of cleanData.subjects) {
+                for (const note of subject.notes) {
+                    noteIds.push(note.id);
+
+                    const noteData = {
+                        ...note,
+                        subjectId: subject.id
+                    };
+
+                    await updateFile(
+                        `data/notes/${note.id}.json`,
+                        JSON.stringify(noteData, null, 2),
+                        `Update note: ${note.title}`
+                    );
+                }
+            }
+
+            await updateFile(
+                'data/notes-index.json',
+                JSON.stringify(noteIds, null, 2),
+                'Update notes index'
+            );
+            
+            console.log('Upload de datos completado exitosamente');
+            
+        } catch (error) {
+            console.error('Error durante el upload de datos:', error);
+            throw error;
+        }
     }
 
     async getFile(path) {
@@ -455,8 +414,27 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
         };
     }
 
-    async createOrUpdateFile(path, content, message) {
-        const existingFile = await this.getFile(path);
+    async createOrUpdateFile(path, content, messageOrForce, force = false) {
+        let message, forceUpdate;
+        if (typeof messageOrForce === 'boolean') {
+            forceUpdate = messageOrForce;
+            message = `Actualización ${forceUpdate ? 'forzada' : 'automática'} de ${path}`;
+        } else {
+            message = messageOrForce || `Actualización de ${path}`;
+            forceUpdate = force;
+        }
+
+        let existingFile = null;
+        
+        if (!forceUpdate) {
+            existingFile = await this.getFile(path);
+        } else {
+            try {
+                existingFile = await this.getFile(path);
+            } catch (error) {
+                console.log(`Archivo ${path} no existe, creando nuevo`);
+            }
+        }
 
         let cleanContent = content;
         try {
@@ -475,11 +453,11 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
             content: this.utf8ToBase64(cleanContent)
         };
 
-        if (existingFile) {
+        if (existingFile && existingFile.sha) {
             body.sha = existingFile.sha;
         }
 
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
+        let response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `token ${this.accessToken}`,
@@ -489,8 +467,34 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
             body: JSON.stringify(body)
         });
 
+        if (response.status === 409) {
+            console.log(`Conflicto 409 detectado para ${path}, refrescando SHA...`);
+            
+            try {
+                const latestFile = await this.getFile(path);
+                if (latestFile && latestFile.sha) {
+                    body.sha = latestFile.sha;
+                    
+                    response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${this.accessToken}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    });
+                    
+                    console.log(`Reintento con SHA actualizado: ${response.status}`);
+                }
+            } catch (retryError) {
+                console.error('Error al reintentar después del conflicto 409:', retryError);
+            }
+        }
+
         if (!response.ok) {
-            throw new Error(`Failed to update file ${path}: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Failed to update file ${path}: ${response.status} - ${errorText}`);
         }
 
         return await response.json();
@@ -558,6 +562,8 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
                 syncButton.disabled = false;
             }
         }
+        
+        this.updateSyncButtons();
     }
 
     async triggerSync() {
@@ -565,7 +571,7 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
             const result = await this.syncData(
                 window.cuadernoDigital.subjects,
                 window.cuadernoDigital.events,
-                this.getLocalSettings()
+                window.cuadernoDigital.getAppSettings()
             );
 
             if (result) {
@@ -587,31 +593,31 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
 
     utf8ToBase64(str) {
         try {
-            const bytes = new TextEncoder().encode(str);
-            let binary = '';
-            bytes.forEach(byte => binary += String.fromCharCode(byte));
-            return btoa(binary);
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            return btoa(String.fromCharCode(...data));
         } catch (error) {
-            console.error('Error encoding to base64:', error);
+            console.warn('UTF-8 encoding failed, using fallback:', error);
             return btoa(unescape(encodeURIComponent(str)));
         }
     }
 
     base64ToUtf8(str) {
         try {
-            const binary = atob(str);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) {
-                bytes[i] = binary.charCodeAt(i);
+            const binaryString = atob(str);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
             }
-            return new TextDecoder().decode(bytes);
+            const decoder = new TextDecoder();
+            return decoder.decode(bytes);
         } catch (error) {
-            console.error('Error decoding from base64:', error);
+            console.warn('UTF-8 decoding failed, using fallback:', error);
             try {
                 return decodeURIComponent(escape(atob(str)));
             } catch (fallbackError) {
-                console.error('Fallback decoding also failed:', fallbackError);
-                return str;
+                console.error('All decoding methods failed:', fallbackError);
+                return atob(str);
             }
         }
     }
@@ -681,6 +687,143 @@ Los datos se sincronizan automáticamente cuando usas Escriba en cualquier dispo
             githubStatus.className = 'github-status error';
             githubStatusText.textContent = 'Error de conexión';
             githubStatus.title = `Error: ${message}\nHaz click para reintentar`;
+        }
+    }
+
+    getLocalData() {
+        try {
+            if (window.cuadernoDigital) {
+                return {
+                    subjects: window.cuadernoDigital.subjects || [],
+                    events: window.cuadernoDigital.events || [],
+                    settings: window.cuadernoDigital.getAppSettings ? window.cuadernoDigital.getAppSettings() : {}
+                };
+            }
+            
+            const subjects = localStorage.getItem('cuadernoDigital');
+            const events = localStorage.getItem('cuadernoEvents');
+            
+            return {
+                subjects: subjects ? JSON.parse(subjects) : [],
+                events: events ? JSON.parse(events) : [],
+                settings: this.getLocalSettings()
+            };
+        } catch (error) {
+            console.error('Error obteniendo datos locales:', error);
+            return {
+                subjects: [],
+                events: [],
+                settings: {}
+            };
+        }
+    }
+
+    async forcePush() {
+        if (!this.isAuthenticated) {
+            this.showError('No estás conectado a GitHub');
+            return false;
+        }
+
+        if (this.syncInProgress) {
+            this.showError('Sincronización en progreso, espera...');
+            return false;
+        }
+
+        try {
+            this.syncInProgress = true;
+            this.updateSyncButtons();
+            
+            const localData = this.getLocalData();
+            if (!localData) {
+                this.showError('No hay datos locales para subir');
+                return false;
+            }
+
+            await this.uploadData(localData, true);
+            this.showSuccess('Push completado: Datos subidos a GitHub');
+            return true;
+
+        } catch (error) {
+            console.error('Error en force push:', error);
+            this.showError(`Error en push: ${error.message}`);
+            return false;
+        } finally {
+            this.syncInProgress = false;
+            this.updateSyncButtons();
+        }
+    }
+
+    async forcePull() {
+        if (!this.isAuthenticated) {
+            this.showError('No estás conectado a GitHub');
+            return false;
+        }
+
+        if (this.syncInProgress) {
+            this.showError('Sincronización en progreso, espera...');
+            return false;
+        }
+
+        try {
+            this.syncInProgress = true;
+            this.updateSyncButtons();
+
+            const remoteData = await this.getRemoteData();
+            if (!remoteData) {
+                this.showError('No se pudieron descargar los datos desde GitHub');
+                return false;
+            }
+
+            localStorage.setItem('cuadernoDigital', JSON.stringify(remoteData.subjects));
+            localStorage.setItem('cuadernoEvents', JSON.stringify(remoteData.events));
+            this.lastSyncTime = new Date().toISOString();
+            localStorage.setItem('last_sync_time', this.lastSyncTime);
+
+            this.showSuccess('Pull completado: Datos descargados desde GitHub');
+            
+            if (window.cuadernoDigital) {
+                window.cuadernoDigital.subjects = remoteData.subjects;
+                window.cuadernoDigital.events = remoteData.events;
+                window.cuadernoDigital.saveCarpeta();
+                window.cuadernoDigital.renderSubjects();
+                window.cuadernoDigital.switchView('subjects');
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('Error en force pull:', error);
+            this.showError(`Error en pull: ${error.message}`);
+            return false;
+        } finally {
+            this.syncInProgress = false;
+            this.updateSyncButtons();
+        }
+    }
+
+    updateSyncButtons() {
+        const pullButton = document.getElementById('pullButton');
+        const pushButton = document.getElementById('pushButton');
+        const syncButtons = document.getElementById('syncButtons');
+
+        if (this.isAuthenticated) {
+            if (syncButtons) syncButtons.style.display = 'flex';
+            
+            if (pullButton) {
+                pullButton.disabled = this.syncInProgress;
+                pullButton.innerHTML = this.syncInProgress ? 
+                    '<i class="fas fa-spinner fa-spin"></i>' : 
+                    '<i class="fas fa-download"></i>';
+            }
+            
+            if (pushButton) {
+                pushButton.disabled = this.syncInProgress;
+                pushButton.innerHTML = this.syncInProgress ? 
+                    '<i class="fas fa-spinner fa-spin"></i>' : 
+                    '<i class="fas fa-upload"></i>';
+            }
+        } else {
+            if (syncButtons) syncButtons.style.display = 'none';
         }
     }
 }

@@ -375,7 +375,32 @@ class CuadernoDigital {
             }
         });
 
+        editor.commands.addCommand({
+            name: 'exitCodeEditor',
+            bindKey: { win: 'Escape', mac: 'Escape' },
+            exec: () => {
+                const noteContent = document.getElementById('noteContent');
+                const range = document.createRange();
+                const selection = window.getSelection();
+                
+                let nextSibling = editorContainer.nextSibling;
+                if (!nextSibling || nextSibling.nodeType !== Node.TEXT_NODE) {
+                    const lineBreak = document.createElement('br');
+                    editorContainer.parentNode.insertBefore(lineBreak, nextSibling);
+                    nextSibling = lineBreak;
+                }
+                
+                range.setStartAfter(editorContainer);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                noteContent.focus();
+            }
+        });
+
         const noteContent = document.getElementById('noteContent');
+        
         editor.on('focus', () => {
             noteContent.currentFocusedEditor = editor;
         });
@@ -2161,6 +2186,96 @@ class CuadernoDigital {
         });
     }
 
+    insertTabIndentation() {
+        const tabSpaces = '    ';
+        
+        try {
+            if (document.execCommand) {
+                document.execCommand('insertText', false, tabSpaces);
+            } else {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const textNode = document.createTextNode(tabSpaces);
+                    range.insertNode(textNode);
+                    
+                    range.setStartAfter(textNode);
+                    range.setEndAfter(textNode);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            }
+            
+            this.showIndentationFeedback();
+            
+        } catch (error) {
+            console.warn('Error insertando indentación:', error);
+            try {
+                document.execCommand('insertHTML', false, '&nbsp;&nbsp;&nbsp;&nbsp;');
+                this.showIndentationFeedback();
+            } catch (e) {
+                console.error('No se pudo insertar indentación:', e);
+            }
+        }
+    }
+
+    showIndentationFeedback() {
+        const noteContent = document.getElementById('noteContent');
+        
+        noteContent.classList.add('indenting');
+        
+        setTimeout(() => {
+            noteContent.classList.remove('indenting');
+        }, 150);
+    }
+
+    handleTabIndentationForSelection(range, isShiftTab) {
+        try {
+            const selection = window.getSelection();
+            const selectedContent = range.extractContents();
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(selectedContent);
+            let content = tempDiv.innerHTML;
+            
+            if (isShiftTab) {
+                content = this.reduceIndentation(content);
+            } else {
+                content = this.increaseIndentation(content);
+            }
+            
+            const fragment = range.createContextualFragment(content);
+            range.insertNode(fragment);
+            
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+        } catch (error) {
+            console.warn('Error procesando indentación de selección:', error);
+            if (!isShiftTab) {
+                document.execCommand('indent');
+            } else {
+                document.execCommand('outdent');
+            }
+        }
+    }
+
+    increaseIndentation(htmlContent) {
+        const tabSpaces = '&nbsp;&nbsp;&nbsp;&nbsp;';
+        
+        return htmlContent
+            .replace(/^/gm, tabSpaces)
+            .replace(/(<br\s*\/?>)/gi, '$1' + tabSpaces)
+            .replace(/(<div[^>]*>)/gi, '$1' + tabSpaces);
+    }
+
+    reduceIndentation(htmlContent) {
+        return htmlContent
+            .replace(/^(&nbsp;|\s){1,4}/gm, '')
+            .replace(/(<br\s*\/?>)(\s|&nbsp;){1,4}/gi, '$1')
+            .replace(/(<div[^>]*>)(\s|&nbsp;){1,4}/gi, '$1');
+    }
+
     handleKeyboardShortcuts(e) {
         const noteContent = document.getElementById('noteContent');
         const activeElement = document.activeElement;
@@ -2186,6 +2301,26 @@ class CuadernoDigital {
         }
 
         if (!noteContent.contains(activeElement)) return;
+
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                
+                if (!range.collapsed) {
+                    this.handleTabIndentationForSelection(range, e.shiftKey);
+                } else {
+                    this.insertTabIndentation();
+                }
+            } else {
+                this.insertTabIndentation();
+            }
+            
+            this.debouncedSave();
+            return;
+        }
 
         if (e.ctrlKey || e.metaKey) {
             switch (e.key) {

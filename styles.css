@@ -2844,7 +2844,7 @@ header h1 i {
 }
 
 .inline-ace-editor {
-    border: 2px solid var(--accent-blue);
+    border: 2px solid var(--border-color);
     border-radius: 8px;
     margin: 1rem 0;
     background: var(--bg-secondary);
@@ -2853,11 +2853,12 @@ header h1 i {
     max-height: 500px;
     height: auto;
     position: relative;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    contain: layout style size;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+    contain: layout style;
     resize: none;
-    will-change: auto;
+    will-change: transform;
+    cursor: text;
 }
 
 .inline-ace-editor .ace_editor,
@@ -2879,27 +2880,62 @@ header h1 i {
 }
 
 .inline-ace-editor:not(.ace-resizing) {
-    transition: height 0.1s ease-out;
+    transition: height 0.2s ease-out, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
 }
 
 .inline-ace-editor.ace-resizing {
-    transition: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-.inline-ace-editor:focus-within {
+.inline-ace-editor[data-initialized="false"],
+.inline-ace-editor[data-initialized="initializing"] {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.inline-ace-editor[data-initialized="true"] {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.inline-ace-editor[data-initialized="error"] {
+    border-color: var(--accent-red);
+    background: rgba(255, 71, 87, 0.1);
+}
+
+.inline-ace-editor:focus-within,
+.inline-ace-editor.ace-focused {
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.inline-ace-editor:hover {
+    border-color: var(--accent-blue);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .ace-editor-placeholder {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    padding: 0.5rem;
+    padding: 1rem;
     margin: 1rem 0;
     color: var(--text-secondary);
     font-style: italic;
     font-size: 0.875rem;
+    text-align: center;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ace-editor-placeholder i {
+    color: var(--accent-orange);
+    font-size: 1.2rem;
 }
 
 .note-language-select {

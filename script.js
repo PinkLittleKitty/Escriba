@@ -264,87 +264,150 @@ class CuadernoDigital {
 
     insertCodeBlock() {
         const noteContent = document.getElementById('noteContent');
-        noteContent.focus();
+        
+        if (!noteContent.contains(document.activeElement)) {
+            noteContent.focus();
+        }
 
         const editorContainer = document.createElement('div');
         editorContainer.className = 'inline-ace-editor';
-        editorContainer.id = `aceEditor-${Date.now()}`;
+        editorContainer.id = `aceEditor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        editorContainer.setAttribute('data-initialized', 'false');
 
         const selection = window.getSelection();
+        let insertPosition = null;
+
         if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
-            range.insertNode(editorContainer);
-            range.collapse(false);
-        } else {
-            noteContent.appendChild(editorContainer);
+            
+            if (noteContent.contains(range.commonAncestorContainer)) {
+                insertPosition = range;
+            }
         }
 
-        this.initializeAceEditor(editorContainer);
-        this.saveCurrentNote();
+        if (insertPosition) {
+            insertPosition.deleteContents();
+            
+            const beforeText = document.createTextNode('\n');
+            insertPosition.insertNode(beforeText);
+            insertPosition.setStartAfter(beforeText);
+            
+            insertPosition.insertNode(editorContainer);
+            insertPosition.setStartAfter(editorContainer);
+            
+            const afterText = document.createTextNode('\n');
+            insertPosition.insertNode(afterText);
+            
+        } else {
+            noteContent.appendChild(document.createElement('br'));
+            noteContent.appendChild(editorContainer);
+            noteContent.appendChild(document.createElement('br'));
+        }
+
+        setTimeout(() => {
+            this.initializeAceEditor(editorContainer);
+        }, 50);
     }
 
     initializeAceEditor(editorContainer, initialCode = '') {
-        const editor = ace.edit(editorContainer.id);
-        const currentLanguage = this.getCurrentNoteLanguage();
-
-        editor.setTheme(this.getCurrentTheme());
-        editor.session.setMode(this.getAceModeForLanguage(currentLanguage));
-        editor.setOptions({
-            enableBasicAutocompletion: true,
-            enableSnippets: true,
-            enableLiveAutocompletion: true,
-            fontSize: 14,
-            fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-            showPrintMargin: false,
-            wrap: true,
-            useWorker: false,
-            maxLines: 25,
-            minLines: 3,
-            autoScrollEditorIntoView: false,
-            scrollPastEnd: 0,
-            behavioursEnabled: true,
-            wrapBehavioursEnabled: true,
-            highlightActiveLine: true,
-            showGutter: true,
-            displayIndentGuides: true,
-            cursorStyle: 'ace',
-            mergeUndoDeltas: true,
-            animatedScroll: false
-        });
-
-        editorContainer.style.height = '80px';
-
-        if (initialCode) {
-            editor.setValue(initialCode);
-            editor.clearSelection();
-        } else {
-            editor.selectAll();
+        if (!editorContainer || editorContainer.getAttribute('data-initialized') === 'true') {
+            console.warn('Editor container already initialized or not found');
+            return null;
         }
 
-        editorContainer.aceEditor = editor;
-        editorContainer.setAttribute('data-language', currentLanguage);
-
-        setTimeout(() => {
-            this.setupAutoResize(editor, editorContainer);
-        }, 100);
-
-        editor.session.on('change', () => {
-            this.debouncedSave();
-        });
-
-        this.setupCodeEditorKeyboard(editor, editorContainer);
-
-        setTimeout(() => {
-            editor.focus();
-            if (initialCode) {
-                editor.navigateFileEnd();
-            } else {
-                editor.selectAll();
+        try {
+            editorContainer.setAttribute('data-initialized', 'initializing');
+            
+            const currentLanguage = this.getCurrentNoteLanguage();
+            
+            if (editorContainer.aceEditor) {
+                editorContainer.aceEditor.destroy();
+                editorContainer.aceEditor = null;
             }
-            editor.resize(true);
-        }, 150);
 
-        return editor;
+            editorContainer.innerHTML = '';
+            
+            editorContainer.style.height = '80px';
+            editorContainer.style.minHeight = '80px';
+            editorContainer.style.position = 'relative';
+            editorContainer.style.overflow = 'hidden';
+
+            const editor = ace.edit(editorContainer.id);
+            
+            editor.setTheme(this.getCurrentTheme());
+            editor.session.setMode(this.getAceModeForLanguage(currentLanguage));
+            
+            editor.setOptions({
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: true,
+                fontSize: 14,
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                showPrintMargin: false,
+                wrap: true,
+                useWorker: false,
+                maxLines: 25,
+                minLines: 3,
+                autoScrollEditorIntoView: false,
+                scrollPastEnd: 0,
+                behavioursEnabled: true,
+                wrapBehavioursEnabled: true,
+                highlightActiveLine: true,
+                showGutter: true,
+                displayIndentGuides: true,
+                cursorStyle: 'ace',
+                mergeUndoDeltas: true,
+                animatedScroll: false,
+                tabSize: 4,
+                useSoftTabs: true
+            });
+
+            if (initialCode) {
+                editor.setValue(initialCode, -1);
+            }
+
+            editorContainer.aceEditor = editor;
+            editorContainer.setAttribute('data-language', currentLanguage);
+
+            this.setupCodeEditorEvents(editor, editorContainer);
+            
+            this.setupCodeEditorKeyboard(editor, editorContainer);
+
+            this.setupAutoResize(editor, editorContainer);
+
+            setTimeout(() => {
+                try {
+                    editor.resize(true);
+                    
+                    if (!initialCode) {
+                        editor.focus();
+                    }
+                    
+                    editorContainer.setAttribute('data-initialized', 'true');
+                    
+                    this.updateEditorHeight(editor, editorContainer);
+                    
+                } catch (resizeError) {
+                    console.warn('Error in editor final setup:', resizeError);
+                }
+            }, 100);
+
+            return editor;
+
+        } catch (error) {
+            console.error('Error initializing ACE editor:', error);
+            editorContainer.setAttribute('data-initialized', 'error');
+            
+            editorContainer.innerHTML = `
+                <div style="padding: 1rem; background: var(--bg-tertiary); color: var(--text-secondary); 
+                           border-radius: 4px; text-align: center;">
+                    <i class="fas fa-exclamation-triangle"></i> Error al cargar editor de código
+                    <br><small>Intentá recargar la página</small>
+                </div>`;
+            
+            return null;
+        }
     }
 
     setupCodeEditorKeyboard(editor, editorContainer) {
@@ -412,67 +475,169 @@ class CuadernoDigital {
         });
     }
 
+    setupCodeEditorEvents(editor, editorContainer) {
+        const noteContent = document.getElementById('noteContent');
+        
+        editor.on('focus', () => {
+            noteContent.currentFocusedEditor = editor;
+            editorContainer.classList.add('ace-focused');
+        });
+
+        editor.on('blur', () => {
+            if (noteContent.currentFocusedEditor === editor) {
+                noteContent.currentFocusedEditor = null;
+            }
+            editorContainer.classList.remove('ace-focused');
+        });
+
+        let changeTimeout;
+        editor.session.on('change', () => {
+            clearTimeout(changeTimeout);
+            changeTimeout = setTimeout(() => {
+                this.debouncedSave();
+            }, 300);
+            
+            this.updateEditorHeight(editor, editorContainer);
+        });
+
+        editor.on('changeStatus', () => {
+            if (editor.renderer) {
+                editor.resize(true);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!editorContainer.contains(e.target) && noteContent.currentFocusedEditor === editor) {
+                if (noteContent.contains(e.target)) {
+                    const range = document.createRange();
+                    const selection = window.getSelection();
+                    
+                    try {
+                        range.setStart(e.target, 0);
+                        range.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        noteContent.focus();
+                    } catch (error) {
+                        noteContent.focus();
+                    }
+                }
+            }
+        });
+    }
+
     deleteCodeBlock(editorContainer) {
         if (confirm('¿Eliminar este bloque de código?')) {
+            if (editorContainer.aceEditor) {
+                try {
+                    editorContainer.aceEditor.destroy();
+                } catch (error) {
+                    console.warn('Error destroying editor during delete:', error);
+                }
+                editorContainer.aceEditor = null;
+            }
+            
+            if (editorContainer._resizeObserver) {
+                editorContainer._resizeObserver.disconnect();
+                editorContainer._resizeObserver = null;
+            }
+
+            const noteContent = document.getElementById('noteContent');
+            if (noteContent.currentFocusedEditor === editorContainer.aceEditor) {
+                noteContent.currentFocusedEditor = null;
+            }
+
+            const range = document.createRange();
+            const selection = window.getSelection();
+            
+            try {
+                range.setStartAfter(editorContainer);
+                range.collapse(true);
+                
+                const nextNode = editorContainer.nextSibling;
+                if (!nextNode || nextNode.nodeName !== 'BR') {
+                    const br = document.createElement('br');
+                    editorContainer.parentNode.insertBefore(br, nextNode);
+                }
+                
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+            } catch (error) {
+                console.warn('Error positioning cursor after delete:', error);
+            }
+
             editorContainer.remove();
+            
+            noteContent.focus();
+            
             this.saveCurrentNote();
             this.showToast('Bloque de código eliminado', 'success');
-            document.getElementById('noteContent').focus();
         }
     }
 
     setupAutoResize(editor, editorContainer) {
-        let resizeTimeout = null;
-        let isResizing = false;
-        let lastHeight = 0;
-
-        const updateHeight = () => {
-            if (isResizing) return;
-
-            try {
-                isResizing = true;
-                editorContainer.classList.add('ace-resizing');
-
-                const session = editor.getSession();
-                const lines = session.getLength();
-                const lineHeight = editor.renderer.lineHeight || 18;
-                const minHeight = 3 * lineHeight + 20;
-                const maxHeight = Math.min(500, window.innerHeight * 0.4);
-
-                let desiredHeight = Math.max(minHeight, lines * lineHeight + 30);
-                desiredHeight = Math.min(desiredHeight, maxHeight);
-
-                if (Math.abs(lastHeight - desiredHeight) > 15) {
-                    lastHeight = desiredHeight;
-                    editorContainer.style.height = desiredHeight + 'px';
-
-                    setTimeout(() => {
-                        if (editor.renderer) {
-                            editor.resize(true);
-                        }
-                    }, 16);
+        editorContainer._resizeHandler = () => this.updateEditorHeight(editor, editorContainer);
+        
+        if (window.ResizeObserver) {
+            const resizeObserver = new ResizeObserver(() => {
+                if (editor.renderer) {
+                    editor.resize(true);
                 }
-
-            } catch (error) {
-                console.warn('Error in ACE editor resize:', error);
-            } finally {
-                setTimeout(() => {
-                    isResizing = false;
-                    editorContainer.classList.remove('ace-resizing');
-                }, 150);
-            }
-        };
-
-        const debouncedUpdateHeight = () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(updateHeight, 200);
-        };
-
-        editor.session.on('change', debouncedUpdateHeight);
+            });
+            resizeObserver.observe(editorContainer);
+            editorContainer._resizeObserver = resizeObserver;
+        }
 
         setTimeout(() => {
-            updateHeight();
-        }, 300);
+            this.updateEditorHeight(editor, editorContainer);
+        }, 100);
+    }
+
+    updateEditorHeight(editor, editorContainer) {
+        if (!editor || !editor.renderer || !editorContainer) {
+            return;
+        }
+
+        try {
+            if (editorContainer.classList.contains('ace-resizing')) {
+                return;
+            }
+
+            editorContainer.classList.add('ace-resizing');
+
+            const session = editor.getSession();
+            if (!session) return;
+
+            const lines = session.getLength();
+            const lineHeight = editor.renderer.lineHeight || 18;
+            const gutterWidth = editor.renderer.gutterWidth || 0;
+            
+            const minHeight = Math.max(80, 3 * lineHeight + 20);
+            const maxHeight = Math.min(500, window.innerHeight * 0.5);
+            
+            let desiredHeight = Math.max(minHeight, lines * lineHeight + 40);
+            desiredHeight = Math.min(desiredHeight, maxHeight);
+
+            const currentHeight = parseInt(editorContainer.style.height) || 0;
+            if (Math.abs(currentHeight - desiredHeight) > 5) {
+                editorContainer.style.height = desiredHeight + 'px';
+                
+                setTimeout(() => {
+                    if (editor.renderer) {
+                        editor.resize(true);
+                        editor.renderer.updateFull();
+                    }
+                }, 10);
+            }
+
+        } catch (error) {
+            console.warn('Error updating editor height:', error);
+        } finally {
+            setTimeout(() => {
+                editorContainer.classList.remove('ace-resizing');
+            }, 100);
+        }
     }
 
     serializeNoteContent() {
@@ -501,10 +666,49 @@ class CuadernoDigital {
 
     restoreNoteContent(content) {
         const noteContent = document.getElementById('noteContent');
+        
+        this.cleanupExistingEditors();
+        
         noteContent.innerHTML = content;
 
         const placeholders = noteContent.querySelectorAll('.ace-editor-placeholder');
-        placeholders.forEach(placeholder => {
+        
+        if (placeholders.length === 0) {
+            return;
+        }
+
+        let delay = 0;
+        placeholders.forEach((placeholder, index) => {
+            setTimeout(() => {
+                this.restoreSingleEditor(placeholder);
+            }, delay);
+            delay += 100;
+        });
+    }
+
+    cleanupExistingEditors() {
+        const noteContent = document.getElementById('noteContent');
+        const existingEditors = noteContent.querySelectorAll('.inline-ace-editor');
+        
+        existingEditors.forEach(container => {
+            if (container.aceEditor) {
+                try {
+                    container.aceEditor.destroy();
+                } catch (error) {
+                    console.warn('Error destroying editor:', error);
+                }
+                container.aceEditor = null;
+            }
+            
+            if (container._resizeObserver) {
+                container._resizeObserver.disconnect();
+                container._resizeObserver = null;
+            }
+        });
+    }
+
+    restoreSingleEditor(placeholder) {
+        try {
             const code = placeholder.getAttribute('data-code') || '';
             const language = placeholder.getAttribute('data-language') || 'javascript';
 
@@ -514,13 +718,31 @@ class CuadernoDigital {
 
             placeholder.parentNode.replaceChild(editorContainer, placeholder);
 
-            this.initializeAceEditor(editorContainer, code);
+            setTimeout(() => {
+                const editor = this.initializeAceEditor(editorContainer, code);
+                
+                if (editor && editorContainer.aceEditor) {
+                    editor.session.setMode(this.getAceModeForLanguage(language));
+                    editorContainer.setAttribute('data-language', language);
+                    
+                    setTimeout(() => {
+                        if (code) {
+                            editor.setValue(code, -1);
+                            editor.clearSelection();
+                        }
+                        this.updateEditorHeight(editor, editorContainer);
+                    }, 50);
+                }
+            }, 10);
 
-            if (editorContainer.aceEditor) {
-                editorContainer.aceEditor.session.setMode(this.getAceModeForLanguage(language));
-                editorContainer.setAttribute('data-language', language);
-            }
-        });
+        } catch (error) {
+            console.error('Error restoring editor:', error);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'ace-editor-placeholder';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error al restaurar editor de código`;
+            placeholder.parentNode.replaceChild(errorDiv, placeholder);
+        }
     }
 
     getCurrentNoteLanguage() {
@@ -561,8 +783,26 @@ class CuadernoDigital {
                 languageSelect.value = language;
             }
 
+            this.updateAllEditorsLanguage(language);
+
             this.showToast(`Lenguaje de código cambiado a ${language}`, 'success');
         }
+    }
+
+    updateAllEditorsLanguage(language) {
+        const noteContent = document.getElementById('noteContent');
+        const editors = noteContent.querySelectorAll('.inline-ace-editor');
+        
+        editors.forEach(editorContainer => {
+            if (editorContainer.aceEditor) {
+                try {
+                    editorContainer.aceEditor.session.setMode(this.getAceModeForLanguage(language));
+                    editorContainer.setAttribute('data-language', language);
+                } catch (error) {
+                    console.warn('Error updating editor language:', error);
+                }
+            }
+        });
     }
 
     getCurrentTheme() {
@@ -1580,6 +1820,8 @@ class CuadernoDigital {
             this.closeMobileMenu();
         }
 
+        this.cleanupExistingEditors();
+        
         this.currentNoteId = noteId;
 
         document.getElementById('welcomeScreen').style.display = 'none';

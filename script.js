@@ -222,6 +222,7 @@ class CuadernoDigital {
         });
 
         document.getElementById('highlightBtn').addEventListener('click', () => this.highlightText());
+        document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertDateBtn').addEventListener('click', () => this.insertDate());
         document.getElementById('insertLinkBtn').addEventListener('click', () => this.showLinkModal());
@@ -234,7 +235,25 @@ class CuadernoDigital {
             }
         }, 2000);
 
+        document.addEventListener('selectionchange', () => {
+            const noteContent = document.getElementById('noteContent');
+            const selection = window.getSelection();
+            
+            if (selection.rangeCount > 0 && noteContent) {
+                const range = selection.getRangeAt(0);
+                if (noteContent.contains(range.commonAncestorContainer) || 
+                    noteContent === range.commonAncestorContainer) {
+                    this.updateToolbarStates();
+                }
+            }
+        });
 
+        document.addEventListener('mouseup', (e) => {
+            const noteContent = document.getElementById('noteContent');
+            if (noteContent && noteContent.contains(e.target)) {
+                setTimeout(() => this.updateToolbarStates(), 10);
+            }
+        });
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -506,24 +525,16 @@ class CuadernoDigital {
             }
         });
 
-        document.addEventListener('click', (e) => {
+        const handleClickOutsideEditor = (e) => {
             if (!editorContainer.contains(e.target) && noteContent.currentFocusedEditor === editor) {
                 if (noteContent.contains(e.target)) {
-                    const range = document.createRange();
-                    const selection = window.getSelection();
-                    
-                    try {
-                        range.setStart(e.target, 0);
-                        range.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                        noteContent.focus();
-                    } catch (error) {
-                        noteContent.focus();
-                    }
+                    noteContent.focus();
                 }
             }
-        });
+        };
+
+        editorContainer._clickHandler = handleClickOutsideEditor;
+        document.addEventListener('click', handleClickOutsideEditor);
     }
 
     deleteCodeBlock(editorContainer) {
@@ -540,6 +551,11 @@ class CuadernoDigital {
             if (editorContainer._resizeObserver) {
                 editorContainer._resizeObserver.disconnect();
                 editorContainer._resizeObserver = null;
+            }
+
+            if (editorContainer._clickHandler) {
+                document.removeEventListener('click', editorContainer._clickHandler);
+                editorContainer._clickHandler = null;
             }
 
             const noteContent = document.getElementById('noteContent');
@@ -703,6 +719,11 @@ class CuadernoDigital {
             if (container._resizeObserver) {
                 container._resizeObserver.disconnect();
                 container._resizeObserver = null;
+            }
+
+            if (container._clickHandler) {
+                document.removeEventListener('click', container._clickHandler);
+                container._clickHandler = null;
             }
         });
     }
@@ -2416,6 +2437,129 @@ class CuadernoDigital {
             document.execCommand('insertHTML', false, `<mark>${selectedText}</mark>`);
             this.saveCurrentNote();
         }
+
+        setTimeout(() => this.updateToolbarStates(), 10);
+    }
+
+    toggleInlineCode() {
+        const content = document.getElementById('noteContent');
+        content.focus();
+
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) {
+            this.insertEmptyInlineCode();
+            return;
+        }
+
+        const range = selection.getRangeAt(0);
+        
+        if (range.collapsed) {
+            this.insertEmptyInlineCode();
+            return;
+        }
+
+        let parentElement = range.commonAncestorContainer;
+        if (parentElement.nodeType === Node.TEXT_NODE) {
+            parentElement = parentElement.parentElement;
+        }
+
+        if (parentElement.tagName === 'CODE' || parentElement.closest('code')) {
+            this.removeInlineCodeFormat(parentElement.closest('code') || parentElement);
+            return;
+        }
+
+        const selectedText = range.toString();
+        if (selectedText.trim()) {
+            try {
+                document.execCommand('insertHTML', false, `<code class="inline-code">${selectedText}</code>`);
+                this.saveCurrentNote();
+                this.showToast('Código inline aplicado', 'success');
+            } catch (error) {
+                console.warn('Error applying inline code:', error);
+                this.insertInlineCodeElement(selectedText, range);
+            }
+        }
+
+        setTimeout(() => this.updateToolbarStates(), 10);
+    }
+
+    insertEmptyInlineCode() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            
+            try {
+                const codeElement = document.createElement('code');
+                codeElement.className = 'inline-code';
+                codeElement.textContent = 'código';
+                
+                range.deleteContents();
+                range.insertNode(codeElement);
+                
+                range.selectNodeContents(codeElement);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                this.saveCurrentNote();
+                this.showToast('Código inline insertado - escribí tu código', 'info');
+                
+            } catch (error) {
+                console.warn('Error inserting empty inline code:', error);
+                document.execCommand('insertHTML', false, '<code class="inline-code">código</code>');
+                this.saveCurrentNote();
+            }
+        }
+    }
+
+    insertInlineCodeElement(text, range) {
+        try {
+            const codeElement = document.createElement('code');
+            codeElement.className = 'inline-code';
+            codeElement.textContent = text;
+            
+            range.deleteContents();
+            range.insertNode(codeElement);
+            
+            range.setStartAfter(codeElement);
+            range.collapse(true);
+            
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            this.saveCurrentNote();
+            this.showToast('Código inline aplicado', 'success');
+            
+        } catch (error) {
+            console.error('Error creating inline code element:', error);
+        }
+    }
+
+    removeInlineCodeFormat(codeElement) {
+        try {
+            const text = codeElement.textContent;
+            const textNode = document.createTextNode(text);
+            
+            codeElement.parentNode.replaceChild(textNode, codeElement);
+            
+            const range = document.createRange();
+            const selection = window.getSelection();
+            
+            range.setStartAfter(textNode);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            this.saveCurrentNote();
+            this.showToast('Formato de código removido', 'success');
+            
+            setTimeout(() => this.updateToolbarStates(), 10);
+            
+        } catch (error) {
+            console.warn('Error removing inline code format:', error);
+            document.execCommand('removeFormat');
+            this.saveCurrentNote();
+        }
     }
 
     updateToolbarStates() {
@@ -2426,6 +2570,23 @@ class CuadernoDigital {
                 btn.classList.toggle('active', document.queryCommandState(command));
             }
         });
+
+        const inlineCodeBtn = document.getElementById('inlineCodeBtn');
+        if (inlineCodeBtn) {
+            const selection = window.getSelection();
+            let isInCodeElement = false;
+            
+            if (selection.rangeCount > 0) {
+                let element = selection.getRangeAt(0).commonAncestorContainer;
+                if (element.nodeType === Node.TEXT_NODE) {
+                    element = element.parentElement;
+                }
+                
+                isInCodeElement = element.tagName === 'CODE' || element.closest('code');
+            }
+            
+            inlineCodeBtn.classList.toggle('active', isInCodeElement);
+        }
     }
 
     insertTabIndentation() {
@@ -2581,6 +2742,11 @@ class CuadernoDigital {
                 case 's':
                     e.preventDefault();
                     this.saveCurrentNote();
+                    break;
+                case '`':
+                case 'Backquote':
+                    e.preventDefault();
+                    this.toggleInlineCode();
                     break;
                 case 'z':
                     if (!focusedEditor) {

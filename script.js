@@ -1884,6 +1884,20 @@ class CuadernoDigital {
         return types[type] || '📝 Apuntes de Clase';
     }
 
+    getNoteTypeIcon(type) {
+        const icons = {
+            lecture: '📝',
+            assignment: '📋',
+            study: '📚',
+            lab: '🧪',
+            project: '🚀',
+            exam: '📊',
+            summary: '📄',
+            exercise: '✏️'
+        };
+        return icons[type] || '📝';
+    }
+
     extractTextPreview(html) {
         if (!html) return 'Sin contenido';
 
@@ -3239,7 +3253,7 @@ class CuadernoDigital {
         notesList.innerHTML = filteredNotes.map(note => `
             <div class="link-note-item" data-note-id="${note.id}">
                 <div class="link-note-icon">
-                    ${this.getEventTypeIcon(note.type || 'lecture')}
+                    ${this.getNoteTypeIcon(note.type || 'lecture')}
                 </div>
                 <div class="link-note-details">
                     <div class="link-note-title">${this.escapeHtml(note.title)}</div>

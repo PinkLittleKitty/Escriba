@@ -206,7 +206,10 @@ class CuadernoDigital {
 
         document.getElementById('noteTitle').addEventListener('input', () => this.debouncedSave());
         document.getElementById('noteContent').addEventListener('input', () => this.debouncedSave());
-        document.getElementById('noteTypeSelect').addEventListener('change', () => this.saveCurrentNote());
+        document.getElementById('noteTypeSelect').addEventListener('change', (e) => {
+            this.handleNoteTypeChange(e.target.value);
+            this.saveCurrentNote();
+        });
         document.getElementById('noteLanguageSelect').addEventListener('change', (e) => this.setNoteLanguage(e.target.value));
         document.getElementById('deleteNoteBtn').addEventListener('click', () => this.deleteCurrentNote());
         document.getElementById('favoriteBtn').addEventListener('click', () => this.toggleFavorite());
@@ -226,6 +229,7 @@ class CuadernoDigital {
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertDateBtn').addEventListener('click', () => this.insertDate());
         document.getElementById('insertLinkBtn').addEventListener('click', () => this.showLinkModal());
+        document.getElementById('mathModeBtn').addEventListener('click', () => this.toggleMathMode());
 
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
 
@@ -1864,6 +1868,8 @@ class CuadernoDigital {
             item.classList.toggle('active', item.dataset.noteId === noteId);
         });
 
+        this.handleNoteTypeChange(note.type || 'lecture');
+
         setTimeout(() => {
             document.getElementById('noteContent').focus();
             this.addLinkListeners();
@@ -1879,7 +1885,8 @@ class CuadernoDigital {
             project: '🚀 Proyecto',
             exam: '📊 Preparación Parcial',
             summary: '📄 Resumen',
-            exercise: '✏️ Ejercicios'
+            exercise: '✏️ Ejercicios',
+            math: '🔢 Matemáticas'
         };
         return types[type] || '📝 Apuntes de Clase';
     }
@@ -1893,7 +1900,8 @@ class CuadernoDigital {
             project: '🚀',
             exam: '📊',
             summary: '📄',
-            exercise: '✏️'
+            exercise: '✏️',
+            math: '🔢'
         };
         return icons[type] || '📝';
     }
@@ -1908,6 +1916,192 @@ class CuadernoDigital {
 
         const preview = textContent.trim().replace(/\s+/g, ' ');
         return preview.length > 150 ? preview.substring(0, 150) + '...' : preview;
+    }
+
+    handleNoteTypeChange(noteType) {
+        if (noteType === 'math') {
+            this.setupMathMode();
+        } else {
+            this.disableMathMode();
+        }
+        
+        setTimeout(() => this.updateToolbarStates(), 50);
+    }
+
+    setupMathMode() {
+        const noteContent = document.getElementById('noteContent');
+        
+        noteContent.classList.add('math-mode');
+        
+        let mathToolbar = document.getElementById('mathToolbar');
+        if (!mathToolbar) {
+            mathToolbar = document.createElement('div');
+            mathToolbar.id = 'mathToolbar';
+            mathToolbar.className = 'math-toolbar';
+            mathToolbar.innerHTML = `
+                <div class="math-toolbar-group">
+                    <span class="math-toolbar-label">Símbolos Matemáticos:</span>
+                    <button class="math-symbol-btn" data-symbol="∞" title="Infinito">∞</button>
+                    <button class="math-symbol-btn" data-symbol="∑" title="Sumatoria">∑</button>
+                    <button class="math-symbol-btn" data-symbol="∫" title="Integral">∫</button>
+                    <button class="math-symbol-btn" data-symbol="∂" title="Derivada parcial">∂</button>
+                    <button class="math-symbol-btn" data-symbol="√" title="Raíz cuadrada">√</button>
+                    <button class="math-symbol-btn" data-symbol="π" title="Pi">π</button>
+                    <button class="math-symbol-btn" data-symbol="θ" title="Theta">θ</button>
+                    <button class="math-symbol-btn" data-symbol="α" title="Alfa">α</button>
+                    <button class="math-symbol-btn" data-symbol="β" title="Beta">β</button>
+                    <button class="math-symbol-btn" data-symbol="λ" title="Lambda">λ</button>
+                    <button class="math-symbol-btn" data-symbol="μ" title="Mu">μ</button>
+                    <button class="math-symbol-btn" data-symbol="σ" title="Sigma">σ</button>
+                </div>
+                <div class="math-toolbar-group">
+                    <span class="math-toolbar-label">Operadores:</span>
+                    <button class="math-symbol-btn" data-symbol="±" title="Más/menos">±</button>
+                    <button class="math-symbol-btn" data-symbol="≤" title="Menor o igual">≤</button>
+                    <button class="math-symbol-btn" data-symbol="≥" title="Mayor o igual">≥</button>
+                    <button class="math-symbol-btn" data-symbol="≠" title="No igual">≠</button>
+                    <button class="math-symbol-btn" data-symbol="≈" title="Aproximadamente">≈</button>
+                    <button class="math-symbol-btn" data-symbol="∈" title="Pertenece a">∈</button>
+                    <button class="math-symbol-btn" data-symbol="∀" title="Para todo">∀</button>
+                    <button class="math-symbol-btn" data-symbol="∃" title="Existe">∃</button>
+                    <button class="math-symbol-btn" data-symbol="∩" title="Intersección">∩</button>
+                    <button class="math-symbol-btn" data-symbol="∪" title="Unión">∪</button>
+                </div>
+                <div class="math-toolbar-group">
+                    <button class="math-function-btn" data-action="fraction" title="Insertar fracción">
+                        <span class="fraction-preview">a/b</span>
+                    </button>
+                    <button class="math-function-btn" data-action="equation" title="Insertar ecuación">
+                        <span>f(x) =</span>
+                    </button>
+                    <button class="math-function-btn" data-action="matrix" title="Insertar matriz">
+                        <span class="matrix-preview">[⋯]</span>
+                    </button>
+                </div>
+            `;
+
+            const toolbar = document.querySelector('.editor-toolbar');
+            toolbar.parentNode.insertBefore(mathToolbar, toolbar.nextSibling);
+
+            mathToolbar.querySelectorAll('.math-symbol-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    this.insertMathSymbol(e.target.dataset.symbol);
+                });
+            });
+
+            mathToolbar.querySelectorAll('.math-function-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    this.insertMathFunction(e.target.dataset.action);
+                });
+            });
+        }
+
+        mathToolbar.style.display = 'flex';
+        
+        this.showToast('Modo matemático activado - símbolos y funciones disponibles', 'info');
+    }
+
+    disableMathMode() {
+        const noteContent = document.getElementById('noteContent');
+        const mathToolbar = document.getElementById('mathToolbar');
+        
+        noteContent.classList.remove('math-mode');
+        
+        if (mathToolbar) {
+            mathToolbar.style.display = 'none';
+        }
+    }
+
+    insertMathSymbol(symbol) {
+        const noteContent = document.getElementById('noteContent');
+        
+        if (!noteContent.contains(document.activeElement)) {
+            noteContent.focus();
+        }
+
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const symbolNode = document.createTextNode(symbol);
+            range.insertNode(symbolNode);
+            range.setStartAfter(symbolNode);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else {
+            document.execCommand('insertText', false, symbol);
+        }
+
+        this.debouncedSave();
+    }
+
+    insertMathFunction(action) {
+        const noteContent = document.getElementById('noteContent');
+        
+        if (!noteContent.contains(document.activeElement)) {
+            noteContent.focus();
+        }
+
+        let template = '';
+        let cursorOffset = 0;
+
+        switch (action) {
+            case 'fraction':
+                template = ' a/b ';
+                cursorOffset = 1;
+                break;
+            case 'equation':
+                template = ' f(x) = ';
+                cursorOffset = 0;
+                break;
+            case 'matrix':
+                template = '\n\n[a₁₁  a₁₂]\n[a₂₁  a₂₂]\n\n';
+                cursorOffset = 3;
+                break;
+        }
+
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const templateNode = document.createTextNode(template);
+            range.insertNode(templateNode);
+            
+            if (cursorOffset > 0) {
+                range.setStart(templateNode, cursorOffset);
+                range.setEnd(templateNode, cursorOffset + 1);
+            } else {
+                range.setStartAfter(templateNode);
+                range.collapse(true);
+            }
+            
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else {
+            document.execCommand('insertText', false, template);
+        }
+
+        this.debouncedSave();
+    }
+
+    toggleMathMode() {
+        if (!this.currentNoteId) {
+            this.showToast('Abrir un apunte primero', 'error');
+            return;
+        }
+
+        const noteTypeSelect = document.getElementById('noteTypeSelect');
+        const currentType = noteTypeSelect.value;
+        
+        if (currentType === 'math') {
+            noteTypeSelect.value = 'lecture';
+            this.handleNoteTypeChange('lecture');
+            this.saveCurrentNote();
+            this.showToast('Modo matemático desactivado', 'info');
+        } else {
+            noteTypeSelect.value = 'math';
+            this.handleNoteTypeChange('math');
+            this.saveCurrentNote();
+        }
     }
 
     toggleFavorite() {
@@ -2601,6 +2795,13 @@ class CuadernoDigital {
             
             inlineCodeBtn.classList.toggle('active', isInCodeElement);
         }
+
+        const mathModeBtn = document.getElementById('mathModeBtn');
+        if (mathModeBtn) {
+            const noteTypeSelect = document.getElementById('noteTypeSelect');
+            const isMathMode = noteTypeSelect && noteTypeSelect.value === 'math';
+            mathModeBtn.classList.toggle('active', isMathMode);
+        }
     }
 
     insertTabIndentation() {
@@ -2761,6 +2962,10 @@ class CuadernoDigital {
                 case 'Backquote':
                     e.preventDefault();
                     this.toggleInlineCode();
+                    break;
+                case 'm':
+                    e.preventDefault();
+                    this.toggleMathMode();
                     break;
                 case 'z':
                     if (!focusedEditor) {

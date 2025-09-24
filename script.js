@@ -227,7 +227,6 @@ class CuadernoDigital {
         document.getElementById('highlightBtn').addEventListener('click', () => this.highlightText());
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
-        document.getElementById('insertDateBtn').addEventListener('click', () => this.insertDate());
         document.getElementById('insertLinkBtn').addEventListener('click', () => this.showLinkModal());
         document.getElementById('mathModeBtn').addEventListener('click', () => this.toggleMathMode());
 
@@ -2127,29 +2126,6 @@ class CuadernoDigital {
 
         const message = note.favorite ? 'Apunte agregado a favoritos' : 'Apunte removido de favoritos';
         this.showToast(message, 'success');
-    }
-
-    insertDate() {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('es-AR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        const content = document.getElementById('noteContent');
-        const selection = window.getSelection();
-
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const dateElement = document.createElement('strong');
-            dateElement.textContent = dateStr;
-            range.insertNode(dateElement);
-            range.collapse(false);
-        }
-
-        this.saveCurrentNote();
     }
 
     printCurrentNote() {

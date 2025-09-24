@@ -329,6 +329,9 @@ class CuadernoDigital {
 
         setTimeout(() => {
             this.initializeAceEditor(editorContainer);
+            setTimeout(() => {
+                this.updateLanguageSelectVisibility();
+            }, 100);
         }, 50);
     }
 
@@ -592,6 +595,8 @@ class CuadernoDigital {
             
             this.saveCurrentNote();
             this.showToast('Bloque de código eliminado', 'success');
+            
+            this.updateLanguageSelectVisibility();
         }
     }
 
@@ -703,6 +708,10 @@ class CuadernoDigital {
             }, delay);
             delay += 100;
         });
+
+        setTimeout(() => {
+            this.updateLanguageSelectVisibility();
+        }, delay + 100);
     }
 
     cleanupExistingEditors() {
@@ -2777,6 +2786,24 @@ class CuadernoDigital {
             const noteTypeSelect = document.getElementById('noteTypeSelect');
             const isMathMode = noteTypeSelect && noteTypeSelect.value === 'math';
             mathModeBtn.classList.toggle('active', isMathMode);
+        }
+
+        this.updateLanguageSelectVisibility();
+    }
+
+    updateLanguageSelectVisibility() {
+        const noteContent = document.getElementById('noteContent');
+        const languageSelect = document.getElementById('noteLanguageSelect');
+        
+        if (!noteContent || !languageSelect) return;
+
+        const codeBlocks = noteContent.querySelectorAll('.inline-ace-editor');
+        const hasCodeBlocks = codeBlocks.length > 0;
+
+        if (hasCodeBlocks) {
+            languageSelect.style.display = 'block';
+        } else {
+            languageSelect.style.display = 'none';
         }
     }
 

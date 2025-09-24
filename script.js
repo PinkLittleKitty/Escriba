@@ -46,6 +46,7 @@ class CuadernoDigital {
 
         this.bindEvents();
         this.loadSettings();
+        this.loadSidebarState();
 
         if (window.githubSync) {
             await this.initializeGitHubSync();
@@ -75,6 +76,24 @@ class CuadernoDigital {
         if (mobileMenuToggle) {
             mobileMenuToggle.addEventListener('click', () => this.toggleMobileMenu());
         }
+
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', () => this.toggleSidebar());
+        }
+
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar) {
+            sidebar.addEventListener('click', (e) => {
+                if (sidebar.classList.contains('compact') && e.target === sidebar) {
+                    this.toggleSidebar();
+                }
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            this.handleWindowResize();
+        });
 
         const mobileOverlay = document.getElementById('mobileOverlay');
         if (mobileOverlay) {
@@ -2903,6 +2922,15 @@ class CuadernoDigital {
 
         const focusedEditor = noteContent.currentFocusedEditor;
 
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case '\\':
+                    e.preventDefault();
+                    this.toggleSidebar();
+                    return;
+            }
+        }
+
         if (focusedEditor && (e.ctrlKey || e.metaKey)) {
             switch (e.key) {
                 case 'z':
@@ -2969,6 +2997,10 @@ class CuadernoDigital {
                 case 'm':
                     e.preventDefault();
                     this.toggleMathMode();
+                    break;
+                case '\\':
+                    e.preventDefault();
+                    this.toggleSidebar();
                     break;
                 case 'z':
                     if (!focusedEditor) {
@@ -3369,10 +3401,16 @@ class CuadernoDigital {
 
         if (!sidebar || !overlay || !toggle) return;
 
+        const wasCompact = sidebar.classList.contains('compact');
+        
         sidebar.classList.add('mobile-open');
         overlay.classList.add('active');
         toggle.classList.add('active');
         toggle.innerHTML = '<i class="fas fa-times"></i>';
+
+        if (wasCompact) {
+            sidebar.setAttribute('data-was-compact', 'true');
+        }
 
         document.body.style.overflow = 'hidden';
     }
@@ -3389,10 +3427,124 @@ class CuadernoDigital {
         toggle.classList.remove('active');
         toggle.innerHTML = '<i class="fas fa-bars"></i>';
 
+        if (sidebar.hasAttribute('data-was-compact')) {
+            sidebar.classList.add('compact');
+            sidebar.removeAttribute('data-was-compact');
+            
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (sidebarToggle) {
+                sidebarToggle.classList.add('compact');
+                sidebarToggle.innerHTML = '<i class="fas fa-angles-right"></i>';
+                sidebarToggle.title = 'Expandir sidebar - Modo compacto activo (Ctrl+\\)';
+            }
+        }
+
         if (window.innerWidth <= 768) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
+        }
+    }
+
+    toggleSidebar() {
+        if (window.innerWidth <= 768) {
+            this.toggleMobileMenu();
+            return;
+        }
+
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        
+        if (!sidebar || !sidebarToggle) return;
+
+        const isCompact = sidebar.classList.contains('compact');
+        
+        if (isCompact) {
+            sidebar.classList.remove('compact');
+            sidebarToggle.classList.remove('compact');
+            sidebarToggle.innerHTML = '<i class="fas fa-angles-left"></i>';
+            sidebarToggle.title = 'Alternar modo compacto (Ctrl+\\)';
+            
+            localStorage.setItem('sidebarCompact', 'false');
+            
+            sidebarToggle.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                sidebarToggle.style.transform = '';
+            }, 200);
+            
+        } else {
+            sidebar.classList.add('compact');
+            sidebarToggle.classList.add('compact');
+            sidebarToggle.innerHTML = '<i class="fas fa-angles-right"></i>';
+            sidebarToggle.title = 'Expandir sidebar - Modo compacto activo (Ctrl+\\)';
+            
+            localStorage.setItem('sidebarCompact', 'true');
+            
+            sidebarToggle.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                sidebarToggle.style.transform = '';
+            }, 200);
+        }
+
+        this.createRippleEffect(sidebarToggle);
+    }
+
+    createRippleEffect(element) {
+        const ripple = document.createElement('span');
+        const rect = element.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.position = 'absolute';
+        ripple.style.borderRadius = '50%';
+        ripple.style.background = 'rgba(74, 158, 255, 0.4)';
+        ripple.style.pointerEvents = 'none';
+        ripple.style.transform = 'scale(0)';
+        ripple.style.animation = 'ripple 0.6s linear';
+        ripple.style.left = '50%';
+        ripple.style.top = '50%';
+        ripple.style.transform = 'translate(-50%, -50%) scale(0)';
+        
+        element.appendChild(ripple);
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    }
+
+    loadSidebarState() {
+        if (window.innerWidth <= 768) {
+            return;
+        }
+
+        const isCompact = localStorage.getItem('sidebarCompact') === 'true';
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        
+        if (isCompact && sidebar && sidebarToggle) {
+            sidebar.classList.add('compact');
+            sidebarToggle.classList.add('compact');
+            sidebarToggle.innerHTML = '<i class="fas fa-angles-right"></i>';
+            sidebarToggle.title = 'Expandir sidebar - Modo compacto activo (Ctrl+\\)';
+        }
+    }
+
+    handleWindowResize() {
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        
+        if (!sidebar || !sidebarToggle) return;
+
+        if (window.innerWidth <= 768) {
+            this.closeMobileMenu();
+        } else {
+            if (sidebar.hasAttribute('data-was-compact')) {
+                sidebar.classList.add('compact');
+                sidebar.removeAttribute('data-was-compact');
+                sidebarToggle.classList.add('compact');
+                sidebarToggle.innerHTML = '<i class="fas fa-angles-right"></i>';
+                sidebarToggle.title = 'Expandir sidebar - Modo compacto activo (Ctrl+\\)';
+            }
         }
     }
 

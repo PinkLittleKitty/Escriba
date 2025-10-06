@@ -1270,6 +1270,67 @@ header h1 i {
     background: var(--bg-secondary);
 }
 
+/* Banner para apuntes compartidos */
+.shared-note-banner {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    color: white;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.shared-note-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 2s infinite;
+}
+
+.shared-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.shared-banner-content i {
+    font-size: 1.25rem;
+    opacity: 0.9;
+}
+
+.shared-banner-content span {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.shared-banner-content .btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.shared-banner-content .btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
 .note-header {
     padding: 1.5rem 2rem;
     background: var(--bg-tertiary);
@@ -1327,6 +1388,16 @@ header h1 i {
     color: var(--text-primary);
     font-size: 0.85rem;
     cursor: pointer;
+}
+
+.note-type-select option {
+    padding: 0.5rem 0.75rem;
+}
+
+.note-type-select i {
+    margin-right: 0.5rem;
+    width: 1rem;
+    text-align: center;
 }
 
 .note-meta {
@@ -1797,6 +1868,16 @@ header h1 i {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.settings-select option {
+    padding: 0.5rem 0.75rem;
+}
+
+.settings-select i {
+    margin-right: 0.5rem;
+    width: 1rem;
+    text-align: center;
+}
+
 .slider-group {
     display: flex;
     align-items: center;
@@ -2006,6 +2087,129 @@ header h1 i {
 
 .share-method i {
     color: var(--accent-blue);
+}
+
+/* GitHub Sync Share Info */
+.github-share-info {
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(168, 85, 247, 0.1));
+    border: 1px solid rgba(74, 158, 255, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.github-repo-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.github-repo-info i {
+    color: var(--accent-blue);
+    font-size: 1.2rem;
+}
+
+.github-repo-info span {
+    flex: 1;
+    color: var(--text-primary);
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.github-repo-info .btn {
+    font-family: var(--font-family);
+}
+
+/* GitHub Warning Styles */
+.github-warning {
+    margin-bottom: 1.5rem;
+}
+
+.warning-card {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.warning-card > i {
+    color: #f59e0b;
+    font-size: 1.5rem;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+}
+
+.warning-content {
+    flex: 1;
+}
+
+.warning-content h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.warning-content p {
+    margin: 0 0 1rem 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.warning-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    border: none;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    color: white;
+}
+
+.privacy-info {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.privacy-info i {
+    color: var(--accent-blue);
+}
+
+.privacy-status {
+    color: var(--text-secondary);
+}
+
+/* Text color utilities */
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-error {
+    color: #ef4444 !important;
+}
+
+.text-warning {
+    color: #f59e0b !important;
 }
 
 .share-url-container {

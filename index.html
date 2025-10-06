@@ -26,8 +26,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-tomorrow_night.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ext-language_tools.min.js"></script>
 
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23334155'><path d='M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z'/></svg>">
 </head>
 
 <body>
@@ -207,18 +206,18 @@
                                 <option value="css">CSS</option>
                                 <option value="json">JSON</option>
                                 <option value="markdown">Markdown</option>
-                                <option value="text">📄 Texto plano</option>
+                                <option value="text"><i class="fas fa-file-alt"></i> Texto plano</option>
                             </select>
                             <select id="noteTypeSelect" class="note-type-select" title="Tipo de apunte">
-                                <option value="lecture">📝 Apuntes de Clase</option>
-                                <option value="assignment">📋 Trabajo Práctico</option>
-                                <option value="study">📚 Guía de Estudio</option>
-                                <option value="lab">🧪 Informe de Lab</option>
-                                <option value="project">🚀 Proyecto</option>
-                                <option value="exam">📊 Preparación Parcial</option>
-                                <option value="summary">📄 Resumen</option>
-                                <option value="exercise">✏️ Ejercicios</option>
-                                <option value="math">🔢 Matemáticas</option>
+                                <option value="lecture"><i class="fas fa-edit"></i> Apuntes de Clase</option>
+                                <option value="assignment"><i class="fas fa-tasks"></i> Trabajo Práctico</option>
+                                <option value="study"><i class="fas fa-book-reader"></i> Guía de Estudio</option>
+                                <option value="lab"><i class="fas fa-flask"></i> Informe de Lab</option>
+                                <option value="project"><i class="fas fa-rocket"></i> Proyecto</option>
+                                <option value="exam"><i class="fas fa-chart-bar"></i> Preparación Parcial</option>
+                                <option value="summary"><i class="fas fa-file-alt"></i> Resumen</option>
+                                <option value="exercise"><i class="fas fa-pencil-alt"></i> Ejercicios</option>
+                                <option value="math"><i class="fas fa-calculator"></i> Matemáticas</option>
                             </select>
                             <div class="note-meta">
                                 <button id="favoriteBtn" class="btn btn-icon" title="Marcar como favorito">
@@ -602,10 +601,10 @@
                     <div class="form-group">
                         <label for="eventType">Tipo de Examen</label>
                         <select id="eventType" class="settings-select">
-                            <option value="parcial">📊 Parcial</option>
-                            <option value="final">🎯 Final</option>
-                            <option value="tp">📋 Trabajo Práctico</option>
-                            <option value="entrega">📤 Entrega</option>
+                            <option value="parcial"><i class="fas fa-chart-bar"></i> Parcial</option>
+                            <option value="final"><i class="fas fa-bullseye"></i> Final</option>
+                            <option value="tp"><i class="fas fa-tasks"></i> Trabajo Práctico</option>
+                            <option value="entrega"><i class="fas fa-paper-plane"></i> Entrega</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -629,6 +628,40 @@
                     <button class="modal-close" title="Cerrar">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <div class="share-section" id="githubSyncShareInfo" style="display: none;">
+                        <h4><i class="fab fa-github"></i> Sincronización con GitHub</h4>
+                        <p class="share-description">Tu apunte está sincronizado con GitHub. Los enlaces compartidos apuntarán directamente a tu repositorio.</p>
+                        
+                        <div class="github-warning">
+                            <div class="warning-card">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div class="warning-content">
+                                    <h5>Repositorio Público Requerido</h5>
+                                    <p>Para que los enlaces funcionen, tu repositorio debe ser <strong>público</strong>. Si tu repositorio es privado, los enlaces no funcionarán para otras personas.</p>
+                                    <div class="warning-actions">
+                                        <button class="btn btn-warning btn-sm" onclick="window.open('https://docs.github.com/es/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility', '_blank')">
+                                            <i class="fas fa-book"></i> Cómo hacer público el repositorio
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="github-share-info">
+                            <div class="github-repo-info">
+                                <i class="fab fa-github"></i>
+                                <span id="githubRepoPath">username/escriba-notes</span>
+                                <button class="btn btn-secondary btn-sm" onclick="window.open('https://github.com/' + document.getElementById('githubRepoPath').textContent, '_blank')">
+                                    <i class="fas fa-external-link-alt"></i> Ver en GitHub
+                                </button>
+                            </div>
+                            <div class="privacy-info">
+                                <i class="fas fa-info-circle"></i>
+                                <span class="privacy-status" id="repoPrivacyStatus">Verificando visibilidad del repositorio...</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="share-section">
                         <h4><i class="fas fa-link"></i> Enlace para Compartir</h4>
                         <p class="share-description">Copiá este enlace para compartir tu apunte. Cualquiera con el

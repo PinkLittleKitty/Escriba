@@ -1218,6 +1218,18 @@ class CuadernoDigital {
         }
 
         document.getElementById('shareModal').classList.add('active');
+        
+        const githubSyncInfo = document.getElementById('githubSyncShareInfo');
+        if (window.githubSync && window.githubSync.isAuthenticated) {
+            githubSyncInfo.style.display = 'block';
+            const repoPath = `${window.githubSync.username}/${window.githubSync.repoName}`;
+            document.getElementById('githubRepoPath').textContent = repoPath;
+            
+            this.checkRepositoryVisibility();
+        } else {
+            githubSyncInfo.style.display = 'none';
+        }
+
         document.getElementById('shareUrl').value = 'Generando enlace...';
         document.getElementById('shareMethodInfo').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando enlace...';
 
@@ -1248,12 +1260,59 @@ class CuadernoDigital {
         document.getElementById('shareModal').classList.remove('active');
     }
 
+    async checkRepositoryVisibility() {
+        const statusElement = document.getElementById('repoPrivacyStatus');
+        
+        if (!window.githubSync || !window.githubSync.isAuthenticated) {
+            statusElement.innerHTML = '<i class="fas fa-times text-error"></i> No conectado a GitHub';
+            return;
+        }
+
+        statusElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando visibilidad...';
+
+        try {
+            const response = await fetch(`https://api.github.com/repos/${window.githubSync.username}/${window.githubSync.repoName}`, {
+                headers: {
+                    'Authorization': `token ${window.githubSync.token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (response.ok) {
+                const repoData = await response.json();
+                const isPublic = !repoData.private;
+                
+                if (isPublic) {
+                    statusElement.innerHTML = '<i class="fas fa-check text-success"></i> Repositorio público - Los enlaces funcionarán correctamente';
+                    statusElement.style.color = '#10b981';
+                } else {
+                    statusElement.innerHTML = '<i class="fas fa-lock text-warning"></i> Repositorio privado - Los enlaces no funcionarán para otras personas';
+                    statusElement.style.color = '#f59e0b';
+                }
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-question-circle"></i> No se pudo verificar la visibilidad';
+                statusElement.style.color = 'var(--text-secondary)';
+            }
+        } catch (error) {
+            console.error('Error checking repository visibility:', error);
+            statusElement.innerHTML = '<i class="fas fa-exclamation-triangle text-error"></i> Error al verificar visibilidad';
+            statusElement.style.color = '#ef4444';
+        }
+    }
+
     async generateShareUrlWithInfo() {
         const url = await this.generateShareUrl();
         let methodInfo = '';
 
-        if (url.includes('gist=')) {
-            methodInfo = '<i class="fas fa-github"></i> Enlace optimizado via GitHub Gist';
+        if (url.includes('github=')) {
+            methodInfo = '<i class="fab fa-github"></i> <strong>Enlace por GitHub</strong> - Acceso directo a tu repositorio sincronizado';
+        } else if (url.includes('gist=')) {
+            const isAuthenticated = window.githubSync && window.githubSync.isAuthenticated;
+            if (isAuthenticated) {
+                methodInfo = '<i class="fas fa-github"></i> <strong> Gist autenticado</strong> - Enlace optimizado con tu cuenta de GitHub';
+            } else {
+                methodInfo = '<i class="fas fa-github"></i> Enlace optimizado via GitHub Gist público';
+            }
         } else if (url.includes('truncated')) {
             methodInfo = '<i class="fas fa-exclamation-triangle text-warning"></i> Contenido truncado para URL - Usá "Exportar como JSON" para el contenido completo';
         } else {
@@ -1292,6 +1351,13 @@ class CuadernoDigital {
         };
 
         try {
+            if (window.githubSync && window.githubSync.isAuthenticated) {
+                const githubUrl = await this.createGitHubShareUrl(note, subject);
+                if (githubUrl) {
+                    return githubUrl;
+                }
+            }
+
             const gistUrl = await this.createGist(shareData);
             if (gistUrl) {
                 return gistUrl;
@@ -1317,6 +1383,91 @@ class CuadernoDigital {
             console.error('Error generating share URL:', error);
             return '';
         }
+    }
+
+    async createGitHubShareUrl(note, subject) {
+        try {
+            if (!window.githubSync || !window.githubSync.isAuthenticated) {
+                return null;
+            }
+
+            const username = window.githubSync.username;
+            const repoName = window.githubSync.repoName;
+
+            const repoUrl = `https://api.github.com/repos/${username}/${repoName}`;
+            const repoResponse = await fetch(repoUrl, {
+                headers: {
+                    'Authorization': `token ${window.githubSync.accessToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!repoResponse.ok) {
+                console.warn('No se pudo acceder al repositorio para compartir');
+                return null;
+            }
+
+            const repoData = await repoResponse.json();
+            
+            if (repoData.private) {
+                return await this.createPublicGist(note, subject);
+            }
+
+            const noteFileName = `note-${note.id}.json`;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?github=${username}/${repoName}/notes/${noteFileName}`;
+            
+            return shareUrl;
+
+        } catch (error) {
+            console.warn('Error creating GitHub share URL, falling back:', error);
+            return null;
+        }
+    }
+
+    async createPublicGist(note, subject) {
+        const shareData = {
+            t: note.title,
+            c: note.content,
+            ty: note.type,
+            s: subject.name,
+            sc: subject.color,
+            d: note.updatedAt,
+            app: 'escriba',
+            version: '1.0',
+            shared_via: 'github_sync'
+        };
+
+        try {
+            const gistData = {
+                description: `📚 Escriba Note: ${note.title} (${subject.name}) - Shared via GitHub Sync`,
+                public: true,
+                files: {
+                    "escriba-note.json": {
+                        content: JSON.stringify(shareData, null, 2)
+                    },
+                    "README.md": {
+                        content: `# 📚 ${note.title}\n\n**Materia:** ${subject.name}\n**Tipo:** ${note.type}\n**Fecha:** ${new Date(note.updatedAt).toLocaleDateString()}\n\n---\n\n*Compartido desde Escriba - Tu carpeta digital*\n\n[🔗 Abrir en Escriba](${window.location.origin}${window.location.pathname}?share=gist)`
+                    }
+                }
+            };
+
+            const response = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `token ${window.githubSync.accessToken}`
+                },
+                body: JSON.stringify(gistData)
+            });
+
+            if (response.ok) {
+                const gist = await response.json();
+                return `${window.location.origin}${window.location.pathname}?gist=${gist.id}`;
+            }
+        } catch (error) {
+            console.warn('Error creating authenticated Gist:', error);
+        }
+        return null;
     }
 
     async createGist(shareData) {
@@ -1610,8 +1761,17 @@ class CuadernoDigital {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('share');
         const gistId = urlParams.get('gist');
+        const githubPath = urlParams.get('github');
 
-        if (gistId) {
+        if (githubPath) {
+            try {
+                await this.loadFromGitHub(githubPath);
+                this.isViewingSharedNote = true;
+            } catch (error) {
+                console.error('Error loading shared note from GitHub:', error);
+                this.showToast('Error al cargar el apunte compartido desde GitHub', 'error');
+            }
+        } else if (gistId) {
             try {
                 await this.loadFromGist(gistId);
                 this.isViewingSharedNote = true;
@@ -1666,6 +1826,66 @@ class CuadernoDigital {
         }
     }
 
+    async loadFromGitHub(githubPath) {
+        try {
+            const pathParts = githubPath.split('/');
+            if (pathParts.length < 3) {
+                throw new Error('Invalid GitHub path format');
+            }
+
+            const username = pathParts[0];
+            const repoName = pathParts[1];
+            const filePath = pathParts.slice(2).join('/');
+
+            const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${filePath}`;
+
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Note not found in GitHub repository');
+                }
+                throw new Error(`GitHub API error: ${response.status}`);
+            }
+
+            const fileData = await response.json();
+            
+            const content = atob(fileData.content);
+            const noteData = JSON.parse(content);
+
+            if (!noteData.app || noteData.app !== 'escriba') {
+                throw new Error('This file does not contain a valid Escriba note');
+            }
+
+            noteData.shared_from = {
+                type: 'github_repo',
+                username: username,
+                repo: repoName,
+                path: filePath,
+                updated_at: fileData.commit?.committer?.date || null
+            };
+
+            this.displaySharedNote(noteData);
+
+        } catch (error) {
+            console.error('Error loading from GitHub:', error);
+            
+            let errorMessage = 'No se pudo cargar el apunte desde GitHub';
+            if (error.message.includes('not found')) {
+                errorMessage = 'El apunte no fue encontrado en GitHub';
+            } else if (error.message.includes('Invalid')) {
+                errorMessage = 'Enlace de GitHub inválido';
+            }
+            
+            this.showToast(errorMessage, 'error');
+            throw error;
+        }
+    }
+
     displaySharedNote(noteData) {
         document.getElementById('welcomeScreen').style.display = 'none';
         document.getElementById('noteEditor').style.display = 'flex';
@@ -1703,17 +1923,39 @@ class CuadernoDigital {
             type: type,
             subject: subject,
             subjectColor: subjectColor,
-            date: date
+            date: date,
+            shared_from: noteData.shared_from,
+            shared_via: noteData.shared_via
         });
     }
 
     addSharedNoteBanner(noteData) {
         const banner = document.createElement('div');
         banner.className = 'shared-note-banner';
+        
+        let originInfo = '';
+        let originIcon = 'fas fa-share-alt';
+        
+        if (noteData.shared_from?.type === 'github_repo') {
+            originIcon = 'fab fa-github';
+            originInfo = `desde el repositorio <strong>${noteData.shared_from.username}/${noteData.shared_from.repo}</strong>`;
+        } else if (noteData.shared_via === 'github_sync') {
+            originIcon = 'fab fa-github';
+            originInfo = 'via <strong>GitHub Sync autenticado</strong>';
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('gist')) {
+                originIcon = 'fab fa-github';
+                originInfo = 'desde <strong>GitHub Gist</strong>';
+            } else {
+                originInfo = 'via <strong>enlace directo</strong>';
+            }
+        }
+        
         banner.innerHTML = `
             <div class="shared-banner-content">
-                <i class="fas fa-share-alt"></i>
-                <span>Estás viendo un apunte compartido de <strong>${this.escapeHtml(noteData.subject)}</strong></span>
+                <i class="${originIcon}"></i>
+                <span>📚 Apunte compartido de <strong>${this.escapeHtml(noteData.subject)}</strong> ${originInfo}</span>
                 <button id="openInEscriba" class="btn btn-primary btn-sm">
                     <i class="fas fa-plus"></i> Agregar a mi Escriba
                 </button>

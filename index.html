@@ -632,12 +632,12 @@
                         <h4><i class="fab fa-github"></i> Sincronización con GitHub</h4>
                         <p class="share-description">Tu apunte está sincronizado con GitHub. Los enlaces compartidos apuntarán directamente a tu repositorio.</p>
                         
-                        <div class="github-warning">
+                        <div id="githubWarning" class="github-warning" style="display: none;">
                             <div class="warning-card">
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <div class="warning-content">
-                                    <h5>Repositorio Público Requerido</h5>
-                                    <p>Para que los enlaces funcionen, tu repositorio debe ser <strong>público</strong>. Si tu repositorio es privado, los enlaces no funcionarán para otras personas.</p>
+                                    <h5 id="warningTitle">Repositorio Público Requerido</h5>
+                                    <p id="warningMessage">Para que los enlaces funcionen, tu repositorio debe ser <strong>público</strong>. Si tu repositorio es privado, los enlaces no funcionarán para otras personas.</p>
                                     <div class="warning-actions">
                                         <button class="btn btn-warning btn-sm" onclick="window.open('https://docs.github.com/es/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility', '_blank')">
                                             <i class="fas fa-book"></i> Cómo hacer público el repositorio

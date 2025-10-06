@@ -1262,18 +1262,43 @@ class CuadernoDigital {
 
     async checkRepositoryVisibility() {
         const statusElement = document.getElementById('repoPrivacyStatus');
+        const warningElement = document.getElementById('githubWarning');
+        const warningTitle = document.getElementById('warningTitle');
+        const warningMessage = document.getElementById('warningMessage');
         
+        const showWarning = (title, message) => {
+            warningTitle.textContent = title;
+            warningMessage.innerHTML = message;
+            warningElement.style.display = 'block';
+        };
+        
+        const hideWarning = () => {
+            warningElement.style.display = 'none';
+        };
+
         if (!window.githubSync || !window.githubSync.isAuthenticated) {
             statusElement.innerHTML = '<i class="fas fa-times text-error"></i> No conectado a GitHub';
+            showWarning('GitHub No Conectado', 'Para compartir enlaces que funcionen, necesitas conectarte a GitHub y tener un repositorio público.');
             return;
         }
 
         statusElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando visibilidad...';
 
         try {
-            const response = await fetch(`https://api.github.com/repos/${window.githubSync.username}/${window.githubSync.repoName}`, {
+            const username = window.githubSync.username || window.githubSync.user?.login;
+            const repoName = window.githubSync.repoName || window.githubSync.repo;
+            const token = window.githubSync.token || window.githubSync.accessToken;
+
+            if (!username || !repoName) {
+                statusElement.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Información del repositorio incompleta';
+                statusElement.style.color = '#f59e0b';
+                showWarning('Configuración Incompleta', 'La información del repositorio no está completa. Verifica tu configuración de GitHub.');
+                return;
+            }
+
+            const response = await fetch(`https://api.github.com/repos/${username}/${repoName}`, {
                 headers: {
-                    'Authorization': `token ${window.githubSync.token}`,
+                    'Authorization': `token ${token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -1285,17 +1310,38 @@ class CuadernoDigital {
                 if (isPublic) {
                     statusElement.innerHTML = '<i class="fas fa-check text-success"></i> Repositorio público - Los enlaces funcionarán correctamente';
                     statusElement.style.color = '#10b981';
+                    hideWarning();
                 } else {
                     statusElement.innerHTML = '<i class="fas fa-lock text-warning"></i> Repositorio privado - Los enlaces no funcionarán para otras personas';
                     statusElement.style.color = '#f59e0b';
+                    showWarning('Repositorio Privado', 'Tu repositorio es <strong>privado</strong>. Los enlaces compartidos no funcionarán para otras personas hasta que lo hagas público.');
                 }
+            } else if (response.status === 404) {
+                statusElement.innerHTML = '<i class="fas fa-question-circle text-warning"></i> Repositorio no encontrado - Verifica que el nombre sea correcto';
+                statusElement.style.color = '#f59e0b';
+                showWarning('Repositorio No Encontrado', 'No se pudo encontrar el repositorio. Verifica que el nombre sea correcto y que tengas acceso.');
+            } else if (response.status === 401) {
+                statusElement.innerHTML = '<i class="fas fa-key text-error"></i> Token de acceso inválido - Reconéctate a GitHub';
+                statusElement.style.color = '#ef4444';
+                showWarning('Token Inválido', 'Tu token de acceso a GitHub no es válido. <strong>Reconéctate</strong> a GitHub para poder compartir enlaces.');
+            } else if (response.status === 403) {
+                statusElement.innerHTML = '<i class="fas fa-ban text-error"></i> Acceso denegado - Verifica los permisos del token';
+                statusElement.style.color = '#ef4444';
+                showWarning('Acceso Denegado', 'No tienes permisos suficientes para acceder al repositorio. Verifica los permisos de tu token.');
             } else {
-                statusElement.innerHTML = '<i class="fas fa-question-circle"></i> No se pudo verificar la visibilidad';
-                statusElement.style.color = 'var(--text-secondary)';
+                statusElement.innerHTML = `<i class="fas fa-question-circle text-warning"></i> Error ${response.status} - No se pudo verificar`;
+                statusElement.style.color = '#f59e0b';
+                showWarning('Error de Verificación', 'No se pudo verificar el estado del repositorio. Los enlaces pueden no funcionar correctamente.');
             }
         } catch (error) {
             console.error('Error checking repository visibility:', error);
-            statusElement.innerHTML = '<i class="fas fa-exclamation-triangle text-error"></i> Error al verificar visibilidad';
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                statusElement.innerHTML = '<i class="fas fa-wifi text-error"></i> Error de conexión - Verifica tu internet';
+                showWarning('Error de Conexión', 'No se pudo conectar a GitHub. Verifica tu conexión a internet.');
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-exclamation-triangle text-error"></i> Error al verificar visibilidad';
+                showWarning('Error Inesperado', 'Ocurrió un error inesperado al verificar el repositorio. Los enlaces pueden no funcionar.');
+            }
             statusElement.style.color = '#ef4444';
         }
     }

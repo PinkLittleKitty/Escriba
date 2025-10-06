@@ -178,6 +178,10 @@ class CuadernoDigital {
         if (document.getElementById('disconnectGitHub')) {
             document.getElementById('disconnectGitHub').addEventListener('click', () => this.disconnectGitHub());
         }
+        
+        if (document.getElementById('disconnectButton')) {
+            document.getElementById('disconnectButton').addEventListener('click', () => this.disconnectGitHub());
+        }
 
         document.getElementById('cancelSubjectPicker').addEventListener('click', () => this.hideSubjectPickerModal());
         document.getElementById('cancelShare').addEventListener('click', () => this.hideShareModal());
@@ -930,6 +934,8 @@ class CuadernoDigital {
         const settingsSyncStatus = document.getElementById('settingsSyncStatus');
         const settingsSyncButton = document.getElementById('settingsSyncButton');
         const disconnectButton = document.getElementById('disconnectGitHub');
+        const dropdownDisconnectButton = document.getElementById('disconnectButton');
+        const syncButton = document.getElementById('syncButton');
 
         if (window.githubSync.isAuthenticated) {
             const lastSync = window.githubSync.lastSyncTime ?
@@ -950,6 +956,14 @@ class CuadernoDigital {
             if (disconnectButton) {
                 disconnectButton.style.display = 'block';
             }
+            
+            if (dropdownDisconnectButton) {
+                dropdownDisconnectButton.style.display = 'block';
+            }
+            
+            if (syncButton) {
+                syncButton.innerHTML = '<i class="fas fa-sync"></i> Sincronizar GitHub';
+            }
         } else {
             if (syncStatus) syncStatus.textContent = 'No conectado';
             if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
@@ -961,6 +975,14 @@ class CuadernoDigital {
 
             if (disconnectButton) {
                 disconnectButton.style.display = 'none';
+            }
+            
+            if (dropdownDisconnectButton) {
+                dropdownDisconnectButton.style.display = 'none';
+            }
+            
+            if (syncButton) {
+                syncButton.innerHTML = '<i class="fab fa-github"></i> Conectar GitHub';
             }
         }
 
@@ -1244,6 +1266,15 @@ class CuadernoDigital {
         ctx.fillText('Generando enlace...', 100, 100);
 
         try {
+            // Verificar permisos del token si está autenticado
+            if (window.githubSync && window.githubSync.isAuthenticated) {
+                const scopes = await this.checkGitHubTokenScopes();
+                if (!scopes.hasGist) {
+                    console.warn('⚠️ Token no tiene permisos de Gist, usando fallback');
+                    document.getElementById('shareMethodInfo').innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> <strong>⚠️ Token sin permisos de Gist</strong> - Para enlaces optimizados, regenerá el token con permisos de "gist"';
+                }
+            }
+
             const result = await this.generateShareUrlWithInfo();
             document.getElementById('shareUrl').value = result.url;
             document.getElementById('shareMethodInfo').innerHTML = result.methodInfo;
@@ -1258,6 +1289,89 @@ class CuadernoDigital {
 
     hideShareModal() {
         document.getElementById('shareModal').classList.remove('active');
+    }
+
+    showLoadingIndicator(message = 'Cargando...') {
+        // Crear o mostrar indicador de carga
+        let loadingDiv = document.getElementById('loadingIndicator');
+        if (!loadingDiv) {
+            loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingIndicator';
+            loadingDiv.className = 'loading-indicator';
+            loadingDiv.innerHTML = `
+                <div class="loading-content">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span id="loadingMessage">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+        } else {
+            document.getElementById('loadingMessage').textContent = message;
+            loadingDiv.style.display = 'flex';
+        }
+    }
+
+    hideLoadingIndicator() {
+        const loadingDiv = document.getElementById('loadingIndicator');
+        if (loadingDiv) {
+            loadingDiv.style.display = 'none';
+        }
+    }
+
+    showSharedNoteError(error) {
+        // Ocultar pantalla de bienvenida y mostrar error
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const noteEditor = document.getElementById('noteEditor');
+        
+        if (welcomeScreen) welcomeScreen.style.display = 'none';
+        if (noteEditor) noteEditor.style.display = 'flex';
+
+        // Crear pantalla de error personalizada
+        const errorContainer = document.createElement('div');
+        errorContainer.className = 'shared-note-error';
+        errorContainer.innerHTML = `
+            <div class="error-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h2>Error al cargar el apunte compartido</h2>
+                <p id="errorDetails">No se pudo cargar el apunte. Esto puede deberse a:</p>
+                <ul>
+                    <li>El enlace ha expirado o es inválido</li>
+                    <li>Problemas de conexión a internet</li>
+                    <li>El archivo compartido no existe o fue eliminado</li>
+                </ul>
+                <div class="error-actions">
+                    <button class="btn btn-primary" onclick="window.location.href = window.location.pathname">
+                        <i class="fas fa-home"></i> Ir a la página principal
+                    </button>
+                    <button class="btn btn-secondary" onclick="location.reload()">
+                        <i class="fas fa-redo"></i> Intentar de nuevo
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Limpiar contenido existente y agregar error
+        if (noteEditor) {
+            noteEditor.innerHTML = '';
+            noteEditor.appendChild(errorContainer);
+        }
+
+        // Mostrar detalles específicos del error
+        let errorMessage = 'Error desconocido';
+        if (error.message.includes('not found') || error.message.includes('404')) {
+            errorMessage = 'El apunte compartido no fue encontrado (Error 404)';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+            errorMessage = 'Error de conexión a internet';
+        } else if (error.message.includes('JSON')) {
+            errorMessage = 'El formato del apunte compartido es inválido';
+        }
+
+        const errorDetails = document.getElementById('errorDetails');
+        if (errorDetails) {
+            errorDetails.textContent = errorMessage;
+        }
+
+        console.error('Shared note error details:', error);
     }
 
     async checkRepositoryVisibility() {
@@ -1350,19 +1464,19 @@ class CuadernoDigital {
         const url = await this.generateShareUrl();
         let methodInfo = '';
 
-        if (url.includes('github=')) {
-            methodInfo = '<i class="fab fa-github"></i> <strong>Enlace por GitHub</strong> - Acceso directo a tu repositorio sincronizado';
-        } else if (url.includes('gist=')) {
+        if (url.includes('gist=')) {
             const isAuthenticated = window.githubSync && window.githubSync.isAuthenticated;
             if (isAuthenticated) {
-                methodInfo = '<i class="fas fa-github"></i> <strong> Gist autenticado</strong> - Enlace optimizado con tu cuenta de GitHub';
+                methodInfo = '<i class="fab fa-github"></i> <strong>Gist Autenticado</strong> - Enlace optimizado y permanente con tu cuenta de GitHub';
             } else {
-                methodInfo = '<i class="fas fa-github"></i> Enlace optimizado via GitHub Gist público';
+                methodInfo = '<i class="fab fa-github"></i> <strong>GitHub Gist</strong> - Enlace público optimizado y confiable';
             }
+        } else if (url.includes('github=')) {
+            methodInfo = '<i class="fab fa-github"></i> <strong>Repositorio GitHub</strong> - Enlace directo a tu repositorio (requiere repo público)';
         } else if (url.includes('truncated')) {
-            methodInfo = '<i class="fas fa-exclamation-triangle text-warning"></i> Contenido truncado para URL - Usá "Exportar como JSON" para el contenido completo';
+            methodInfo = '<i class="fas fa-exclamation-triangle text-warning"></i> <strong>⚠️ Contenido Truncado</strong> - Usá "Exportar como JSON" para el contenido completo';
         } else {
-            methodInfo = '<i class="fas fa-link"></i> Enlace directo (Si el apunte es largo no va a funcar, Usá "Exportar como JSON" para el contenido completo)';
+            methodInfo = '<i class="fas fa-link"></i> <strong>📄 Enlace Directo</strong> - Para apuntes cortos (limitado por tamaño de URL)';
         }
 
         return { url, methodInfo };
@@ -1397,16 +1511,31 @@ class CuadernoDigital {
         };
 
         try {
+            // Prioridad 1: Si está autenticado y tiene permisos de Gist, intentar Gist autenticado
             if (window.githubSync && window.githubSync.isAuthenticated) {
-                const githubUrl = await this.createGitHubShareUrl(note, subject);
-                if (githubUrl) {
-                    return githubUrl;
+                const scopes = await this.checkGitHubTokenScopes();
+                if (scopes.hasGist) {
+                    console.log('🔄 Intentando crear Gist autenticado...');
+                    const authenticatedGistUrl = await this.createPublicGist(note, subject);
+                    if (authenticatedGistUrl) {
+                        console.log('✅ Gist autenticado creado exitosamente');
+                        return authenticatedGistUrl;
+                    } else {
+                        console.warn('❌ Falló la creación del Gist autenticado, intentando Gist público...');
+                    }
+                } else {
+                    console.warn('⚠️ Token autenticado sin permisos de Gist, saltando a Gist público...');
                 }
             }
 
+            // Prioridad 2: Gist público sin autenticación
+            console.log('🔄 Intentando crear Gist público sin autenticación...');
             const gistUrl = await this.createGist(shareData);
             if (gistUrl) {
+                console.log('✅ Gist público creado exitosamente');
                 return gistUrl;
+            } else {
+                console.warn('❌ Falló la creación del Gist público, usando fallback de URL...');
             }
 
             const jsonString = JSON.stringify(shareData);
@@ -1439,11 +1568,13 @@ class CuadernoDigital {
 
             const username = window.githubSync.username;
             const repoName = window.githubSync.repoName;
+            const token = window.githubSync.accessToken;
 
+            // Verificar acceso al repositorio
             const repoUrl = `https://api.github.com/repos/${username}/${repoName}`;
             const repoResponse = await fetch(repoUrl, {
                 headers: {
-                    'Authorization': `token ${window.githubSync.accessToken}`,
+                    'Authorization': `token ${token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -1455,12 +1586,73 @@ class CuadernoDigital {
 
             const repoData = await repoResponse.json();
             
+            // Si el repositorio es privado, usar Gist público
             if (repoData.private) {
                 return await this.createPublicGist(note, subject);
             }
 
-            const noteFileName = `note-${note.id}.json`;
-            const shareUrl = `${window.location.origin}${window.location.pathname}?github=${username}/${repoName}/notes/${noteFileName}`;
+            // Crear el archivo en el repositorio
+            const shareData = {
+                t: note.title,
+                c: note.content,
+                ty: note.type,
+                s: subject.name,
+                sc: subject.color,
+                d: note.updatedAt,
+                app: 'escriba',
+                version: '1.0',
+                shared_via: 'github_repo'
+            };
+
+            const noteFileName = `shared-notes/note-${note.id}.json`;
+            const fileContent = JSON.stringify(shareData, null, 2);
+            
+            // Verificar si el archivo ya existe
+            let sha = null;
+            try {
+                const existingFileResponse = await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/${noteFileName}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (existingFileResponse.ok) {
+                    const existingFile = await existingFileResponse.json();
+                    sha = existingFile.sha;
+                }
+            } catch (e) {
+                // El archivo no existe, lo crearemos nuevo
+            }
+
+            // Crear o actualizar el archivo
+            const createFileData = {
+                message: `📚 Compartir apunte: ${note.title}`,
+                content: btoa(unescape(encodeURIComponent(fileContent))),
+                branch: 'main'
+            };
+
+            if (sha) {
+                createFileData.sha = sha; // Para actualizar archivo existente
+            }
+
+            const createFileResponse = await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/${noteFileName}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify(createFileData)
+            });
+
+            if (!createFileResponse.ok) {
+                console.warn('No se pudo crear el archivo en el repositorio');
+                return null;
+            }
+
+            // Generar la URL del enlace compartido
+            const shareUrl = `${window.location.origin}${window.location.pathname}?github=${username}/${repoName}/${noteFileName}`;
             
             return shareUrl;
 
@@ -1508,10 +1700,16 @@ class CuadernoDigital {
 
             if (response.ok) {
                 const gist = await response.json();
+                console.log('✅ Gist autenticado creado con ID:', gist.id);
                 return `${window.location.origin}${window.location.pathname}?gist=${gist.id}`;
+            } else {
+                console.warn('❌ Respuesta no exitosa al crear Gist autenticado:', response.status, response.statusText);
+                if (response.status === 403) {
+                    console.warn('🔒 El token no tiene permisos de Gist. Necesitas regenerar el token con scope "gist"');
+                }
             }
         } catch (error) {
-            console.warn('Error creating authenticated Gist:', error);
+            console.warn('❌ Error creating authenticated Gist:', error);
         }
         return null;
     }
@@ -1809,31 +2007,31 @@ class CuadernoDigital {
         const gistId = urlParams.get('gist');
         const githubPath = urlParams.get('github');
 
-        if (githubPath) {
-            try {
+        // Si no hay parámetros de compartir, salir
+        if (!sharedData && !gistId && !githubPath) {
+            return;
+        }
+
+        try {
+            // Mostrar indicador de carga
+            this.showLoadingIndicator('Cargando apunte compartido...');
+
+            if (githubPath) {
                 await this.loadFromGitHub(githubPath);
-                this.isViewingSharedNote = true;
-            } catch (error) {
-                console.error('Error loading shared note from GitHub:', error);
-                this.showToast('Error al cargar el apunte compartido desde GitHub', 'error');
-            }
-        } else if (gistId) {
-            try {
+            } else if (gistId) {
                 await this.loadFromGist(gistId);
-                this.isViewingSharedNote = true;
-            } catch (error) {
-                console.error('Error loading shared note from Gist:', error);
-                this.showToast('Error al cargar el apunte compartido desde Gist', 'error');
-            }
-        } else if (sharedData) {
-            try {
+            } else if (sharedData) {
                 const decodedData = JSON.parse(this.base64ToUtf8(sharedData));
                 this.displaySharedNote(decodedData);
-                this.isViewingSharedNote = true;
-            } catch (error) {
-                console.error('Error loading shared note:', error);
-                this.showToast('Error al cargar el apunte compartido', 'error');
             }
+
+            this.isViewingSharedNote = true;
+            this.hideLoadingIndicator();
+
+        } catch (error) {
+            console.error('Error loading shared note:', error);
+            this.hideLoadingIndicator();
+            this.showSharedNoteError(error);
         }
     }
 
@@ -1893,9 +2091,11 @@ class CuadernoDigital {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    throw new Error('Note not found in GitHub repository');
+                    throw new Error(`El apunte compartido no existe en el repositorio ${username}/${repoName}. Es posible que el enlace sea antiguo o que el archivo haya sido eliminado.`);
+                } else if (response.status === 403) {
+                    throw new Error(`Acceso denegado al repositorio ${username}/${repoName}. El repositorio puede ser privado.`);
                 }
-                throw new Error(`GitHub API error: ${response.status}`);
+                throw new Error(`Error de GitHub (${response.status}): No se pudo acceder al apunte compartido.`);
             }
 
             const fileData = await response.json();
@@ -1920,100 +2120,206 @@ class CuadernoDigital {
         } catch (error) {
             console.error('Error loading from GitHub:', error);
             
-            let errorMessage = 'No se pudo cargar el apunte desde GitHub';
-            if (error.message.includes('not found')) {
-                errorMessage = 'El apunte no fue encontrado en GitHub';
-            } else if (error.message.includes('Invalid')) {
-                errorMessage = 'Enlace de GitHub inválido';
+            // Mejorar el mensaje de error para el usuario
+            let errorMessage = error.message;
+            if (error.message.includes('Invalid GitHub path')) {
+                errorMessage = 'El enlace de GitHub no tiene el formato correcto';
+            } else if (!error.message.includes('repositorio') && !error.message.includes('GitHub')) {
+                errorMessage = 'Error al conectar con GitHub: ' + error.message;
             }
             
             this.showToast(errorMessage, 'error');
-            throw error;
+            throw new Error(errorMessage);
         }
     }
 
     displaySharedNote(noteData) {
-        document.getElementById('welcomeScreen').style.display = 'none';
-        document.getElementById('noteEditor').style.display = 'flex';
+        try {
+            // Validar que tenemos los datos necesarios
+            if (!noteData) {
+                throw new Error('No hay datos del apunte para mostrar');
+            }
 
-        const noteContent = document.getElementById('noteContent');
-        noteContent.contentEditable = false;
-        noteContent.style.cursor = 'default';
+            // Obtener elementos del DOM de forma segura
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const noteEditor = document.getElementById('noteEditor');
+            const noteContent = document.getElementById('noteContent');
+            const noteTitle = document.getElementById('noteTitle');
+            const noteTypeSelect = document.getElementById('noteTypeSelect');
+            const noteDate = document.getElementById('noteDate');
+            const noteSubject = document.getElementById('noteSubject');
+            const noteType = document.getElementById('noteType');
+            const editorToolbar = document.querySelector('.editor-toolbar');
 
-        const title = noteData.title || noteData.t || 'Apunte Compartido';
-        const content = noteData.content || noteData.c || '';
-        const type = noteData.type || noteData.ty || 'lecture';
-        const subject = noteData.subject || noteData.s || 'Materia';
-        const subjectColor = noteData.subjectColor || noteData.sc || '#3b82f6';
-        const date = noteData.date || noteData.d || new Date().toISOString();
+            // Verificar que los elementos existen
+            if (!noteEditor || !noteContent || !noteTitle) {
+                throw new Error('Elementos del editor no encontrados en la página');
+            }
 
-        document.getElementById('noteTitle').value = title;
-        document.getElementById('noteTitle').disabled = true;
-        document.getElementById('noteContent').innerHTML = content;
-        document.getElementById('noteTypeSelect').value = type;
-        document.getElementById('noteTypeSelect').disabled = true;
-        document.getElementById('noteDate').textContent = this.formatDate(date);
+            // Mostrar editor y ocultar bienvenida
+            if (welcomeScreen) welcomeScreen.style.display = 'none';
+            noteEditor.style.display = 'flex';
 
-        document.getElementById('noteSubject').textContent = subject;
-        document.getElementById('noteType').textContent = this.getNoteTypeLabel(type);
+            // Configurar contenido como solo lectura
+            noteContent.contentEditable = false;
+            noteContent.style.cursor = 'default';
 
-        document.getElementById('favoriteBtn').style.display = 'none';
-        document.getElementById('shareNoteBtn').style.display = 'none';
-        document.getElementById('deleteNoteBtn').style.display = 'none';
+            // Extraer datos de forma segura
+            const title = noteData.title || noteData.t || 'Apunte Compartido';
+            const content = noteData.content || noteData.c || '';
+            const type = noteData.type || noteData.ty || 'lecture';
+            const subject = noteData.subject || noteData.s || 'Materia';
+            const subjectColor = noteData.subjectColor || noteData.sc || '#3b82f6';
+            const date = noteData.date || noteData.d || new Date().toISOString();
 
-        document.querySelector('.editor-toolbar').style.display = 'none';
+            // Configurar elementos del DOM
+            noteTitle.value = title;
+            noteTitle.disabled = true;
+            noteContent.innerHTML = content;
+            
+            if (noteTypeSelect) {
+                noteTypeSelect.value = type;
+                noteTypeSelect.disabled = true;
+            }
+            
+            if (noteDate) {
+                try {
+                    noteDate.textContent = this.formatDate(date);
+                } catch (e) {
+                    noteDate.textContent = 'Fecha no disponible';
+                }
+            }
 
-        this.addSharedNoteBanner({
-            title: title,
-            content: content,
-            type: type,
-            subject: subject,
-            subjectColor: subjectColor,
-            date: date,
-            shared_from: noteData.shared_from,
-            shared_via: noteData.shared_via
-        });
+            if (noteSubject) noteSubject.textContent = subject;
+            if (noteType) {
+                try {
+                    noteType.textContent = this.getNoteTypeLabel(type);
+                } catch (e) {
+                    noteType.textContent = 'Apunte';
+                }
+            }
+
+            // Ocultar botones de acción
+            const buttonsToHide = ['favoriteBtn', 'shareNoteBtn', 'deleteNoteBtn'];
+            buttonsToHide.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) button.style.display = 'none';
+            });
+
+            // Ocultar toolbar
+            if (editorToolbar) editorToolbar.style.display = 'none';
+
+            // Agregar banner
+            this.addSharedNoteBanner({
+                title: title,
+                content: content,
+                type: type,
+                subject: subject,
+                subjectColor: subjectColor,
+                date: date,
+                shared_from: noteData.shared_from,
+                shared_via: noteData.shared_via
+            });
+
+            // Procesar editores de código si existen
+            setTimeout(() => {
+                try {
+                    this.restoreNoteContent(content);
+                } catch (error) {
+                    console.warn('Error al restaurar editores de código:', error);
+                }
+            }, 100);
+
+        } catch (error) {
+            console.error('Error displaying shared note:', error);
+            throw new Error(`Error al mostrar el apunte: ${error.message}`);
+        }
     }
 
     addSharedNoteBanner(noteData) {
-        const banner = document.createElement('div');
-        banner.className = 'shared-note-banner';
-        
-        let originInfo = '';
-        let originIcon = 'fas fa-share-alt';
-        
-        if (noteData.shared_from?.type === 'github_repo') {
-            originIcon = 'fab fa-github';
-            originInfo = `desde el repositorio <strong>${noteData.shared_from.username}/${noteData.shared_from.repo}</strong>`;
-        } else if (noteData.shared_via === 'github_sync') {
-            originIcon = 'fab fa-github';
-            originInfo = 'via <strong>GitHub Sync autenticado</strong>';
-        } else {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('gist')) {
-                originIcon = 'fab fa-github';
-                originInfo = 'desde <strong>GitHub Gist</strong>';
-            } else {
-                originInfo = 'via <strong>enlace directo</strong>';
+        try {
+            const noteEditor = document.getElementById('noteEditor');
+            if (!noteEditor) {
+                console.warn('Note editor not found, cannot add shared banner');
+                return;
             }
+
+            // Remover banner existente si ya hay uno
+            const existingBanner = noteEditor.querySelector('.shared-note-banner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
+
+            const banner = document.createElement('div');
+            banner.className = 'shared-note-banner';
+            
+            let originInfo = '';
+            let originIcon = 'fas fa-share-alt';
+            
+            try {
+                if (noteData.shared_from?.type === 'github_repo') {
+                    originIcon = 'fab fa-github';
+                    originInfo = `desde el repositorio <strong>${this.escapeHtml(noteData.shared_from.username)}/${this.escapeHtml(noteData.shared_from.repo)}</strong>`;
+                } else if (noteData.shared_via === 'github_sync') {
+                    originIcon = 'fab fa-github';
+                    originInfo = 'via <strong>GitHub Sync autenticado</strong>';
+                } else {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('gist')) {
+                        originIcon = 'fab fa-github';
+                        originInfo = 'desde <strong>GitHub Gist</strong>';
+                    } else {
+                        originInfo = 'via <strong>enlace directo</strong>';
+                    }
+                }
+            } catch (e) {
+                console.warn('Error determining share origin:', e);
+                originInfo = 'via <strong>enlace compartido</strong>';
+            }
+            
+            const subjectName = this.escapeHtml(noteData.subject || 'Materia desconocida');
+            
+            banner.innerHTML = `
+                <div class="shared-banner-content">
+                    <i class="${originIcon}"></i>
+                    <span><i class="fas fa-book-open"></i> Apunte compartido de <strong>${subjectName}</strong> ${originInfo}</span>
+                    <div class="banner-actions">
+                        <button id="openInEscriba" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Agregar a mi Escriba
+                        </button>
+                        <button id="goToEscribaHome" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-home"></i> Ir a mi Escriba
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            noteEditor.insertBefore(banner, noteEditor.firstChild);
+
+            // Agregar event listeners de forma segura
+            const openBtn = document.getElementById('openInEscriba');
+            const homeBtn = document.getElementById('goToEscribaHome');
+            
+            if (openBtn) {
+                openBtn.addEventListener('click', () => {
+                    try {
+                        this.importSharedNote(noteData);
+                    } catch (error) {
+                        console.error('Error importing shared note:', error);
+                        this.showToast('Error al importar el apunte', 'error');
+                    }
+                });
+            }
+
+            if (homeBtn) {
+                homeBtn.addEventListener('click', () => {
+                    window.location.href = window.location.pathname;
+                });
+            }
+
+        } catch (error) {
+            console.error('Error adding shared banner:', error);
         }
-        
-        banner.innerHTML = `
-            <div class="shared-banner-content">
-                <i class="${originIcon}"></i>
-                <span>📚 Apunte compartido de <strong>${this.escapeHtml(noteData.subject)}</strong> ${originInfo}</span>
-                <button id="openInEscriba" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Agregar a mi Escriba
-                </button>
-            </div>
-        `;
-
-        const noteEditor = document.getElementById('noteEditor');
-        noteEditor.insertBefore(banner, noteEditor.firstChild);
-
-        document.getElementById('openInEscriba').addEventListener('click', () => {
-            this.importSharedNote(noteData);
-        });
     }
 
     importSharedNote(noteData) {
@@ -4326,6 +4632,35 @@ class CuadernoDigital {
         this.saveEvents();
         this.renderCalendar();
         this.hideEventModal();
+    }
+
+    async checkGitHubTokenScopes() {
+        if (!window.githubSync || !window.githubSync.isAuthenticated) {
+            return { hasGist: false, hasRepo: false };
+        }
+
+        try {
+            const response = await fetch('https://api.github.com/user', {
+                method: 'HEAD',
+                headers: {
+                    'Authorization': `token ${window.githubSync.accessToken}`
+                }
+            });
+
+            const scopes = response.headers.get('X-OAuth-Scopes');
+            if (scopes) {
+                const scopeList = scopes.split(', ');
+                return {
+                    hasGist: scopeList.includes('gist'),
+                    hasRepo: scopeList.includes('repo'),
+                    scopes: scopeList
+                };
+            }
+        } catch (error) {
+            console.warn('Error checking token scopes:', error);
+        }
+
+        return { hasGist: false, hasRepo: false };
     }
 
     editEvent(eventId) {

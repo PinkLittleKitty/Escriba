@@ -31,10 +31,10 @@ class GitHubSync {
                             <div class="step-number">1</div>
                             <div class="step-content">
                                 <p>Creá un Personal Access Token en GitHub:</p>
-                                <button class="btn btn-primary" onclick="window.open('https://github.com/settings/tokens/new?scopes=repo&description=Escriba%20Notes%20Sync', '_blank')">
+                                <button class="btn btn-primary" onclick="window.open('https://github.com/settings/tokens/new?scopes=repo,gist&description=Escriba%20Notes%20Sync', '_blank')">
                                     <i class="fab fa-github"></i> Crear Token en GitHub
                                 </button>
-                                <small class="help-text">Se abrirá GitHub con los permisos correctos preseleccionados</small>
+                                <small class="help-text">Se abrirá GitHub con los permisos correctos preseleccionados (repo + gist)</small>
                             </div>
                         </div>
                         <div class="step">

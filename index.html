@@ -13,6 +13,9 @@
     <!-- GitHub Sync -->
     <script src="github-sync.js"></script>
 
+    <!-- Mermaid for UML diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    
     <!-- Ace Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-markdown.min.js"></script>
@@ -271,6 +274,8 @@
                                     class="fas fa-link"></i></button>
                             <button class="toolbar-btn" id="mathModeBtn" title="Modo matemático (Ctrl+M)"><i
                                     class="fas fa-square-root-alt"></i></button>
+                            <button class="toolbar-btn" id="insertUMLBtn" title="Insertar diagrama UML"><i
+                                    class="fas fa-project-diagram"></i></button>
                         </div>
                     </div>
 
@@ -617,6 +622,102 @@
                     <button class="btn btn-secondary" id="cancelEvent">Cancelar</button>
                     <button class="btn btn-danger" id="deleteEvent" style="display: none;">Eliminar</button>
                     <button class="btn btn-primary" id="saveEvent">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para insertar UML -->
+        <div id="umlModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3><i class="fas fa-project-diagram"></i> Insertar Diagrama UML</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="uml-editor-container">
+                        <div class="uml-sidebar">
+                            <h4><i class="fas fa-shapes"></i> Tipos de Diagrama</h4>
+                            <div class="uml-templates">
+                                <button class="uml-template-btn active" data-template="class">
+                                    <i class="fas fa-cube"></i>
+                                    <span>Diagrama de Clases</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="sequence">
+                                    <i class="fas fa-arrows-alt-h"></i>
+                                    <span>Diagrama de Secuencia</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="flowchart">
+                                    <i class="fas fa-sitemap"></i>
+                                    <span>Diagrama de Flujo</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="er">
+                                    <i class="fas fa-database"></i>
+                                    <span>Diagrama ER</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="state">
+                                    <i class="fas fa-circle-notch"></i>
+                                    <span>Diagrama de Estados</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="usecase">
+                                    <i class="fas fa-user-circle"></i>
+                                    <span>Casos de Uso</span>
+                                </button>
+                            </div>
+                            
+                            <div class="uml-help">
+                                <h5><i class="fas fa-info-circle"></i> Ayuda Rápida</h5>
+                                <div class="help-content" id="umlHelpContent">
+                                    <p>Selecciona un tipo de diagrama para ver ejemplos y sintaxis.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="uml-main">
+                            <div class="uml-editor-section">
+                                <div class="uml-editor-header">
+                                    <h4><i class="fas fa-code"></i> Editor de Código</h4>
+                                    <div class="uml-editor-actions">
+                                        <button class="btn btn-sm btn-secondary" id="umlPreviewBtn">
+                                            <i class="fas fa-eye"></i> Vista Previa
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" id="umlFullscreenBtn">
+                                            <i class="fas fa-expand"></i> Pantalla Completa
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="uml-code-editor" id="umlCodeEditor"></div>
+                            </div>
+                            
+                            <div class="uml-preview-section">
+                                <div class="uml-preview-header">
+                                    <h4><i class="fas fa-eye"></i> Vista Previa</h4>
+                                    <div class="uml-preview-actions">
+                                        <button class="btn btn-sm btn-secondary" id="umlZoomInBtn">
+                                            <i class="fas fa-search-plus"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" id="umlZoomOutBtn">
+                                            <i class="fas fa-search-minus"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" id="umlResetZoomBtn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="uml-preview-container">
+                                    <div class="uml-preview" id="umlPreview">
+                                        <div class="uml-preview-placeholder">
+                                            <i class="fas fa-project-diagram"></i>
+                                            <p>La vista previa aparecerá aquí</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelUML">Cancelar</button>
+                    <button class="btn btn-primary" id="insertUMLDiagram">Insertar Diagrama</button>
                 </div>
             </div>
         </div>

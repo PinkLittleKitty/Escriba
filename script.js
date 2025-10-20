@@ -47,6 +47,7 @@ class CuadernoDigital {
         this.bindEvents();
         this.loadSettings();
         this.loadSidebarState();
+        this.initializeMermaid();
 
         if (window.githubSync) {
             await this.initializeGitHubSync();
@@ -65,6 +66,36 @@ class CuadernoDigital {
         setTimeout(() => {
             document.body.classList.remove('loading');
         }, 100);
+    }
+
+    initializeMermaid() {
+        if (typeof mermaid !== 'undefined') {
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark',
+                securityLevel: 'loose',
+                fontFamily: 'Inter, Arial, sans-serif',
+                fontSize: 14,
+                flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                    curve: 'basis'
+                },
+                sequence: {
+                    useMaxWidth: true,
+                    showSequenceNumbers: true
+                },
+                class: {
+                    useMaxWidth: true
+                },
+                state: {
+                    useMaxWidth: true
+                },
+                er: {
+                    useMaxWidth: true
+                }
+            });
+        }
     }
 
     bindEvents() {
@@ -223,6 +254,13 @@ class CuadernoDigital {
             btn.addEventListener('click', () => this.hideLinkModal());
         });
 
+        document.querySelectorAll('#umlModal .modal-close').forEach(btn => {
+            btn.addEventListener('click', () => this.hideUMLModal());
+        });
+
+        document.getElementById('cancelUML').addEventListener('click', () => this.hideUMLModal());
+        document.getElementById('insertUMLDiagram').addEventListener('click', () => this.insertUMLDiagram());
+
         document.querySelectorAll('.color-option').forEach(option => {
             option.addEventListener('click', (e) => this.selectColor(e.target.dataset.color));
         });
@@ -252,6 +290,7 @@ class CuadernoDigital {
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertLinkBtn').addEventListener('click', () => this.showLinkModal());
         document.getElementById('mathModeBtn').addEventListener('click', () => this.toggleMathMode());
+        document.getElementById('insertUMLBtn').addEventListener('click', () => this.showUMLModal());
 
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
 
@@ -691,6 +730,7 @@ class CuadernoDigital {
         const noteContent = document.getElementById('noteContent');
         const clone = noteContent.cloneNode(true);
 
+        // Handle ACE editors
         const aceEditors = clone.querySelectorAll('.inline-ace-editor');
         aceEditors.forEach(editorContainer => {
             const originalEditor = document.getElementById(editorContainer.id);
@@ -708,6 +748,15 @@ class CuadernoDigital {
             }
         });
 
+        const umlDiagrams = clone.querySelectorAll('.uml-diagram-container');
+        umlDiagrams.forEach(container => {
+
+            const content = container.querySelector('.uml-diagram-content');
+            if (content && content.id) {
+                content.removeAttribute('id');
+            }
+        });
+
         return clone.innerHTML;
     }
 
@@ -718,23 +767,49 @@ class CuadernoDigital {
         
         noteContent.innerHTML = content;
 
+        // Restore ACE editors
         const placeholders = noteContent.querySelectorAll('.ace-editor-placeholder');
-        
-        if (placeholders.length === 0) {
-            return;
-        }
-
         let delay = 0;
-        placeholders.forEach((placeholder, index) => {
+        placeholders.forEach((placeholder) => {
             setTimeout(() => {
                 this.restoreSingleEditor(placeholder);
             }, delay);
             delay += 100;
         });
 
+        // Restore UML diagrams
+        const umlDiagrams = noteContent.querySelectorAll('.uml-diagram-container');
+        umlDiagrams.forEach((container, index) => {
+            setTimeout(() => {
+                this.restoreUMLDiagram(container);
+            }, delay + (index * 100));
+        });
+
         setTimeout(() => {
             this.updateLanguageSelectVisibility();
-        }, delay + 100);
+        }, delay + (umlDiagrams.length * 100) + 100);
+    }
+
+    restoreUMLDiagram(container) {
+        const code = container.getAttribute('data-uml-code');
+        if (!code) return;
+
+        const contentElement = container.querySelector('.uml-diagram-content');
+        if (!contentElement) return;
+
+        // Generate unique ID for this diagram
+        const diagramId = 'uml-restored-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        contentElement.id = diagramId;
+
+        contentElement.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                <i class="fas fa-spinner fa-spin"></i> Cargando diagrama...
+            </div>
+        `;
+
+        setTimeout(() => {
+            this.renderUMLDiagramInNote(diagramId, code);
+        }, 100);
     }
 
     cleanupExistingEditors() {
@@ -3821,7 +3896,34 @@ class CuadernoDigital {
         currentSettings.theme = theme;
         localStorage.setItem('escribaSettings', JSON.stringify(currentSettings));
 
+        // Update Mermaid theme
+        if (typeof mermaid !== 'undefined') {
+            mermaid.initialize({
+                theme: theme === 'light' ? 'default' : 'dark'
+            });
+            
+            // Re-render any visible UML diagrams
+            this.reRenderUMLDiagrams();
+        }
+
         this.showToast(`Tema "${this.getThemeName(theme)}" aplicado`, 'success');
+    }
+
+    reRenderUMLDiagrams() {
+        const noteContent = document.getElementById('noteContent');
+        if (!noteContent) return;
+
+        const umlDiagrams = noteContent.querySelectorAll('.uml-diagram-container');
+        umlDiagrams.forEach(container => {
+            const code = container.getAttribute('data-uml-code');
+            const contentElement = container.querySelector('.uml-diagram-content');
+            
+            if (code && contentElement && contentElement.id) {
+                setTimeout(() => {
+                    this.renderUMLDiagramInNote(contentElement.id, code);
+                }, 100);
+            }
+        });
     }
 
     getThemeName(theme) {
@@ -4688,6 +4790,892 @@ class CuadernoDigital {
         }));
         
         localStorage.setItem('cuadernoEvents', JSON.stringify(cleanEvents));
+    }
+
+    // UML Functionality
+    showUMLModal() {
+        const modal = document.getElementById('umlModal');
+        modal.classList.add('active');
+        
+        // Start in fullscreen mode by default
+        setTimeout(() => {
+            modal.classList.add('fullscreen');
+            const btn = document.getElementById('umlFullscreenBtn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-compress"></i> Salir Pantalla Completa';
+                btn.title = 'Salir de Pantalla Completa';
+            }
+            
+            // Resize editor after fullscreen is applied
+            setTimeout(() => {
+                if (this.umlEditor) {
+                    this.umlEditor.resize(true);
+                }
+            }, 100);
+        }, 50);
+        
+        this.initializeUMLEditor();
+        this.setupUMLEventListeners();
+        this.selectUMLTemplate('class'); // Default template
+    }
+
+    hideUMLModal() {
+        document.getElementById('umlModal').classList.remove('active');
+        if (this.umlEditor) {
+            this.umlEditor.destroy();
+            this.umlEditor = null;
+        }
+    }
+
+    initializeUMLEditor() {
+        if (this.umlEditor) {
+            this.umlEditor.destroy();
+        }
+
+        const editorContainer = document.getElementById('umlCodeEditor');
+        editorContainer.innerHTML = '';
+        
+        // Ensure container has proper dimensions
+        editorContainer.style.width = '100%';
+        editorContainer.style.height = '100%';
+
+        this.umlEditor = ace.edit(editorContainer);
+        this.umlEditor.setTheme(this.getCurrentTheme());
+        this.umlEditor.session.setMode('ace/mode/text');
+        
+        this.umlEditor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: false,
+            fontSize: 14,
+            fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+            showPrintMargin: false,
+            wrap: false,
+            useWorker: false,
+            maxLines: Infinity,
+            minLines: 10,
+            autoScrollEditorIntoView: false,
+            scrollPastEnd: 0.3,
+            behavioursEnabled: true,
+            wrapBehavioursEnabled: true,
+            highlightActiveLine: true,
+            showGutter: true,
+            displayIndentGuides: true,
+            cursorStyle: 'ace',
+            mergeUndoDeltas: true,
+            animatedScroll: false,
+            tabSize: 4,
+            useSoftTabs: true
+        });
+
+        // Auto-update preview on change
+        let updateTimeout;
+        this.umlEditor.session.on('change', () => {
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(() => {
+                this.updateUMLPreview();
+            }, 500);
+        });
+
+        // Initialize Mermaid
+        if (typeof mermaid !== 'undefined') {
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark',
+                securityLevel: 'loose',
+                fontFamily: 'Inter, Arial, sans-serif',
+                fontSize: 14,
+                flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                    curve: 'basis'
+                },
+                sequence: {
+                    useMaxWidth: true,
+                    showSequenceNumbers: true
+                },
+                class: {
+                    useMaxWidth: true
+                },
+                state: {
+                    useMaxWidth: true
+                },
+                er: {
+                    useMaxWidth: true
+                }
+            });
+        }
+        
+        // Force editor resize after initialization
+        setTimeout(() => {
+            if (this.umlEditor) {
+                this.umlEditor.resize(true);
+                this.umlEditor.renderer.updateFull();
+            }
+        }, 100);
+    }
+
+    setupUMLEventListeners() {
+        // Template selection
+        document.querySelectorAll('.uml-template-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const template = btn.dataset.template;
+                this.selectUMLTemplate(template);
+            });
+        });
+
+        // Preview button
+        document.getElementById('umlPreviewBtn').addEventListener('click', () => {
+            this.updateUMLPreview();
+        });
+
+        // Zoom controls
+        document.getElementById('umlZoomInBtn').addEventListener('click', () => {
+            this.zoomUMLPreview(1.2);
+        });
+
+        document.getElementById('umlZoomOutBtn').addEventListener('click', () => {
+            this.zoomUMLPreview(0.8);
+        });
+
+        document.getElementById('umlResetZoomBtn').addEventListener('click', () => {
+            this.resetUMLZoom();
+        });
+
+        // Fullscreen toggle
+        document.getElementById('umlFullscreenBtn').addEventListener('click', () => {
+            this.toggleUMLFullscreen();
+        });
+    }
+
+    selectUMLTemplate(templateType) {
+        // Update active button
+        document.querySelectorAll('.uml-template-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-template="${templateType}"]`).classList.add('active');
+
+        // Get template code and help
+        const template = this.getUMLTemplate(templateType);
+        
+        if (this.umlEditor) {
+            this.umlEditor.setValue(template.code, -1);
+            this.umlEditor.clearSelection();
+        }
+
+        // Update help content
+        document.getElementById('umlHelpContent').innerHTML = template.help;
+
+        // Update preview
+        setTimeout(() => {
+            this.updateUMLPreview();
+        }, 100);
+    }
+
+    getUMLTemplate(type) {
+        const templates = {
+            class: {
+                code: `classDiagram
+    class Usuario {
+        -String nombre
+        -String email
+        -String password
+        +login()
+        +logout()
+        +cambiarPassword()
+    }
+    
+    class Producto {
+        -int id
+        -String nombre
+        -double precio
+        -int stock
+        +actualizarStock()
+        +calcularDescuento()
+    }
+    
+    class Pedido {
+        -int id
+        -Date fecha
+        -String estado
+        +agregarProducto()
+        +calcularTotal()
+        +confirmar()
+    }
+    
+    Usuario ||--o{ Pedido
+    Pedido }o--|| Producto`,
+                help: `
+                    <p><strong>Diagrama de Clases UML</strong></p>
+                    <p>Sintaxis básica:</p>
+                    <pre>classDiagram
+    class NombreClase {
+        -atributoPrivado
+        +metodoPublico()
+        #metodoProtegido()
+        ~metodoPaquete()
+    }</pre>
+                    <p><strong>Relaciones:</strong></p>
+                    <code>A --|> B</code> : Herencia<br>
+                    <code>A --* B</code> : Composición<br>
+                    <code>A --o B</code> : Agregación<br>
+                    <code>A --> B</code> : Asociación<br>
+                    <code>A ||--o{ B</code> : Uno a muchos
+                `
+            },
+            sequence: {
+                code: `sequenceDiagram
+    participant U as Usuario
+    participant S as Sistema
+    participant DB as Base de Datos
+    
+    U->>+S: Iniciar sesión
+    S->>+DB: Verificar credenciales
+    DB-->>-S: Credenciales válidas
+    S-->>-U: Sesión iniciada
+    
+    U->>+S: Solicitar datos
+    S->>+DB: Consultar información
+    DB-->>-S: Datos encontrados
+    S-->>-U: Mostrar información
+    
+    Note over U,DB: El usuario puede realizar múltiples consultas
+    
+    U->>S: Cerrar sesión
+    S-->>U: Sesión cerrada`,
+                help: `
+                    <p><strong>Diagrama de Secuencia</strong></p>
+                    <p>Sintaxis básica:</p>
+                    <pre>sequenceDiagram
+    participant A as Actor
+    A->>B: Mensaje
+    B-->>A: Respuesta</pre>
+                    <p><strong>Tipos de flechas:</strong></p>
+                    <code>-&gt;&gt;</code> : Mensaje síncrono<br>
+                    <code>--&gt;&gt;</code> : Mensaje de respuesta<br>
+                    <code>-&gt;&gt;+</code> : Activar lifeline<br>
+                    <code>--&gt;&gt;-</code> : Desactivar lifeline
+                `
+            },
+            flowchart: {
+                code: `flowchart TD
+    A[Inicio] --> B{¿Datos válidos?}
+    B -->|Sí| C[Procesar datos]
+    B -->|No| D[Mostrar error]
+    C --> E[Guardar en BD]
+    E --> F{¿Guardado exitoso?}
+    F -->|Sí| G[Mostrar éxito]
+    F -->|No| H[Mostrar error BD]
+    D --> I[Solicitar datos nuevamente]
+    I --> B
+    G --> J[Fin]
+    H --> J`,
+                help: `
+                    <p><strong>Diagrama de Flujo</strong></p>
+                    <p>Sintaxis básica:</p>
+                    <pre>flowchart TD
+    A[Rectángulo] --> B{Decisión}
+    B --> C((Círculo))
+    B --> D[/Paralelogramo/]</pre>
+                    <p><strong>Formas disponibles:</strong></p>
+                    <code>[texto]</code> : Rectángulo<br>
+                    <code>{texto}</code> : Rombo (decisión)<br>
+                    <code>((texto))</code> : Círculo<br>
+                    <code>[/texto/]</code> : Paralelogramo
+                `
+            },
+            er: {
+                code: `erDiagram
+    USUARIO {
+        int id PK
+        string nombre
+        string email UK
+        string password
+        date fecha_registro
+    }
+    
+    PRODUCTO {
+        int id PK
+        string nombre
+        text descripcion
+        decimal precio
+        int stock
+        int categoria_id FK
+    }
+    
+    PEDIDO {
+        int id PK
+        int usuario_id FK
+        date fecha
+        string estado
+        decimal total
+    }
+    
+    CATEGORIA {
+        int id PK
+        string nombre
+        text descripcion
+    }
+    
+    USUARIO ||--o{ PEDIDO : realiza
+    PEDIDO }o--|| PRODUCTO : contiene
+    CATEGORIA ||--o{ PRODUCTO : pertenece`,
+                help: `
+                    <p><strong>Diagrama Entidad-Relación</strong></p>
+                    <p>Sintaxis básica:</p>
+                    <pre>erDiagram
+    ENTIDAD {
+        tipo campo PK
+        tipo campo FK
+        tipo campo UK
+    }</pre>
+                    <p><strong>Tipos de relación:</strong></p>
+                    <code>||--||</code> : Uno a uno<br>
+                    <code>||--o{</code> : Uno a muchos<br>
+                    <code>}o--o{</code> : Muchos a muchos<br>
+                    <p><strong>Claves:</strong> PK (Primary Key), FK (Foreign Key), UK (Unique Key)</p>
+                `
+            },
+            state: {
+                code: `stateDiagram-v2
+    [*] --> Inactivo
+    
+    Inactivo --> Autenticando : iniciar_sesion
+    Autenticando --> Activo : credenciales_validas
+    Autenticando --> Inactivo : credenciales_invalidas
+    
+    Activo --> Procesando : realizar_accion
+    Procesando --> Activo : accion_completada
+    Procesando --> Error : error_procesamiento
+    
+    Error --> Activo : reintentar
+    Error --> Inactivo : cancelar
+    
+    Activo --> Cerrando : cerrar_sesion
+    Cerrando --> Inactivo : sesion_cerrada
+    
+    state Activo {
+        [*] --> Navegando
+        Navegando --> Editando : editar
+        Editando --> Guardando : guardar
+        Guardando --> Navegando : guardado_exitoso
+    }`,
+                help: `
+                    <p><strong>Diagrama de Estados</strong></p>
+                    <p>Sintaxis básica:</p>
+                    <pre>stateDiagram-v2
+    [*] --> Estado1
+    Estado1 --> Estado2 : evento
+    Estado2 --> [*]</pre>
+                    <p><strong>Estados especiales:</strong></p>
+                    <code>[*]</code> : Estado inicial/final<br>
+                    <code>state Estado { }</code> : Estado compuesto<br>
+                    <p><strong>Transiciones:</strong> <code>Estado1 --> Estado2 : evento</code></p>
+                `
+            },
+            usecase: {
+                code: `flowchart TD
+    subgraph Sistema["Sistema de Gestión"]
+        UC1((Iniciar Sesión))
+        UC2((Gestionar Productos))
+        UC3((Realizar Pedido))
+        UC4((Ver Historial))
+        UC5((Generar Reportes))
+    end
+    
+    U[Usuario] --> UC1
+    U --> UC3
+    U --> UC4
+    
+    A[Administrador] --> UC1
+    A --> UC2
+    A --> UC5
+    
+    UC3 -.-> UC1
+    UC2 -.-> UC1
+    UC5 -.-> UC1`,
+                help: `
+                    <p><strong>Diagrama de Casos de Uso</strong></p>
+                    <p>Sintaxis básica:</p>
+                    <pre>flowchart TD
+    Actor[👤 Actor] --> UC((Caso de Uso))
+    UC -.-> UC2 : <<include>></pre>
+                    <p><strong>Elementos:</strong></p>
+                    <code>((texto))</code> : Caso de uso<br>
+                    <code>[👤 texto]</code> : Actor<br>
+                    <code>--></code> : Asociación<br>
+                    <code>-.-> : <<include>></code> : Inclusión<br>
+                    <code>-.-> : <<extend>></code> : Extensión
+                `
+            }
+        };
+
+        return templates[type] || templates.class;
+    }
+
+    updateUMLPreview() {
+        const code = this.umlEditor ? this.umlEditor.getValue() : '';
+        const previewContainer = document.getElementById('umlPreview');
+        
+        if (!code.trim()) {
+            previewContainer.innerHTML = `
+                <div class="uml-preview-placeholder">
+                    <i class="fas fa-project-diagram"></i>
+                    <p>Escribí código Mermaid para ver la vista previa</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Show loading state
+        previewContainer.innerHTML = `
+            <div class="uml-preview-placeholder">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Generando vista previa...</p>
+            </div>
+        `;
+
+        try {
+            if (typeof mermaid !== 'undefined') {
+                const diagramId = 'umlDiagram-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                
+                // Clear any existing mermaid elements
+                const existingElements = document.querySelectorAll('[id^="umlDiagram-"]');
+                existingElements.forEach(el => {
+                    if (el.parentNode && el.parentNode !== previewContainer) {
+                        el.remove();
+                    }
+                });
+                
+                mermaid.render(diagramId, code).then(({ svg }) => {
+                    // Create diagram container
+                    const diagramContainer = document.createElement('div');
+                    diagramContainer.className = 'uml-diagram';
+                    diagramContainer.innerHTML = svg;
+                    
+                    // Clear and add new content
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(diagramContainer);
+                    
+                    // Reset zoom
+                    previewContainer.style.transform = 'scale(1)';
+                    
+                }).catch(error => {
+                    console.error('Mermaid render error:', error);
+                    let errorMessage = 'Verifica la sintaxis';
+                    
+                    if (error.message) {
+                        if (error.message.includes('Parse error')) {
+                            errorMessage = 'Error de sintaxis en el código';
+                        } else if (error.message.includes('Lexical error')) {
+                            errorMessage = 'Caracteres no válidos en el código';
+                        } else {
+                            errorMessage = error.message.substring(0, 100);
+                        }
+                    }
+                    
+                    previewContainer.innerHTML = `
+                        <div class="uml-preview-placeholder">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--accent-red);"></i>
+                            <p>Error en el código del diagrama</p>
+                            <small>${errorMessage}</small>
+                        </div>
+                    `;
+                });
+            } else {
+                previewContainer.innerHTML = `
+                    <div class="uml-preview-placeholder">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--accent-orange);"></i>
+                        <p>Mermaid no está disponible</p>
+                        <small>Recarga la página para cargar la librería</small>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error updating UML preview:', error);
+            previewContainer.innerHTML = `
+                <div class="uml-preview-placeholder">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--accent-red);"></i>
+                    <p>Error al generar vista previa</p>
+                    <small>Intenta recargar la página</small>
+                </div>
+            `;
+        }
+    }
+
+    zoomUMLPreview(factor) {
+        const preview = document.getElementById('umlPreview');
+        const currentTransform = preview.style.transform || 'scale(1)';
+        const currentScale = parseFloat(currentTransform.match(/scale\(([^)]+)\)/)?.[1] || 1);
+        const newScale = Math.max(0.25, Math.min(5, currentScale * factor));
+        
+        preview.style.transform = `scale(${newScale})`;
+        
+        // Show current zoom level
+        const zoomLevel = Math.round(newScale * 100);
+        this.showToast(`Zoom: ${zoomLevel}%`, 'info');
+    }
+
+    resetUMLZoom() {
+        const preview = document.getElementById('umlPreview');
+        preview.style.transform = 'scale(1)';
+        this.showToast('Zoom: 100%', 'info');
+    }
+
+    toggleUMLFullscreen() {
+        const modal = document.getElementById('umlModal');
+        const btn = document.getElementById('umlFullscreenBtn');
+        
+        if (modal.classList.contains('fullscreen')) {
+            modal.classList.remove('fullscreen');
+            btn.innerHTML = '<i class="fas fa-expand"></i> Pantalla Completa';
+            btn.title = 'Pantalla Completa';
+        } else {
+            modal.classList.add('fullscreen');
+            btn.innerHTML = '<i class="fas fa-compress"></i> Salir Pantalla Completa';
+            btn.title = 'Salir de Pantalla Completa';
+        }
+        
+        // Resize editor after fullscreen toggle
+        setTimeout(() => {
+            if (this.umlEditor) {
+                this.umlEditor.resize();
+            }
+        }, 100);
+    }
+
+    toggleUMLFullscreen() {
+        const modal = document.getElementById('umlModal');
+        const btn = document.getElementById('umlFullscreenBtn');
+        
+        if (modal.classList.contains('fullscreen')) {
+            modal.classList.remove('fullscreen');
+            btn.innerHTML = '<i class="fas fa-expand"></i>';
+            btn.title = 'Pantalla Completa';
+        } else {
+            modal.classList.add('fullscreen');
+            btn.innerHTML = '<i class="fas fa-compress"></i>';
+            btn.title = 'Salir de Pantalla Completa';
+        }
+        
+        // Resize editor after fullscreen toggle
+        setTimeout(() => {
+            if (this.umlEditor) {
+                this.umlEditor.resize();
+            }
+        }, 100);
+    }
+
+    insertUMLDiagram() {
+        if (!this.umlEditor) {
+            this.showToast('Error: Editor UML no inicializado', 'error');
+            return;
+        }
+
+        const code = this.umlEditor.getValue().trim();
+        if (!code) {
+            this.showToast('Por favor escribí el código del diagrama', 'error');
+            return;
+        }
+
+        // Get diagram type from code
+        const diagramType = this.detectDiagramType(code);
+        
+        try {
+            // Create UML diagram container
+            const diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            
+            const diagramContainer = document.createElement('div');
+            diagramContainer.className = 'uml-diagram-container';
+            diagramContainer.setAttribute('data-uml-code', code);
+            diagramContainer.setAttribute('data-diagram-type', diagramType);
+            
+            diagramContainer.innerHTML = `
+                <div class="uml-diagram-header">
+                    <div class="uml-diagram-title">
+                        <i class="fas fa-project-diagram"></i>
+                        Diagrama ${this.getDiagramTypeName(diagramType)}
+                    </div>
+                    <div class="uml-diagram-actions">
+                        <button class="uml-diagram-btn" onclick="cuaderno.editUMLDiagram(this)" title="Editar diagrama">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="uml-diagram-btn" onclick="cuaderno.deleteUMLDiagram(this)" title="Eliminar diagrama">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="uml-diagram-content" id="${diagramId}">
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <i class="fas fa-spinner fa-spin"></i> Generando diagrama...
+                    </div>
+                </div>
+            `;
+
+            // Insert into note content
+            const noteContent = document.getElementById('noteContent');
+            if (!noteContent.contains(document.activeElement)) {
+                noteContent.focus();
+            }
+
+            const selection = window.getSelection();
+            let insertPosition = null;
+
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (noteContent.contains(range.commonAncestorContainer)) {
+                    insertPosition = range;
+                }
+            }
+
+            if (insertPosition) {
+                insertPosition.deleteContents();
+                
+                const beforeText = document.createTextNode('\n');
+                insertPosition.insertNode(beforeText);
+                insertPosition.setStartAfter(beforeText);
+                
+                insertPosition.insertNode(diagramContainer);
+                insertPosition.setStartAfter(diagramContainer);
+                
+                const afterText = document.createTextNode('\n');
+                insertPosition.insertNode(afterText);
+            } else {
+                noteContent.appendChild(document.createElement('br'));
+                noteContent.appendChild(diagramContainer);
+                noteContent.appendChild(document.createElement('br'));
+            }
+
+            // Render the diagram
+            setTimeout(() => {
+                this.renderUMLDiagramInNote(diagramId, code);
+            }, 100);
+
+            this.hideUMLModal();
+            this.saveCurrentNote();
+            this.showToast('Diagrama UML insertado exitosamente', 'success');
+
+        } catch (error) {
+            console.error('Error inserting UML diagram:', error);
+            this.showToast('Error al insertar el diagrama UML', 'error');
+        }
+    }
+
+    detectDiagramType(code) {
+        const firstLine = code.split('\n')[0].trim().toLowerCase();
+        
+        if (firstLine.includes('classDiagram')) return 'class';
+        if (firstLine.includes('sequenceDiagram')) return 'sequence';
+        if (firstLine.includes('flowchart') || firstLine.includes('graph')) return 'flowchart';
+        if (firstLine.includes('erDiagram')) return 'er';
+        if (firstLine.includes('stateDiagram')) return 'state';
+        if (firstLine.includes('gitgraph')) return 'git';
+        if (firstLine.includes('pie')) return 'pie';
+        if (firstLine.includes('journey')) return 'journey';
+        
+        return 'diagram';
+    }
+
+    getDiagramTypeName(type) {
+        const names = {
+            'class': 'de Clases',
+            'sequence': 'de Secuencia',
+            'flowchart': 'de Flujo',
+            'er': 'Entidad-Relación',
+            'state': 'de Estados',
+            'git': 'Git',
+            'pie': 'Circular',
+            'journey': 'de Viaje del Usuario',
+            'diagram': 'UML'
+        };
+        return names[type] || 'UML';
+    }
+
+    renderUMLDiagramInNote(containerId, code) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (typeof mermaid !== 'undefined') {
+            const diagramId = 'rendered-' + containerId;
+            
+            mermaid.render(diagramId, code).then(({ svg }) => {
+                container.innerHTML = svg;
+            }).catch(error => {
+                console.error('Error rendering UML diagram in note:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--accent-red);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error al renderizar el diagrama</p>
+                        <small>${error.message || 'Verifica la sintaxis del código'}</small>
+                    </div>
+                `;
+            });
+        } else {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--accent-orange);">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Mermaid no está disponible</p>
+                    <small>Recarga la página para cargar la librería</small>
+                </div>
+            `;
+        }
+    }
+
+    editUMLDiagram(button) {
+        const container = button.closest('.uml-diagram-container');
+        const code = container.getAttribute('data-uml-code');
+        
+        if (code) {
+            this.showUMLModal();
+            setTimeout(() => {
+                if (this.umlEditor) {
+                    this.umlEditor.setValue(code, -1);
+                    this.umlEditor.clearSelection();
+                    this.updateUMLPreview();
+                }
+            }, 200);
+            
+            // Store reference to update this diagram
+            this.editingDiagramContainer = container;
+        }
+    }
+
+    deleteUMLDiagram(button) {
+        if (confirm('¿Estás seguro de que querés eliminar este diagrama?')) {
+            const container = button.closest('.uml-diagram-container');
+            container.remove();
+            this.saveCurrentNote();
+            this.showToast('Diagrama eliminado', 'success');
+        }
+    }
+
+    // Override insertUMLDiagram when editing existing diagram
+    insertUMLDiagram() {
+        if (!this.umlEditor) {
+            this.showToast('Error: Editor UML no inicializado', 'error');
+            return;
+        }
+
+        const code = this.umlEditor.getValue().trim();
+        if (!code) {
+            this.showToast('Por favor escribí el código del diagrama', 'error');
+            return;
+        }
+
+        // If editing existing diagram, update it
+        if (this.editingDiagramContainer) {
+            const diagramType = this.detectDiagramType(code);
+            this.editingDiagramContainer.setAttribute('data-uml-code', code);
+            this.editingDiagramContainer.setAttribute('data-diagram-type', diagramType);
+            
+            // Update title
+            const titleElement = this.editingDiagramContainer.querySelector('.uml-diagram-title');
+            if (titleElement) {
+                titleElement.innerHTML = `
+                    <i class="fas fa-project-diagram"></i>
+                    Diagrama ${this.getDiagramTypeName(diagramType)}
+                `;
+            }
+            
+            // Re-render diagram
+            const contentElement = this.editingDiagramContainer.querySelector('.uml-diagram-content');
+            if (contentElement) {
+                contentElement.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <i class="fas fa-spinner fa-spin"></i> Actualizando diagrama...
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    this.renderUMLDiagramInNote(contentElement.id, code);
+                }, 100);
+            }
+            
+            this.editingDiagramContainer = null;
+            this.hideUMLModal();
+            this.saveCurrentNote();
+            this.showToast('Diagrama actualizado exitosamente', 'success');
+            return;
+        }
+
+        // Otherwise, insert new diagram (original logic)
+        const diagramType = this.detectDiagramType(code);
+        
+        try {
+            const diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            
+            const diagramContainer = document.createElement('div');
+            diagramContainer.className = 'uml-diagram-container';
+            diagramContainer.setAttribute('data-uml-code', code);
+            diagramContainer.setAttribute('data-diagram-type', diagramType);
+            
+            diagramContainer.innerHTML = `
+                <div class="uml-diagram-header">
+                    <div class="uml-diagram-title">
+                        <i class="fas fa-project-diagram"></i>
+                        Diagrama ${this.getDiagramTypeName(diagramType)}
+                    </div>
+                    <div class="uml-diagram-actions">
+                        <button class="uml-diagram-btn" onclick="cuaderno.editUMLDiagram(this)" title="Editar diagrama">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="uml-diagram-btn" onclick="cuaderno.deleteUMLDiagram(this)" title="Eliminar diagrama">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="uml-diagram-content" id="${diagramId}">
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <i class="fas fa-spinner fa-spin"></i> Generando diagrama...
+                    </div>
+                </div>
+            `;
+
+            const noteContent = document.getElementById('noteContent');
+            if (!noteContent.contains(document.activeElement)) {
+                noteContent.focus();
+            }
+
+            const selection = window.getSelection();
+            let insertPosition = null;
+
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (noteContent.contains(range.commonAncestorContainer)) {
+                    insertPosition = range;
+                }
+            }
+
+            if (insertPosition) {
+                insertPosition.deleteContents();
+                
+                const beforeText = document.createTextNode('\n');
+                insertPosition.insertNode(beforeText);
+                insertPosition.setStartAfter(beforeText);
+                
+                insertPosition.insertNode(diagramContainer);
+                insertPosition.setStartAfter(diagramContainer);
+                
+                const afterText = document.createTextNode('\n');
+                insertPosition.insertNode(afterText);
+            } else {
+                noteContent.appendChild(document.createElement('br'));
+                noteContent.appendChild(diagramContainer);
+                noteContent.appendChild(document.createElement('br'));
+            }
+
+            setTimeout(() => {
+                this.renderUMLDiagramInNote(diagramId, code);
+            }, 100);
+
+            this.hideUMLModal();
+            this.saveCurrentNote();
+            this.showToast('Diagrama UML insertado exitosamente', 'success');
+
+        } catch (error) {
+            console.error('Error inserting UML diagram:', error);
+            this.showToast('Error al insertar el diagrama UML', 'error');
+        }
     }
 }
 

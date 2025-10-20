@@ -190,8 +190,8 @@
 }
 
 [data-theme="cyberpunk"] .note-content {
-    background: radial-gradient(ellipse at center, rgba(0, 255, 65, 0.02) 0%, transparent 70%), 
-                linear-gradient(0deg, rgba(0, 255, 65, 0.01) 0%, transparent 100%);
+    background: radial-gradient(ellipse at center, rgba(0, 255, 65, 0.02) 0%, transparent 70%),
+        linear-gradient(0deg, rgba(0, 255, 65, 0.01) 0%, transparent 100%);
 }
 
 [data-theme="cyberpunk"] header h1 {
@@ -270,6 +270,7 @@
     from {
         text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
     }
+
     to {
         text-shadow: 0 0 20px rgba(0, 255, 65, 1), 0 0 30px rgba(0, 255, 65, 0.5);
     }
@@ -282,7 +283,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: 
+    background-image:
         linear-gradient(90deg, transparent 98%, rgba(0, 255, 65, 0.03) 100%),
         linear-gradient(0deg, transparent 98%, rgba(0, 255, 65, 0.03) 100%);
     background-size: 20px 20px;
@@ -292,8 +293,13 @@
 }
 
 @keyframes digitalRain {
-    0% { background-position: 0 0; }
-    100% { background-position: 20px 20px; }
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 20px 20px;
+    }
 }
 
 body {
@@ -513,8 +519,13 @@ header h1 i {
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .github-controls {
@@ -771,6 +782,514 @@ header h1 i {
 .sync-actions .btn {
     flex: 1;
     min-width: 140px;
+}
+
+/* UML Modal Styles */
+.modal-large {
+    max-width: 98vw;
+    width: 1400px;
+    height: 95vh;
+    max-height: 95vh;
+}
+
+.modal-large .modal-body {
+    padding: 0;
+    height: calc(95vh - 80px);
+    overflow: hidden;
+}
+
+.modal-large .modal-footer {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    min-height: auto;
+}
+
+.uml-editor-container {
+    display: flex;
+    height: 100%;
+    gap: 1px;
+    background: var(--border-color);
+}
+
+.uml-sidebar {
+    width: 300px;
+    min-width: 300px;
+    background: var(--bg-secondary);
+    padding: 1rem;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-color);
+}
+
+.uml-sidebar h4 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.uml-templates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.uml-template-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    font-size: 0.875rem;
+}
+
+.uml-template-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-light);
+}
+
+.uml-template-btn.active {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+.uml-template-btn i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.uml-help {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.uml-help h5 {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.help-content {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.help-content code {
+    background: var(--bg-tertiary);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+}
+
+.help-content pre {
+    background: var(--bg-tertiary);
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin: 0.5rem 0;
+    overflow-x: auto;
+    font-size: 0.75rem;
+}
+
+.uml-main {
+    flex: 1;
+    display: flex;
+    background: var(--bg-primary);
+    min-width: 0;
+}
+
+.uml-editor-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    min-width: 0;
+}
+
+.uml-editor-header,
+.uml-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.uml-editor-header h4,
+.uml-preview-header h4 {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.uml-editor-actions,
+.uml-preview-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.uml-code-editor {
+    flex: 1;
+    min-height: 400px;
+    background: var(--bg-primary);
+    position: relative;
+}
+
+.uml-preview-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg-primary);
+}
+
+.uml-preview-container {
+    flex: 1;
+    overflow: auto;
+    background: var(--bg-primary);
+    position: relative;
+}
+
+.uml-preview {
+    padding: 1rem;
+    min-height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    transform-origin: top center;
+    transition: transform 0.2s ease;
+    overflow: visible;
+}
+
+.uml-preview-placeholder {
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.uml-preview-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.uml-preview-placeholder p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.uml-diagram {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    max-width: none;
+    width: fit-content;
+    margin: 1rem auto;
+}
+
+.uml-diagram svg {
+    display: block;
+    max-width: none;
+    height: auto;
+}
+
+/* UML Diagram in Note Content */
+.note-content .uml-diagram-container {
+    margin: 1rem 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-card);
+}
+
+.note-content .uml-diagram-header {
+    background: var(--bg-tertiary);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.note-content .uml-diagram-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.note-content .uml-diagram-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.note-content .uml-diagram-container:hover .uml-diagram-actions {
+    opacity: 1;
+}
+
+.note-content .uml-diagram-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+}
+
+.note-content .uml-diagram-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-light);
+}
+
+.note-content .uml-diagram-content {
+    padding: 1.5rem;
+    background: white;
+    overflow: auto;
+    max-height: 600px;
+}
+
+.note-content .uml-diagram-content svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Fullscreen UML Modal */
+.modal.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    z-index: 9999;
+}
+
+.modal.fullscreen .modal-content {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+}
+
+.modal.fullscreen .modal-body {
+    height: calc(100vh - 80px);
+}
+
+/* UML Editor Scrollbars */
+.uml-code-editor .ace_scrollbar {
+    background: var(--bg-secondary) !important;
+}
+
+.uml-code-editor .ace_scrollbar-v {
+    width: 14px !important;
+    right: 0 !important;
+}
+
+.uml-code-editor .ace_scrollbar-h {
+    height: 14px !important;
+    bottom: 0 !important;
+}
+
+.uml-code-editor .ace_scrollbar-thumb {
+    background: var(--border-light) !important;
+    border-radius: 6px !important;
+}
+
+.uml-code-editor .ace_scrollbar-thumb:hover {
+    background: var(--text-muted) !important;
+}
+
+/* Ensure ACE editor takes full container size */
+.uml-code-editor .ace_editor {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.uml-preview-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.uml-preview-container::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+}
+
+.uml-preview-container::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border-radius: 6px;
+    border: 2px solid var(--bg-secondary);
+}
+
+.uml-preview-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+.uml-preview-container::-webkit-scrollbar-corner {
+    background: var(--bg-secondary);
+}
+
+/* UML Diagram Serialization Support */
+.note-content .uml-diagram-container[data-uml-code] {
+    position: relative;
+}
+
+.note-content .uml-diagram-container::before {
+    content: attr(data-diagram-type);
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    background: var(--accent-blue);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    border-radius: 0 8px 0 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.note-content .uml-diagram-container:hover::before {
+    opacity: 0.8;
+}
+
+/* Responsive UML Modal */
+@media (max-width: 1200px) {
+    .uml-sidebar {
+        width: 250px;
+        min-width: 250px;
+    }
+}
+
+@media (max-width: 1024px) {
+
+    .uml-editor-container {
+        flex-direction: column;
+    }
+
+    .uml-sidebar {
+        width: 100%;
+        min-width: auto;
+        max-height: 180px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem;
+    }
+
+    .uml-templates {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .uml-help {
+        display: none;
+    }
+
+    .uml-main {
+        flex-direction: column;
+    }
+
+    .uml-editor-section {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        flex: none;
+        height: 300px;
+    }
+
+    .uml-preview-section {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-large {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .modal-large .modal-body {
+        height: calc(100vh - 80px);
+    }
+
+    .uml-editor-header,
+    .uml-preview-header {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .uml-editor-header h4,
+    .uml-preview-header h4 {
+        font-size: 0.85rem;
+    }
+
+    .uml-preview {
+        padding: 0.5rem;
+    }
+
+    .uml-sidebar {
+        padding: 0.5rem;
+        max-height: 150px;
+    }
+
+    .uml-templates {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.25rem;
+    }
+
+    .uml-template-btn {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .uml-template-btn i {
+        font-size: 0.9rem;
+    }
 }
 
 /* GitHub Token Auth Modal */
@@ -1300,12 +1819,12 @@ header h1 i {
     flex-wrap: wrap;
 }
 
-.shared-banner-content > i {
+.shared-banner-content>i {
     font-size: 1.2rem;
     flex-shrink: 0;
 }
 
-.shared-banner-content > span {
+.shared-banner-content>span {
     flex: 1;
     min-width: 200px;
 }
@@ -1320,18 +1839,18 @@ header h1 i {
     .shared-note-banner {
         padding: 1rem;
     }
-    
+
     .shared-banner-content {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
         text-align: center;
     }
-    
-    .shared-banner-content > span {
+
+    .shared-banner-content>span {
         min-width: auto;
     }
-    
+
     .banner-actions {
         justify-content: center;
     }
@@ -1365,8 +1884,13 @@ header h1 i {
 }
 
 @keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
 }
 
 .note-header {
@@ -1622,11 +2146,11 @@ header h1 i {
     line-height: 1.7;
 }
 
-.note-content > *:first-child {
+.note-content>*:first-child {
     margin-top: 0;
 }
 
-.note-content > *:last-child {
+.note-content>*:last-child {
     margin-bottom: 0;
 }
 
@@ -1998,12 +2522,12 @@ header h1 i {
     border-color: var(--accent-blue);
 }
 
-.checkbox-label input[type="checkbox"]:checked + .checkmark {
+.checkbox-label input[type="checkbox"]:checked+.checkmark {
     background: var(--accent-blue);
     border-color: var(--accent-blue);
 }
 
-.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+.checkbox-label input[type="checkbox"]:checked+.checkmark::after {
     content: '✓';
     position: absolute;
     top: 50%;
@@ -2178,7 +2702,7 @@ header h1 i {
     align-items: flex-start;
 }
 
-.warning-card > i {
+.warning-card>i {
     color: #f59e0b;
     font-size: 1.5rem;
     margin-top: 0.125rem;
@@ -3567,13 +4091,13 @@ header h1 i {
     .link-notes-list {
         max-height: 250px;
     }
-    
+
     .link-note-meta {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.25rem;
     }
-    
+
     .link-note-subject,
     .link-note-date {
         font-size: 0.75rem;
@@ -3724,7 +4248,7 @@ header h1 i {
     left: 0;
     width: 100%;
     height: 100%;
-    background: 
+    background:
         radial-gradient(ellipse at 20% 30%, rgba(157, 78, 221, 0.15) 0%, transparent 50%),
         radial-gradient(ellipse at 80% 60%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
         radial-gradient(ellipse at 50% 80%, rgba(255, 107, 157, 0.08) 0%, transparent 50%);
@@ -3792,10 +4316,12 @@ header h1 i {
         opacity: 0.6;
         filter: hue-rotate(0deg);
     }
+
     50% {
         opacity: 0.8;
         filter: hue-rotate(30deg);
     }
+
     100% {
         opacity: 0.6;
         filter: hue-rotate(0deg);
@@ -3806,9 +4332,11 @@ header h1 i {
     0% {
         filter: hue-rotate(0deg) saturate(1);
     }
+
     50% {
         filter: hue-rotate(15deg) saturate(1.2);
     }
+
     100% {
         filter: hue-rotate(0deg) saturate(1);
     }
@@ -3911,8 +4439,15 @@ header h1 i {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .success {
@@ -3924,6 +4459,7 @@ header h1 i {
 }
 
 @media print {
+
     .sidebar,
     .editor-toolbar,
     .note-header .note-actions {
@@ -4191,25 +4727,25 @@ header h1 i {
         padding: 0.75rem;
         gap: 0.5rem;
     }
-    
+
     .math-toolbar-group {
         gap: 0.375rem;
         justify-content: flex-start;
     }
-    
+
     .math-toolbar-label {
         font-size: 0.75rem;
         margin-right: 0.25rem;
         width: 100%;
         margin-bottom: 0.25rem;
     }
-    
+
     .math-symbol-btn {
         min-width: 32px;
         height: 32px;
         font-size: 1rem;
     }
-    
+
     .math-function-btn {
         font-size: 0.75rem;
         padding: 0.375rem 0.5rem;
@@ -4221,13 +4757,13 @@ header h1 i {
     .math-toolbar {
         padding: 0.5rem;
     }
-    
+
     .math-symbol-btn {
         min-width: 28px;
         height: 28px;
         font-size: 0.9375rem;
     }
-    
+
     .math-function-btn {
         font-size: 0.6875rem;
         padding: 0.25rem 0.375rem;
@@ -4287,6 +4823,7 @@ header h1 i {
         transform: translate(-50%, -50%) scale(0);
         opacity: 1;
     }
+
     to {
         transform: translate(-50%, -50%) scale(2);
         opacity: 0;
@@ -4297,6 +4834,7 @@ header h1 i {
     from {
         text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
     }
+
     to {
         text-shadow: 0 0 20px rgba(0, 255, 65, 0.8), 0 0 30px rgba(0, 255, 65, 0.6);
     }
@@ -4306,6 +4844,7 @@ header h1 i {
     from {
         width: 320px;
     }
+
     to {
         width: 60px;
     }
@@ -4315,6 +4854,7 @@ header h1 i {
     from {
         width: 60px;
     }
+
     to {
         width: 320px;
     }

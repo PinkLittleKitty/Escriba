@@ -163,9 +163,13 @@ class EscribaApp {
         document.getElementById('importJsonFile').addEventListener('change', (e) => this.handleJsonImport(e));
 
         document.getElementById('settingsBtn').addEventListener('click', () => {
+            this.updateSettingsStats();
             loadSettingsToModal(this.settings);
             showModal('settingsModal');
         });
+
+        const cancelSettings = document.getElementById('cancelSettings');
+        if (cancelSettings) cancelSettings.addEventListener('click', () => this.cancelSettings());
 
         initModalEvents((modalId) => {
             if (modalId === 'subjectModal') {
@@ -176,6 +180,13 @@ class EscribaApp {
         });
 
         document.getElementById('createSubject').addEventListener('click', () => this.createSubject());
+
+        const cancelSubjectBtn = document.getElementById('cancelSubject');
+        if (cancelSubjectBtn) cancelSubjectBtn.addEventListener('click', () => hideModal('subjectModal'));
+
+        const cancelSubjectPickerBtn = document.getElementById('cancelSubjectPicker');
+        if (cancelSubjectPickerBtn) cancelSubjectPickerBtn.addEventListener('click', () => hideModal('subjectPickerModal'));
+
         document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
         document.getElementById('clearAllData').addEventListener('click', () => {
             if (confirm('¿Estás seguro de que querés borrar todos tus datos? Esta acción es irreversible.')) {
@@ -750,6 +761,36 @@ class EscribaApp {
         applySettings();
         hideModal('settingsModal');
         showToast('Configuración guardada', 'success');
+    }
+
+    cancelSettings() {
+        applySettings();
+        hideModal('settingsModal');
+    }
+
+    updateSettingsStats() {
+        const totalSubjects = this.subjects.length;
+        let totalNotes = 0;
+        let totalWords = 0;
+
+        this.subjects.forEach(subject => {
+            totalNotes += subject.notes.length;
+            subject.notes.forEach(note => {
+                if (note.content) {
+                    const text = note.content.replace(/<[^>]*>?/gm, ' ');
+                    const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+                    totalWords += words.length;
+                }
+            });
+        });
+
+        const countSubjects = document.getElementById('countSubjects');
+        const countNotes = document.getElementById('countNotes');
+        const countWords = document.getElementById('countWords');
+
+        if (countSubjects) countSubjects.textContent = totalSubjects;
+        if (countNotes) countNotes.textContent = totalNotes;
+        if (countWords) countWords.textContent = totalWords;
     }
 
     selectTheme(theme) {
@@ -1566,6 +1607,8 @@ class EscribaApp {
         const dropdownDisconnect = document.getElementById('disconnectButton');
         const modalDisconnect = document.getElementById('disconnectGitHub');
         const dropdownConnect = document.getElementById('syncButton');
+        const settingsSyncStatus = document.getElementById('settingsSyncStatus');
+        const settingsSyncButton = document.getElementById('settingsSyncButton');
 
         if (!githubStatus || !statusText) return;
 
@@ -1579,8 +1622,10 @@ class EscribaApp {
                 statusText.textContent = this.github.username || 'Conectado';
                 if (syncButtons) syncButtons.style.display = 'flex';
                 if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
-                if (modalDisconnect) modalDisconnect.style.display = 'block';
+                if (modalDisconnect) modalDisconnect.style.display = 'flex';
                 if (dropdownConnect) dropdownConnect.style.display = 'none';
+                if (settingsSyncStatus) settingsSyncStatus.textContent = 'Conectado como ' + (this.github.username || 'usuario');
+                if (settingsSyncButton) settingsSyncButton.style.display = 'none';
                 break;
             case 'syncing':
                 githubStatus.classList.add('syncing');
@@ -1608,6 +1653,8 @@ class EscribaApp {
                 if (dropdownDisconnect) dropdownDisconnect.style.display = 'none';
                 if (modalDisconnect) modalDisconnect.style.display = 'none';
                 if (dropdownConnect) dropdownConnect.style.display = 'flex';
+                if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
+                if (settingsSyncButton) settingsSyncButton.style.display = 'flex';
                 break;
         }
 

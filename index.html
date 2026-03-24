@@ -346,64 +346,80 @@
                             <div class="theme-option active" data-theme="dark">
                                 <div class="theme-preview dark-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Oscuro</span>
                             </div>
                             <div class="theme-option" data-theme="light">
                                 <div class="theme-preview light-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Claro</span>
                             </div>
                             <div class="theme-option" data-theme="blue">
                                 <div class="theme-preview blue-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Azul</span>
                             </div>
                             <div class="theme-option" data-theme="unq">
                                 <div class="theme-preview unq-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>UNQ</span>
                             </div>
                             <div class="theme-option" data-theme="forest">
                                 <div class="theme-preview forest-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Bosque</span>
                             </div>
                             <div class="theme-option" data-theme="sunset">
                                 <div class="theme-preview sunset-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Atardecer</span>
                             </div>
                             <div class="theme-option" data-theme="aurora">
                                 <div class="theme-preview aurora-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Aurora</span>
                             </div>
                             <div class="theme-option" data-theme="cyberpunk">
-                                <div class="theme-preview cyberpunk-preview">
+                                <div class="theme-preview matrix-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Matrix</span>
                             </div>
@@ -438,21 +454,21 @@
                             <label class="checkbox-label">
                                 <input type="checkbox" id="autoSave" checked>
                                 <span class="checkmark"></span>
-                                Auto-guardado cada 2 segundos
+                                <span class="toggle-text">Auto-guardado cada 2 segundos</span>
                             </label>
                         </div>
                         <div class="form-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="expandSubjects" checked>
                                 <span class="checkmark"></span>
-                                Expandir materias por defecto
+                                <span class="toggle-text">Expandir materias por defecto</span>
                             </label>
                         </div>
                         <div class="form-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="showWelcome" checked>
                                 <span class="checkmark"></span>
-                                Mostrar pantalla de bienvenida
+                                <span class="toggle-text">Mostrar pantalla de bienvenida</span>
                             </label>
                         </div>
                     </div>
@@ -471,7 +487,7 @@
                                 <label class="checkbox-label">
                                     <input type="checkbox" id="autoSync" checked>
                                     <span class="checkmark"></span>
-                                    Sincronización automática cada 5 minutos
+                                    <span class="toggle-text">Sincronización automática cada 5 minutos</span>
                                 </label>
                             </div>
                             <div class="sync-actions">
@@ -487,22 +503,31 @@
 
                     <div class="settings-section">
                         <h4><i class="fas fa-database"></i> Datos</h4>
-                        <div class="data-stats">
-                            <div class="stat">
-                                <span class="stat-number" id="totalSubjects">0</span>
-                                <span class="stat-label">Materias</span>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-folder"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="countSubjects">0</span>
+                                    <span class="stat-label">Materias</span>
+                                </div>
                             </div>
-                            <div class="stat">
-                                <span class="stat-number" id="totalNotes">0</span>
-                                <span class="stat-label">Apuntes</span>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-sticky-note"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="countNotes">0</span>
+                                    <span class="stat-label">Apuntes</span>
+                                </div>
                             </div>
-                            <div class="stat">
-                                <span class="stat-number" id="totalWords">0</span>
-                                <span class="stat-label">Palabras</span>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="countWords">0</span>
+                                    <span class="stat-label">Palabras</span>
+                                </div>
                             </div>
                         </div>
                         <div class="data-actions">
-                            <button class="btn btn-secondary" id="clearAllData">
+                            <button class="btn btn-danger" id="clearAllData">
                                 <i class="fas fa-trash"></i> Limpiar Todo
                             </button>
                             <button class="btn btn-secondary" id="resetSettings">

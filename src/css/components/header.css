@@ -1,11 +1,10 @@
 header {
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
-    padding: 1rem 2rem;
+    padding: 0.75rem 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: var(--shadow);
     position: relative;
     z-index: 100;
 }
@@ -48,9 +47,10 @@ header h1 i {
 
 .semester-info {
     background: var(--bg-tertiary);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
     font-size: 0.85rem;
+    font-weight: 500;
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
 }
@@ -65,11 +65,12 @@ header h1 i {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.75rem;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-    border-radius: 20px;
-    font-size: 0.8rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
     color: var(--text-muted);
     transition: all 0.2s ease;
     cursor: pointer;
@@ -142,7 +143,7 @@ header h1 i {
     padding: 0.4rem;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 4px;
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -186,9 +187,9 @@ header h1 i {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -211,8 +212,6 @@ header h1 i {
 
 .sidebar-toggle.compact:hover {
     background: var(--accent-blue);
-    transform: translateY(-1px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(74, 158, 255, 0.3);
 }
 
 .dropdown {

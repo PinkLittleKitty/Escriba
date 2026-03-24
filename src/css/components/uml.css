@@ -37,7 +37,7 @@
     padding: 0.875rem;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 4px;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -60,7 +60,7 @@
 .uml-help {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 1rem;
 }
 
@@ -124,7 +124,7 @@
 
 .uml-diagram {
     background: white;
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 1.5rem;
     box-shadow: var(--shadow);
     max-width: none;
@@ -135,16 +135,15 @@
 .uml-diagram-container {
     margin: 1.5rem 0;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 4px;
     overflow: hidden;
     background: var(--bg-card);
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
+    box-shadow: none;
+    transition: all 0.2s ease;
 }
 
 .uml-diagram-container:hover {
-    box-shadow: var(--shadow);
-    border-color: var(--accent-blue);
+    border-color: var(--border-light);
 }
 
 .uml-diagram-header {
@@ -183,7 +182,7 @@
     cursor: pointer !important;
     width: 32px !important;
     height: 32px !important;
-    border-radius: 8px !important;
+    border-radius: 4px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -197,20 +196,16 @@
 
 .uml-edit-btn:hover,
 .uml-diagram-btn:first-child:hover {
-    background: var(--accent-blue) !important;
-    color: white !important;
-    border-color: var(--accent-blue) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3) !important;
+    background: var(--bg-hover) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-light) !important;
 }
 
 .uml-delete-btn:hover,
 .uml-diagram-btn:last-child:hover {
-    background: var(--accent-red, #ef4444) !important;
-    color: white !important;
-    border-color: var(--accent-red, #ef4444) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+    background: var(--accent-red-bg) !important;
+    color: var(--accent-red) !important;
+    border-color: var(--accent-red) !important;
 }
 
 .uml-diagram-content {

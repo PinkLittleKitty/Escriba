@@ -1,0 +1,13 @@
+@import url('themes.css');
+@import url('base.css');
+
+@import url('components/buttons.css');
+@import url('components/header.css');
+@import url('components/sidebar.css');
+@import url('components/editor.css');
+@import url('components/modals.css');
+@import url('components/calendar.css');
+@import url('components/uml.css');
+@import url('components/github.css');
+@import url('components/toasts.css');
+@import url('components/subjects.css');

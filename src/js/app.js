@@ -183,7 +183,10 @@ class EscribaApp {
         });
 
         document.getElementById('noteTitle').addEventListener('input', () => this.debouncedSave());
-        document.getElementById('noteContent').addEventListener('input', () => {
+        document.getElementById('noteContent').addEventListener('input', (e) => {
+            if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n')) {
+                this.handleMarkdownAutoFormat(e);
+            }
             updateToolbarStates();
             this.debouncedSave();
         });
@@ -366,6 +369,7 @@ class EscribaApp {
 
         document.getElementById('noteTitle').value = foundNote.title;
         document.getElementById('noteContent').innerHTML = foundNote.content;
+        this.bindInternalLinkListeners();
         document.getElementById('noteSubject').textContent = foundSubject.name;
         document.getElementById('noteDate').textContent = formatDate(foundNote.updatedAt);
 
@@ -479,22 +483,190 @@ class EscribaApp {
     }
 
     handleKeyboardShortcuts(e) {
-        if (e.ctrlKey && e.key === 'b') {
-            e.preventDefault();
-            document.execCommand('bold', false, null);
+        const noteContent = document.getElementById('noteContent');
+        const activeElement = document.activeElement;
+
+        const isNoteContentFocused = noteContent && (noteContent.contains(activeElement) || noteContent === activeElement);
+
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 'b':
+                    if (isNoteContentFocused) {
+                        e.preventDefault();
+                        document.execCommand('bold', false, null);
+                    }
+                    break;
+                case 'i':
+                    if (isNoteContentFocused) {
+                        e.preventDefault();
+                        document.execCommand('italic', false, null);
+                    }
+                    break;
+                case 'u':
+                    if (isNoteContentFocused) {
+                        e.preventDefault();
+                        document.execCommand('underline', false, null);
+                    }
+                    break;
+                case 's':
+                    e.preventDefault();
+                    this.debouncedSave();
+                    showToast('Apunte guardado', 'info');
+                    break;
+                case '`':
+                    if (isNoteContentFocused) {
+                        e.preventDefault();
+                        this.toggleInlineCode();
+                    }
+                    break;
+                case 'm':
+                    if (isNoteContentFocused) {
+                        e.preventDefault();
+                        this.toggleMathMode();
+                    }
+                    break;
+                case 'z':
+                    if (isNoteContentFocused) {
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            document.execCommand('redo');
+                        }
+                    }
+                    break;
+                case 'y':
+                    if (isNoteContentFocused) {
+                        e.preventDefault();
+                        document.execCommand('redo');
+                    }
+                    break;
+                case '\\':
+                    e.preventDefault();
+                    this.toggleSidebar();
+                    break;
+            }
+            return;
         }
-        if (e.ctrlKey && e.key === 'i') {
+
+        if (isNoteContentFocused && e.key === 'Tab') {
             e.preventDefault();
-            document.execCommand('italic', false, null);
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (!range.collapsed) {
+                    this.handleTabIndentationForSelection(range, e.shiftKey);
+                } else {
+                    this.insertTabIndentation();
+                }
+            }
+            this.debouncedSave();
         }
-        if (e.ctrlKey && e.key === 'u') {
-            e.preventDefault();
-            document.execCommand('underline', false, null);
+    }
+
+    insertTabIndentation() {
+        const tabSpaces = '    ';
+        try {
+            document.execCommand('insertText', false, tabSpaces);
+        } catch (error) {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const textNode = document.createTextNode(tabSpaces);
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
         }
-        if (e.ctrlKey && e.key === '\\') {
-            e.preventDefault();
-            this.toggleSidebar();
+    }
+
+    handleTabIndentationForSelection(range, isShiftTab) {
+        try {
+            const selection = window.getSelection();
+            const selectedContent = range.extractContents();
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(selectedContent);
+            let content = tempDiv.innerHTML;
+
+            if (isShiftTab) {
+                content = this.reduceIndentation(content);
+            } else {
+                content = this.increaseIndentation(content);
+            }
+
+            const fragment = range.createContextualFragment(content);
+            range.insertNode(fragment);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } catch (error) {
+            console.warn('Error processing selection indentation:', error);
+            document.execCommand(isShiftTab ? 'outdent' : 'indent');
         }
+    }
+
+    bindInternalLinkListeners() {
+        const noteContent = document.getElementById('noteContent');
+        if (!noteContent) return;
+
+        noteContent.querySelectorAll('.internal-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const noteId = link.dataset.noteId;
+                if (noteId) {
+                    this.loadNote(noteId);
+                }
+            });
+        });
+    }
+
+    handleMarkdownAutoFormat(e) {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        const node = range.startContainer;
+        if (node.nodeType !== Node.TEXT_NODE) return;
+
+        const text = node.textContent;
+        const offset = range.startOffset;
+        const lineText = text.substring(0, offset);
+
+        const rules = [
+            { pattern: /^#\s$/, command: 'formatBlock', value: 'h1' },
+            { pattern: /^##\s$/, command: 'formatBlock', value: 'h2' },
+            { pattern: /^###\s$/, command: 'formatBlock', value: 'h3' },
+            { pattern: /^([\-\*])\s$/, command: 'insertUnorderedList', value: null },
+            { pattern: /^1\.\s$/, command: 'insertOrderedList', value: null },
+            { pattern: /^>\s$/, command: 'formatBlock', value: 'blockquote' }
+        ];
+
+        for (const rule of rules) {
+            const match = lineText.match(rule.pattern);
+            if (match) {
+                e.preventDefault();
+
+                const newText = text.substring(offset);
+                node.textContent = newText;
+
+                document.execCommand(rule.command, false, rule.value);
+                break;
+            }
+        }
+    }
+
+    increaseIndentation(htmlContent) {
+        const tabSpaces = '&nbsp;&nbsp;&nbsp;&nbsp;';
+        return htmlContent
+            .replace(/^/gm, tabSpaces)
+            .replace(/(<br\s*\/?>)/gi, '$1' + tabSpaces)
+            .replace(/(<div[^>]*>)/gi, '$1' + tabSpaces);
+    }
+
+    reduceIndentation(htmlContent) {
+        return htmlContent
+            .replace(/^(&nbsp;|\s){1,4}/gm, '')
+            .replace(/(<br\s*\/?>)(\s|&nbsp;){1,4}/gi, '$1')
+            .replace(/(<div[^>]*>)(\s|&nbsp;){1,4}/gi, '$1');
     }
 
     exportCarpeta() {
@@ -1145,7 +1317,7 @@ class EscribaApp {
         }
 
         showModal('shareModal');
-        
+
         const githubSyncInfo = document.getElementById('githubSyncShareInfo');
         if (this.github && this.github.isAuthenticated()) {
             githubSyncInfo.style.display = 'block';
@@ -1157,7 +1329,7 @@ class EscribaApp {
 
         const shareUrlInput = document.getElementById('shareUrl');
         const methodInfo = document.getElementById('shareMethodInfo');
-        
+
         shareUrlInput.value = 'Generando enlace...';
         methodInfo.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando enlace...';
 

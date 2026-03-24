@@ -28,27 +28,28 @@
 .token-auth-steps {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 .step {
     display: flex;
-    gap: 1rem;
+    gap: 1.25rem;
     align-items: flex-start;
 }
 
 .step-number {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     background: var(--accent-blue);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-    font-size: 0.9rem;
+    font-weight: 700;
+    font-size: 0.85rem;
     flex-shrink: 0;
+    box-shadow: 0 0 10px var(--accent-shadow);
 }
 
 .step-content {
@@ -56,32 +57,65 @@
 }
 
 .step-content p {
-    margin-bottom: 0.75rem;
-    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.step-content strong {
+    color: var(--accent-blue);
+}
+
+.help-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    padding: 4px 0;
+}
+
+.help-link:hover {
+    color: var(--text-primary);
+    transform: translateX(3px);
 }
 
 .token-input-group {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .token-input {
     flex: 1;
-    padding: 0.75rem;
-    background: var(--bg-secondary);
+    padding: 0.8rem 1rem;
+    background: var(--bg-secondary) !important;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 10px;
     color: var(--text-primary);
     font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.token-input:-webkit-autofill,
+.token-input:-webkit-autofill:hover,
+.token-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-primary);
+    -webkit-box-shadow: 0 0 0px 1000px var(--bg-secondary) inset;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 .token-input:focus {
     outline: none;
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px var(--accent-focus);
+    background: var(--bg-tertiary) !important;
+    box-shadow: 0 0 0 4px var(--accent-focus);
 }
 
 .help-text {
@@ -89,5 +123,4 @@
     color: var(--text-muted);
     font-size: 0.8rem;
     margin-top: 0.5rem;
-    font-style: italic;
 }

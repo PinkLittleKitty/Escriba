@@ -10,14 +10,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Application Entry Point -->
     <script type="module" src="src/js/app.js"></script>
 
 
-    <!-- Mermaid for UML diagrams -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
-    
-    <!-- Ace Editor -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-markdown.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-javascript.min.js"></script>
@@ -30,7 +27,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-tomorrow_night.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ext-language_tools.min.js"></script>
 
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23334155'><path d='M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z'/></svg>">
+    <link rel="icon" type="image/x-icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23334155'><path d='M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z'/></svg>">
 </head>
 
 <body>
@@ -75,7 +73,8 @@
                     </button>
                     <div class="dropdown-menu">
                         <button id="syncButton"><i class="fab fa-github"></i> Conectar GitHub</button>
-                        <button id="disconnectButton" style="display: none;"><i class="fas fa-unlink"></i> Desconectar GitHub</button>
+                        <button id="disconnectButton" style="display: none;"><i class="fas fa-unlink"></i> Desconectar
+                            GitHub</button>
                         <button id="exportBtn"><i class="fas fa-download"></i> Exportar Carpeta</button>
                         <button id="importBtn"><i class="fas fa-upload"></i> Importar Carpeta</button>
                         <button id="importJsonBtn"><i class="fas fa-file-import"></i> Importar Apunte JSON</button>
@@ -88,7 +87,6 @@
             </div>
         </header>
 
-        <!-- Mobile overlay -->
         <div id="mobileOverlay" class="mobile-overlay"></div>
 
         <div class="main-content">
@@ -120,13 +118,13 @@
 
                 <div class="recent-container" id="recentContainer" style="display: none;">
                     <div class="recent-notes-list">
-                        <!-- Los apuntes recientes se cargan aquí -->
+                        <!-- Los apuntes recientes se cargan acá -->
                     </div>
                 </div>
 
                 <div class="favorites-container" id="favoritesContainer" style="display: none;">
                     <div class="favorites-notes-list">
-                        <!-- Los apuntes favoritos se cargan aquí -->
+                        <!-- Los apuntes favoritos se cargan acá -->
                     </div>
                 </div>
 
@@ -142,7 +140,7 @@
                             </button>
                         </div>
                         <div class="calendar-grid" id="calendarGrid">
-                            <!-- El calendario se genera aquí -->
+                            <!-- El calendario se genera acá -->
                         </div>
                     </div>
                     <div class="calendar-events">
@@ -153,7 +151,7 @@
                             </button>
                         </div>
                         <div id="eventsList" class="events-list">
-                            <!-- Los eventos se cargan aquí -->
+                            <!-- Los eventos se cargan acá -->
                         </div>
                     </div>
                 </div>
@@ -258,8 +256,8 @@
                                     class="fas fa-list-ol"></i></button>
                             <button class="toolbar-btn" data-command="indent" title="Aumentar sangría (o usá Tab)"><i
                                     class="fas fa-indent"></i></button>
-                            <button class="toolbar-btn" data-command="outdent" title="Reducir sangría (o usá Shift+Tab)"><i
-                                    class="fas fa-outdent"></i></button>
+                            <button class="toolbar-btn" data-command="outdent"
+                                title="Reducir sangría (o usá Shift+Tab)"><i class="fas fa-outdent"></i></button>
                         </div>
                         <div class="toolbar-separator"></div>
                         <div class="toolbar-group">
@@ -287,7 +285,6 @@
             </main>
         </div>
 
-        <!-- Modal para crear materia -->
         <div id="subjectModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -336,7 +333,6 @@
             </div>
         </div>
 
-        <!-- Modal de personalización -->
         <div id="settingsModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -522,7 +518,6 @@
             </div>
         </div>
 
-        <!-- Modal para seleccionar materia -->
         <div id="subjectPickerModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -543,7 +538,6 @@
             </div>
         </div>
 
-        <!-- Modal para enlazar apunte -->
         <div id="linkModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -567,7 +561,7 @@
                     <div class="form-group">
                         <label>Seleccionar apunte:</label>
                         <div id="linkNotesList" class="link-notes-list">
-                            <!-- Los apuntes se cargan aquí -->
+                            <!-- Los apuntes se cargan acá -->
                         </div>
                     </div>
                 </div>
@@ -578,7 +572,6 @@
             </div>
         </div>
 
-        <!-- Modal para agregar evento -->
         <div id="eventModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -627,7 +620,6 @@
             </div>
         </div>
 
-        <!-- Modal para insertar UML -->
         <div id="umlModal" class="modal">
             <div class="modal-content modal-large">
                 <div class="modal-header">
@@ -664,7 +656,7 @@
                                     <span>Casos de Uso</span>
                                 </button>
                             </div>
-                            
+
                             <div class="uml-help">
                                 <h5><i class="fas fa-info-circle"></i> Ayuda Rápida</h5>
                                 <div class="help-content" id="umlHelpContent">
@@ -672,7 +664,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="uml-main">
                             <div class="uml-editor-section">
                                 <div class="uml-editor-header">
@@ -688,7 +680,7 @@
                                 </div>
                                 <div class="uml-code-editor" id="umlCodeEditor"></div>
                             </div>
-                            
+
                             <div class="uml-preview-section">
                                 <div class="uml-preview-header">
                                     <h4><i class="fas fa-eye"></i> Vista Previa</h4>
@@ -723,7 +715,6 @@
             </div>
         </div>
 
-        <!-- Modal para compartir apunte -->
         <div id="shareModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -733,16 +724,21 @@
                 <div class="modal-body">
                     <div class="share-section" id="githubSyncShareInfo" style="display: none;">
                         <h4><i class="fab fa-github"></i> Sincronización con GitHub</h4>
-                        <p class="share-description">Tu apunte está sincronizado con GitHub. Los enlaces compartidos apuntarán directamente a tu repositorio.</p>
-                        
+                        <p class="share-description">Tu apunte está sincronizado con GitHub. Los enlaces compartidos
+                            apuntarán directamente a tu repositorio.</p>
+
                         <div id="githubWarning" class="github-warning" style="display: none;">
                             <div class="warning-card">
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <div class="warning-content">
                                     <h5 id="warningTitle">Repositorio Público Requerido</h5>
-                                    <p id="warningMessage">Para que los enlaces funcionen, tu repositorio debe ser <strong>público</strong>. Si tu repositorio es privado, los enlaces no funcionarán para otras personas.</p>
+                                    <p id="warningMessage">Para que los enlaces funcionen, tu repositorio debe ser
+                                        <strong>público</strong>. Si tu repositorio es privado, los enlaces no
+                                        funcionarán para otras personas.
+                                    </p>
                                     <div class="warning-actions">
-                                        <button class="btn btn-warning btn-sm" onclick="window.open('https://docs.github.com/es/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility', '_blank')">
+                                        <button class="btn btn-warning btn-sm"
+                                            onclick="window.open('https://docs.github.com/es/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility', '_blank')">
                                             <i class="fas fa-book"></i> Cómo hacer público el repositorio
                                         </button>
                                     </div>
@@ -754,13 +750,15 @@
                             <div class="github-repo-info">
                                 <i class="fab fa-github"></i>
                                 <span id="githubRepoPath">username/escriba-notes</span>
-                                <button class="btn btn-secondary btn-sm" onclick="window.open('https://github.com/' + document.getElementById('githubRepoPath').textContent, '_blank')">
+                                <button class="btn btn-secondary btn-sm"
+                                    onclick="window.open('https://github.com/' + document.getElementById('githubRepoPath').textContent, '_blank')">
                                     <i class="fas fa-external-link-alt"></i> Ver en GitHub
                                 </button>
                             </div>
                             <div class="privacy-info">
                                 <i class="fas fa-info-circle"></i>
-                                <span class="privacy-status" id="repoPrivacyStatus">Verificando visibilidad del repositorio...</span>
+                                <span class="privacy-status" id="repoPrivacyStatus">Verificando visibilidad del
+                                    repositorio...</span>
                             </div>
                         </div>
                     </div>
@@ -816,7 +814,53 @@
             </div>
         </div>
 
-        <!-- Toast para notificaciones -->
+        <div id="githubTokenModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fab fa-github"></i> Conectar con GitHub</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="token-auth-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <p>Generá un <strong>Personal Access Token (Classic)</strong> en tu cuenta de GitHub.
+                                </p>
+                                <a href="https://github.com/settings/tokens/new?scopes=gist,repo&description=Escriba%20App"
+                                    target="_blank" class="help-link">
+                                    <i class="fas fa-external-link-alt"></i> Crear token ahora
+                                </a>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <p>Asegurate de seleccionar los permisos <strong>'gist'</strong> y
+                                    <strong>'repo'</strong>.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <p>Pegá el token generado a continuación:</p>
+                                <div class="token-input-group">
+                                    <input type="password" id="githubTokenInput" class="token-input"
+                                        placeholder="ghp_xxxxxxxxxxxx" autocomplete="one-time-code" spellcheck="false">
+                                </div>
+                                <span class="help-text">Tu token se guarda de forma segura en este navegador.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelToken">Cancelar</button>
+                    <button class="btn btn-primary" id="confirmToken">Conectar GitHub</button>
+                </div>
+            </div>
+        </div>
+
         <div id="toast" class="toast">
             <div class="toast-content">
                 <i class="toast-icon"></i>

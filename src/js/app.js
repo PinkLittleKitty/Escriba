@@ -241,6 +241,9 @@ class EscribaApp {
         document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
         document.getElementById('exportJsonBtn').addEventListener('click', () => this.exportCurrentNoteAsJson());
 
+        document.getElementById('confirmToken').addEventListener('click', () => this.handleConfirmToken());
+        document.getElementById('cancelToken').addEventListener('click', () => hideModal('githubTokenModal'));
+
         document.getElementById('addEventBtn').addEventListener('click', () => {
             this.currentEventId = null;
             document.getElementById('eventTitle').value = '';
@@ -792,16 +795,36 @@ class EscribaApp {
                 console.error('GitHub Sync Error:', error);
             }
         } else {
-            const token = prompt('Ingresá tu GitHub Personal Access Token (Classic):');
-            if (token) {
-                try {
-                    await this.github.connectWithToken(token);
-                    showToast('Conectado a GitHub', 'success');
-                    this.handleGitHubAuth();
-                } catch (error) {
-                    showToast('Error de conexión: ' + error.message, 'error');
-                }
-            }
+            const tokenInput = document.getElementById('githubTokenInput');
+            if (tokenInput) tokenInput.value = '';
+            showModal('githubTokenModal');
+        }
+    }
+
+    async handleConfirmToken() {
+        const tokenInput = document.getElementById('githubTokenInput');
+        const token = tokenInput.value ? tokenInput.value.trim() : '';
+
+        if (!token) {
+            showToast('Por favor, ingresá un token válido', 'error');
+            return;
+        }
+
+        const confirmBtn = document.getElementById('confirmToken');
+        const originalText = confirmBtn.textContent;
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+
+        try {
+            await this.github.connectWithToken(token);
+            hideModal('githubTokenModal');
+            showToast('Conectado a GitHub con éxito', 'success');
+            this.handleGitHubAuth(true);
+        } catch (error) {
+            showToast('Error de conexión: ' + error.message, 'error');
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
         }
     }
 

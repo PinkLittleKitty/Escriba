@@ -29,6 +29,7 @@ export const getDiagramTypeName = (type) => {
 };
 
 export const renderUMLDiagram = async (containerId, code) => {
+    if (!containerId) return;
     const container = document.getElementById(containerId);
     if (!container) return;
 

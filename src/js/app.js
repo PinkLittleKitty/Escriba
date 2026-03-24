@@ -266,6 +266,9 @@ class EscribaApp {
         document.getElementById('insertUMLBtn').addEventListener('click', () => showModal('umlModal'));
         document.getElementById('insertUMLDiagram').addEventListener('click', () => this.handleInsertUML());
 
+        const cancelUMLBtn = document.getElementById('cancelUML');
+        if (cancelUMLBtn) cancelUMLBtn.addEventListener('click', () => hideModal('umlModal'));
+
         const umlCode = document.getElementById('umlCode');
         if (umlCode) {
             umlCode.addEventListener('input', debounce(() => {
@@ -912,6 +915,9 @@ class EscribaApp {
             const content = container.querySelector('.uml-diagram-content');
             const code = container.getAttribute('data-uml-code');
             if (content && code) {
+                if (!content.id) {
+                    content.id = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                }
                 renderUMLDiagram(content.id, code);
             }
         });
@@ -945,7 +951,7 @@ class EscribaApp {
         noteContent.appendChild(document.createElement('br'));
 
         await renderUMLDiagram(diagramId, umlCode);
-        
+
         hideModal('umlModal');
         document.getElementById('umlCode').value = '';
         this.debouncedSave();
@@ -1082,12 +1088,12 @@ class EscribaApp {
         updateCalendarHeader(header, this.currentDate);
         renderCalendarGrid(grid, this.currentDate, this.events, (day, date, isDiffMonth, isToday) => {
             const dayElement = document.createElement('div');
-            dayElement.className = `calendar - day ${ isDiffMonth ? 'different-month' : '' } ${ isToday ? 'today' : '' } `;
+            dayElement.className = `calendar - day ${isDiffMonth ? 'different-month' : ''} ${isToday ? 'today' : ''} `;
 
             const hasEvents = this.events.some(e => new Date(e.date).toDateString() === date.toDateString());
             if (hasEvents) dayElement.classList.add('has-events');
 
-            dayElement.innerHTML = `< span class="day-number" > ${ day }</span > `;
+            dayElement.innerHTML = `< span class="day-number" > ${day}</span > `;
             dayElement.addEventListener('click', () => this.showEventModal(date));
 
             return dayElement;
@@ -1144,7 +1150,7 @@ class EscribaApp {
         const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
         if (days <= 0) return { text: 'Hoy', class: 'urgent' };
         if (days === 1) return { text: 'Mañana', class: 'urgent' };
-        return { text: `${ days } días`, class: days <= 7 ? 'soon' : 'normal' };
+        return { text: `${days} días`, class: days <= 7 ? 'soon' : 'normal' };
     }
 
     getEventTypeIcon(type) {
@@ -1202,119 +1208,119 @@ class EscribaApp {
     async loadFromGist(gistId) {
         try {
             const response = await fetch(`https://api.github.com/gists/${gistId}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const gist = await response.json();
-        const files = Object.values(gist.files);
-        if (files.length === 0) throw new Error('No files found in Gist');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const gist = await response.json();
+            const files = Object.values(gist.files);
+            if (files.length === 0) throw new Error('No files found in Gist');
 
-        const jsonFile = files.find(file =>
-            file.filename.includes('.json') ||
-            file.filename.includes('escriba')
-        ) || files[0];
+            const jsonFile = files.find(file =>
+                file.filename.includes('.json') ||
+                file.filename.includes('escriba')
+            ) || files[0];
 
-        const noteData = JSON.parse(jsonFile.content);
-        if (noteData.app !== 'escriba') throw new Error('Invalid Escriba note');
+            const noteData = JSON.parse(jsonFile.content);
+            if (noteData.app !== 'escriba') throw new Error('Invalid Escriba note');
 
-        this.displaySharedNote(noteData);
-    } catch(error) {
-        console.error('Error loading from Gist:', error);
-        showToast('No se pudo cargar el apunte desde Gist', 'error');
-        throw error;
+            this.displaySharedNote(noteData);
+        } catch (error) {
+            console.error('Error loading from Gist:', error);
+            showToast('No se pudo cargar el apunte desde Gist', 'error');
+            throw error;
+        }
     }
-}
 
     async loadFromGitHub(githubPath) {
-    try {
-        const pathParts = githubPath.split('/');
-        if (pathParts.length < 3) throw new Error('Invalid GitHub path format');
+        try {
+            const pathParts = githubPath.split('/');
+            if (pathParts.length < 3) throw new Error('Invalid GitHub path format');
 
-        const username = pathParts[0];
-        const repoName = pathParts[1];
-        const filePath = pathParts.slice(2).join('/');
-        const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${filePath}`;
+            const username = pathParts[0];
+            const repoName = pathParts[1];
+            const filePath = pathParts.slice(2).join('/');
+            const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${filePath}`;
 
-        const response = await fetch(apiUrl, {
-            headers: { 'Accept': 'application/vnd.github.v3+json' }
+            const response = await fetch(apiUrl, {
+                headers: { 'Accept': 'application/vnd.github.v3+json' }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) throw new Error('El apunte no existe');
+                throw new Error(`GitHub Error: ${response.status}`);
+            }
+
+            const fileData = await response.json();
+            const noteData = JSON.parse(atob(fileData.content));
+            if (noteData.app !== 'escriba') throw new Error('Invalid Escriba note');
+
+            noteData.shared_from = {
+                type: 'github_repo',
+                username,
+                repo: repoName,
+                path: filePath
+            };
+
+            this.displaySharedNote(noteData);
+        } catch (error) {
+            console.error('Error loading from GitHub:', error);
+            showToast('No se pudo cargar desde GitHub', 'error');
+            throw error;
+        }
+    }
+
+    displaySharedNote(noteData) {
+        const title = noteData.title || noteData.t || 'Apunte Compartido';
+        const content = noteData.content || noteData.c || '';
+        const type = noteData.type || noteData.ty || 'lecture';
+        const subject = noteData.subject || noteData.s || 'Materia';
+
+        document.getElementById('noteTitle').value = title;
+        document.getElementById('noteTitle').disabled = true;
+        document.getElementById('noteContent').innerHTML = content;
+        document.getElementById('noteContent').contentEditable = false;
+        document.getElementById('noteSubject').textContent = subject;
+
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const noteEditor = document.getElementById('noteEditor');
+        if (welcomeScreen) welcomeScreen.style.display = 'none';
+        if (noteEditor) noteEditor.style.display = 'flex';
+
+        const buttonsToHide = ['favoriteBtn', 'shareNoteBtn', 'deleteNoteBtn'];
+        buttonsToHide.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.style.display = 'none';
         });
 
-        if (!response.ok) {
-            if (response.status === 404) throw new Error('El apunte no existe');
-            throw new Error(`GitHub Error: ${response.status}`);
-        }
+        const toolbar = document.querySelector('.editor-toolbar');
+        if (toolbar) toolbar.style.display = 'none';
 
-        const fileData = await response.json();
-        const noteData = JSON.parse(atob(fileData.content));
-        if (noteData.app !== 'escriba') throw new Error('Invalid Escriba note');
+        this.addSharedNoteBanner(noteData);
 
-        noteData.shared_from = {
-            type: 'github_repo',
-            username,
-            repo: repoName,
-            path: filePath
-        };
-
-        this.displaySharedNote(noteData);
-    } catch (error) {
-        console.error('Error loading from GitHub:', error);
-        showToast('No se pudo cargar desde GitHub', 'error');
-        throw error;
-    }
-}
-
-displaySharedNote(noteData) {
-    const title = noteData.title || noteData.t || 'Apunte Compartido';
-    const content = noteData.content || noteData.c || '';
-    const type = noteData.type || noteData.ty || 'lecture';
-    const subject = noteData.subject || noteData.s || 'Materia';
-
-    document.getElementById('noteTitle').value = title;
-    document.getElementById('noteTitle').disabled = true;
-    document.getElementById('noteContent').innerHTML = content;
-    document.getElementById('noteContent').contentEditable = false;
-    document.getElementById('noteSubject').textContent = subject;
-
-    const welcomeScreen = document.getElementById('welcomeScreen');
-    const noteEditor = document.getElementById('noteEditor');
-    if (welcomeScreen) welcomeScreen.style.display = 'none';
-    if (noteEditor) noteEditor.style.display = 'flex';
-
-    const buttonsToHide = ['favoriteBtn', 'shareNoteBtn', 'deleteNoteBtn'];
-    buttonsToHide.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.style.display = 'none';
-    });
-
-    const toolbar = document.querySelector('.editor-toolbar');
-    if (toolbar) toolbar.style.display = 'none';
-
-    this.addSharedNoteBanner(noteData);
-
-    setTimeout(() => {
-        if (content.includes('uml-diagram-container')) {
-            document.querySelectorAll('.uml-diagram-content').forEach(container => {
-                const code = container.closest('.uml-diagram-container').getAttribute('data-uml-code');
-                if (code) renderUMLDiagram(container.id, code);
-            });
-        }
-    }, 100);
-}
-
-addSharedNoteBanner(noteData) {
-    const noteEditor = document.getElementById('noteEditor');
-    if (!noteEditor) return;
-
-    const existing = noteEditor.querySelector('.shared-note-banner');
-    if (existing) existing.remove();
-
-    const banner = document.createElement('div');
-    banner.className = 'shared-note-banner';
-
-    let origin = 'un enlace compartido';
-    if (noteData.shared_from?.type === 'github_repo') {
-        origin = `el repositorio ${noteData.shared_from.username}/${noteData.shared_from.repo}`;
+        setTimeout(() => {
+            if (content.includes('uml-diagram-container')) {
+                document.querySelectorAll('.uml-diagram-content').forEach(container => {
+                    const code = container.closest('.uml-diagram-container').getAttribute('data-uml-code');
+                    if (code) renderUMLDiagram(container.id, code);
+                });
+            }
+        }, 100);
     }
 
-    banner.innerHTML = `
+    addSharedNoteBanner(noteData) {
+        const noteEditor = document.getElementById('noteEditor');
+        if (!noteEditor) return;
+
+        const existing = noteEditor.querySelector('.shared-note-banner');
+        if (existing) existing.remove();
+
+        const banner = document.createElement('div');
+        banner.className = 'shared-note-banner';
+
+        let origin = 'un enlace compartido';
+        if (noteData.shared_from?.type === 'github_repo') {
+            origin = `el repositorio ${noteData.shared_from.username}/${noteData.shared_from.repo}`;
+        }
+
+        banner.innerHTML = `
             <div class="shared-banner-content">
                 <i class="fas fa-share-alt"></i>
                 <span>Apunte compartido de <strong>${escapeHtml(noteData.subject || 'Materia')}</strong> desde ${origin}</span>
@@ -1325,46 +1331,46 @@ addSharedNoteBanner(noteData) {
             </div>
         `;
 
-    noteEditor.insertBefore(banner, noteEditor.firstChild);
-    document.getElementById('importNoteBtn').addEventListener('click', () => this.importSharedNote(noteData));
-}
-
-importSharedNote(noteData) {
-    let subject = this.subjects.find(s => s.name === noteData.subject);
-    if (!subject) {
-        subject = {
-            id: generateId('subject'),
-            name: noteData.subject || 'Importados',
-            color: noteData.subjectColor || '#3b82f6',
-            notes: [],
-            expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
-            createdAt: new Date().toISOString(),
-            lastModified: new Date().toISOString()
-        };
-        this.subjects.unshift(subject);
+        noteEditor.insertBefore(banner, noteEditor.firstChild);
+        document.getElementById('importNoteBtn').addEventListener('click', () => this.importSharedNote(noteData));
     }
 
-    const note = {
-        id: generateId('note'),
-        title: (noteData.title || noteData.t) + ' (Importado)',
-        content: noteData.content || noteData.c,
-        type: noteData.type || noteData.ty || 'lecture',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        favorite: false
-    };
+    importSharedNote(noteData) {
+        let subject = this.subjects.find(s => s.name === noteData.subject);
+        if (!subject) {
+            subject = {
+                id: generateId('subject'),
+                name: noteData.subject || 'Importados',
+                color: noteData.subjectColor || '#3b82f6',
+                notes: [],
+                expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
+                createdAt: new Date().toISOString(),
+                lastModified: new Date().toISOString()
+            };
+            this.subjects.unshift(subject);
+        }
 
-    subject.notes.unshift(note);
-    subject.lastModified = new Date().toISOString();
-    saveSubjects(this.subjects);
-    window.location.href = window.location.pathname;
-}
+        const note = {
+            id: generateId('note'),
+            title: (noteData.title || noteData.t) + ' (Importado)',
+            content: noteData.content || noteData.c,
+            type: noteData.type || noteData.ty || 'lecture',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            favorite: false
+        };
 
-showSharedNoteError(error) {
-    const noteEditor = document.getElementById('noteEditor');
-    if (!noteEditor) return;
+        subject.notes.unshift(note);
+        subject.lastModified = new Date().toISOString();
+        saveSubjects(this.subjects);
+        window.location.href = window.location.pathname;
+    }
 
-    noteEditor.innerHTML = `
+    showSharedNoteError(error) {
+        const noteEditor = document.getElementById('noteEditor');
+        if (!noteEditor) return;
+
+        noteEditor.innerHTML = `
             <div class="shared-note-error">
                 <i class="fas fa-exclamation-circle"></i>
                 <h2>Error al cargar el apunte</h2>
@@ -1372,357 +1378,357 @@ showSharedNoteError(error) {
                 <button onclick="window.location.href=window.location.pathname" class="btn btn-primary">Volver al inicio</button>
             </div>
         `;
-}
+    }
 
-showLoadingIndicator(msg) {
-    document.body.classList.add('loading');
-}
+    showLoadingIndicator(msg) {
+        document.body.classList.add('loading');
+    }
 
-hideLoadingIndicator() {
-    document.body.classList.remove('loading');
-}
+    hideLoadingIndicator() {
+        document.body.classList.remove('loading');
+    }
 
-utf8ToBase64(str) {
-    return btoa(unescape(encodeURIComponent(str)));
-}
+    utf8ToBase64(str) {
+        return btoa(unescape(encodeURIComponent(str)));
+    }
 
-base64ToUtf8(str) {
-    return decodeURIComponent(escape(atob(str)));
-}
+    base64ToUtf8(str) {
+        return decodeURIComponent(escape(atob(str)));
+    }
 
     async handleForcePull() {
-    if (!confirm('Esto reemplazará tus datos locales con los de GitHub. ¿Continuar?')) return;
-    try {
-        const remoteData = await this.github.getRemoteData();
-        this.subjects = remoteData.subjects;
-        this.events = remoteData.events;
-        this.settings = remoteData.settings;
+        if (!confirm('Esto reemplazará tus datos locales con los de GitHub. ¿Continuar?')) return;
+        try {
+            const remoteData = await this.github.getRemoteData();
+            this.subjects = remoteData.subjects;
+            this.events = remoteData.events;
+            this.settings = remoteData.settings;
 
-        saveSubjects(this.subjects);
-        saveEvents(this.events);
-        saveSettings(this.settings);
-        window.location.reload();
-    } catch (error) {
-        showToast('Error al descargar datos', 'error');
+            saveSubjects(this.subjects);
+            saveEvents(this.events);
+            saveSettings(this.settings);
+            window.location.reload();
+        } catch (error) {
+            showToast('Error al descargar datos', 'error');
+        }
     }
-}
 
     async handleForcePush() {
-    if (!confirm('Esto reemplazará los datos en GitHub con tus datos locales. ¿Continuar?')) return;
-    try {
-        const data = {
-            subjects: this.subjects,
-            events: this.events,
-            settings: this.settings
-        };
-        await this.github.uploadData(data);
-        showToast('Datos subidos a GitHub', 'success');
-    } catch (error) {
-        showToast('Error al subir datos', 'error');
+        if (!confirm('Esto reemplazará los datos en GitHub con tus datos locales. ¿Continuar?')) return;
+        try {
+            const data = {
+                subjects: this.subjects,
+                events: this.events,
+                settings: this.settings
+            };
+            await this.github.uploadData(data);
+            showToast('Datos subidos a GitHub', 'success');
+        } catch (error) {
+            showToast('Error al subir datos', 'error');
+        }
     }
-}
 
-disconnectGitHub() {
-    if (confirm('¿Estás seguro de que querés desconectar tu cuenta de GitHub?')) {
-        this.github.logout();
-        showToast('Cuenta desconectada', 'info');
+    disconnectGitHub() {
+        if (confirm('¿Estás seguro de que querés desconectar tu cuenta de GitHub?')) {
+            this.github.logout();
+            showToast('Cuenta desconectada', 'info');
+        }
     }
-}
 
-copyShareUrl() {
-    const shareUrl = document.getElementById('shareUrl');
-    if (!shareUrl) return;
+    copyShareUrl() {
+        const shareUrl = document.getElementById('shareUrl');
+        if (!shareUrl) return;
 
-    shareUrl.select();
-    shareUrl.setSelectionRange(0, 99999);
+        shareUrl.select();
+        shareUrl.setSelectionRange(0, 99999);
 
-    try {
-        document.execCommand('copy');
-        showToast('Enlace copiado al portapapeles', 'success');
-    } catch (err) {
-        navigator.clipboard.writeText(shareUrl.value).then(() => {
+        try {
+            document.execCommand('copy');
             showToast('Enlace copiado al portapapeles', 'success');
-        }).catch(() => {
-            showToast('No se pudo copiar el enlace', 'error');
-        });
+        } catch (err) {
+            navigator.clipboard.writeText(shareUrl.value).then(() => {
+                showToast('Enlace copiado al portapapeles', 'success');
+            }).catch(() => {
+                showToast('No se pudo copiar el enlace', 'error');
+            });
+        }
     }
-}
 
-shareToWhatsApp() {
-    const shareUrl = document.getElementById('shareUrl')?.value;
-    const note = this.getNoteById(this.currentNoteId);
-    const subject = this.getSubjectOfNote(this.currentNoteId);
+    shareToWhatsApp() {
+        const shareUrl = document.getElementById('shareUrl')?.value;
+        const note = this.getNoteById(this.currentNoteId);
+        const subject = this.getSubjectOfNote(this.currentNoteId);
 
-    if (!note || !subject || !shareUrl) return;
+        if (!note || !subject || !shareUrl) return;
 
-    const message = `📚 Te comparto mis apuntes de ${subject.name}: "${note.title}"\n\n${shareUrl}`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-}
+        const message = `📚 Te comparto mis apuntes de ${subject.name}: "${note.title}"\n\n${shareUrl}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    }
 
-shareToEmail() {
-    const shareUrl = document.getElementById('shareUrl')?.value;
-    const note = this.getNoteById(this.currentNoteId);
-    const subject = this.getSubjectOfNote(this.currentNoteId);
+    shareToEmail() {
+        const shareUrl = document.getElementById('shareUrl')?.value;
+        const note = this.getNoteById(this.currentNoteId);
+        const subject = this.getSubjectOfNote(this.currentNoteId);
 
-    if (!note || !subject || !shareUrl) return;
+        if (!note || !subject || !shareUrl) return;
 
-    const mailSubject = encodeURIComponent(`Apuntes de ${subject.name}: ${note.title}`);
-    const mailBody = encodeURIComponent(`Hola! Te comparto este apunte de Escriba:\n\n${note.title} (${subject.name})\n\n${shareUrl}`);
-    window.location.href = `mailto:?subject=${mailSubject}&body=${mailBody}`;
-}
+        const mailSubject = encodeURIComponent(`Apuntes de ${subject.name}: ${note.title}`);
+        const mailBody = encodeURIComponent(`Hola! Te comparto este apunte de Escriba:\n\n${note.title} (${subject.name})\n\n${shareUrl}`);
+        window.location.href = `mailto:?subject=${mailSubject}&body=${mailBody}`;
+    }
 
-exportCurrentNoteAsJson() {
-    if (!this.currentNoteId) return;
-    const note = this.getNoteById(this.currentNoteId);
-    const subject = this.getSubjectOfNote(this.currentNoteId);
+    exportCurrentNoteAsJson() {
+        if (!this.currentNoteId) return;
+        const note = this.getNoteById(this.currentNoteId);
+        const subject = this.getSubjectOfNote(this.currentNoteId);
 
-    if (note && subject) {
-        const data = {
-            app: 'escriba',
-            v: '1.0',
-            t: note.title,
-            c: note.content,
-            s: subject.name,
-            sc: subject.color,
-            cd: note.createdAt,
-            ty: note.type
+        if (note && subject) {
+            const data = {
+                app: 'escriba',
+                v: '1.0',
+                t: note.title,
+                c: note.content,
+                s: subject.name,
+                sc: subject.color,
+                cd: note.createdAt,
+                ty: note.type
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${note.title.replace(/\s+/g, '_').toLowerCase()}.escriba.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    saveEvent() {
+        const title = document.getElementById('eventTitle').value.trim();
+        const date = document.getElementById('eventDate').value;
+        const type = document.getElementById('eventType').value;
+        const desc = document.getElementById('eventDesc').value;
+
+        if (!title || !date) {
+            showToast('Título y fecha son obligatorios', 'error');
+            return;
+        }
+
+        const newEvent = {
+            id: generateId(),
+            title,
+            date,
+            type,
+            description: desc,
+            createdAt: new Date().toISOString()
         };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${note.title.replace(/\s+/g, '_').toLowerCase()}.escriba.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-}
 
-saveEvent() {
-    const title = document.getElementById('eventTitle').value.trim();
-    const date = document.getElementById('eventDate').value;
-    const type = document.getElementById('eventType').value;
-    const desc = document.getElementById('eventDesc').value;
-
-    if (!title || !date) {
-        showToast('Título y fecha son obligatorios', 'error');
-        return;
-    }
-
-    const newEvent = {
-        id: generateId(),
-        title,
-        date,
-        type,
-        description: desc,
-        createdAt: new Date().toISOString()
-    };
-
-    this.events.push(newEvent);
-    saveEvents(this.events);
-    this.renderCalendar();
-    hideModal('eventModal');
-    showToast('Evento guardado', 'success');
-}
-
-deleteEvent() {
-    if (!this.currentEventId) return;
-    if (confirm('¿Eliminar este evento?')) {
-        this.events = this.events.filter(e => e.id !== this.currentEventId);
+        this.events.push(newEvent);
         saveEvents(this.events);
         this.renderCalendar();
         hideModal('eventModal');
-        showToast('Evento eliminado', 'info');
+        showToast('Evento guardado', 'success');
     }
-}
+
+    deleteEvent() {
+        if (!this.currentEventId) return;
+        if (confirm('¿Eliminar este evento?')) {
+            this.events = this.events.filter(e => e.id !== this.currentEventId);
+            saveEvents(this.events);
+            this.renderCalendar();
+            hideModal('eventModal');
+            showToast('Evento eliminado', 'info');
+        }
+    }
     async showShareModal() {
-    if (!this.currentNoteId) {
-        showToast('No hay ningún apunte abierto para compartir', 'error');
-        return;
+        if (!this.currentNoteId) {
+            showToast('No hay ningún apunte abierto para compartir', 'error');
+            return;
+        }
+
+        showModal('shareModal');
+
+        const githubSyncInfo = document.getElementById('githubSyncShareInfo');
+        if (this.github && this.github.isAuthenticated()) {
+            githubSyncInfo.style.display = 'block';
+            const repoPath = `${this.github.username}/${this.github.repoName}`;
+            document.getElementById('githubRepoPath').textContent = repoPath;
+        } else {
+            githubSyncInfo.style.display = 'none';
+        }
+
+        const shareUrlInput = document.getElementById('shareUrl');
+        const methodInfo = document.getElementById('shareMethodInfo');
+
+        shareUrlInput.value = 'Generando enlace...';
+        methodInfo.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando enlace...';
+
+        this.initQRPlaceholder();
+
+        try {
+            const result = await this.generateShareUrlWithInfo();
+            shareUrlInput.value = result.url;
+            methodInfo.innerHTML = result.methodInfo;
+            this.generateQRCode(result.url);
+        } catch (error) {
+            console.error('Error generating share URL:', error);
+            shareUrlInput.value = 'Error al generar enlace';
+            methodInfo.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error al generar enlace';
+        }
     }
 
-    showModal('shareModal');
-
-    const githubSyncInfo = document.getElementById('githubSyncShareInfo');
-    if (this.github && this.github.isAuthenticated()) {
-        githubSyncInfo.style.display = 'block';
-        const repoPath = `${this.github.username}/${this.github.repoName}`;
-        document.getElementById('githubRepoPath').textContent = repoPath;
-    } else {
-        githubSyncInfo.style.display = 'none';
+    initQRPlaceholder() {
+        const canvas = document.getElementById('qrCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, 200, 200);
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, 200, 200);
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '14px Inter, Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Generando QR...', 100, 100);
     }
-
-    const shareUrlInput = document.getElementById('shareUrl');
-    const methodInfo = document.getElementById('shareMethodInfo');
-
-    shareUrlInput.value = 'Generando enlace...';
-    methodInfo.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando enlace...';
-
-    this.initQRPlaceholder();
-
-    try {
-        const result = await this.generateShareUrlWithInfo();
-        shareUrlInput.value = result.url;
-        methodInfo.innerHTML = result.methodInfo;
-        this.generateQRCode(result.url);
-    } catch (error) {
-        console.error('Error generating share URL:', error);
-        shareUrlInput.value = 'Error al generar enlace';
-        methodInfo.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error al generar enlace';
-    }
-}
-
-initQRPlaceholder() {
-    const canvas = document.getElementById('qrCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 200, 200);
-    ctx.fillStyle = '#f8f9fa';
-    ctx.fillRect(0, 0, 200, 200);
-    ctx.fillStyle = '#6c757d';
-    ctx.font = '14px Inter, Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Generando QR...', 100, 100);
-}
 
     async generateShareUrlWithInfo() {
-    const url = await this.generateShareUrl();
-    let methodInfo = '';
+        const url = await this.generateShareUrl();
+        let methodInfo = '';
 
-    if (url.includes('gist=')) {
-        methodInfo = '<i class="fab fa-github"></i> <strong>GitHub Gist</strong> - Enlace público optimizado';
-    } else if (url.includes('github=')) {
-        methodInfo = '<i class="fab fa-github"></i> <strong>Repositorio GitHub</strong> - Enlace directo a tu repositorio';
-    } else {
-        methodInfo = '<i class="fas fa-link"></i> <strong>📄 Enlace Directo</strong> - Para apuntes cortos';
+        if (url.includes('gist=')) {
+            methodInfo = '<i class="fab fa-github"></i> <strong>GitHub Gist</strong> - Enlace público optimizado';
+        } else if (url.includes('github=')) {
+            methodInfo = '<i class="fab fa-github"></i> <strong>Repositorio GitHub</strong> - Enlace directo a tu repositorio';
+        } else {
+            methodInfo = '<i class="fas fa-link"></i> <strong>📄 Enlace Directo</strong> - Para apuntes cortos';
+        }
+
+        return { url, methodInfo };
     }
-
-    return { url, methodInfo };
-}
 
     async generateShareUrl() {
-    if (!this.currentNoteId) return '';
-    const note = this.getNoteById(this.currentNoteId);
-    const subject = this.getSubjectOfNote(this.currentNoteId);
-    if (!note || !subject) return '';
+        if (!this.currentNoteId) return '';
+        const note = this.getNoteById(this.currentNoteId);
+        const subject = this.getSubjectOfNote(this.currentNoteId);
+        if (!note || !subject) return '';
 
-    const shareData = {
-        t: note.title,
-        c: note.content,
-        ty: note.type,
-        s: subject.name,
-        sc: subject.color,
-        d: note.updatedAt,
-        app: 'escriba',
-        version: '1.0'
-    };
-
-    try {
-        if (this.github && this.github.isAuthenticated()) {
-            const relativePath = `notes/${subject.name}/${note.title}.md`.replace(/ /g, '%20');
-            const repoUrl = `${window.location.origin}${window.location.pathname}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
-            if (repoUrl.length < 2000) return repoUrl;
-        }
-
-        const gistUrl = await this.createGist(shareData);
-        if (gistUrl) return gistUrl;
-
-        return `${window.location.origin}${window.location.pathname}?share=${this.utf8ToBase64(JSON.stringify(shareData))}`;
-    } catch (error) {
-        console.error('Share URL generation failed:', error);
-        return '';
-    }
-}
-
-    async createGist(shareData) {
-    try {
-        const gistData = {
-            description: `📚 Escriba Note: ${shareData.t} (${shareData.s})`,
-            public: true,
-            files: {
-                "escriba-note.json": {
-                    content: JSON.stringify(shareData, null, 2)
-                }
-            }
+        const shareData = {
+            t: note.title,
+            c: note.content,
+            ty: note.type,
+            s: subject.name,
+            sc: subject.color,
+            d: note.updatedAt,
+            app: 'escriba',
+            version: '1.0'
         };
 
-        const response = await fetch('https://api.github.com/gists', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(gistData)
-        });
-
-        if (response.ok) {
-            const gist = await response.json();
-            return `${window.location.origin}${window.location.pathname}?gist=${gist.id}`;
-        }
-    } catch (error) {
-        console.error('Gist creation failed:', error);
-    }
-    return null;
-}
-
-generateQRCode(url) {
-    const canvas = document.getElementById('qrCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&format=png&data=${encodeURIComponent(url)}`;
-
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-        ctx.clearRect(0, 0, 200, 200);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, 200, 200);
-        ctx.drawImage(img, 5, 5, 190, 190);
-        ctx.strokeStyle = '#e9ecef';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(1, 1, 198, 198);
-    };
-    img.src = qrApiUrl;
-}
-
-getNoteById(noteId) {
-    for (const s of this.subjects) {
-        const note = s.notes.find(n => n.id === noteId);
-        if (note) return note;
-    }
-    return null;
-}
-
-getSubjectOfNote(noteId) {
-    return this.subjects.find(s => s.notes.some(n => n.id === noteId));
-}
-
-createInternalLink() {
-    const selectedNoteId = document.querySelector('.link-note-item.selected')?.dataset.noteId;
-    const linkText = document.getElementById('linkText').value.trim();
-
-    if (!selectedNoteId || !linkText) {
-        showToast('Seleccioná un apunte y escribí un texto', 'error');
-        return;
-    }
-
-    const linkHtml = `<a href="#" class="internal-link" data-note-id="${selectedNoteId}">${escapeHtml(linkText)}</a>`;
-    document.execCommand('insertHTML', false, linkHtml);
-    hideModal('linkModal');
-    showToast('Enlace creado', 'success');
-}
-
-searchNotesForLink(query) {
-    const container = document.getElementById('linkNotesList');
-    if (!container) return;
-
-    const results = [];
-    this.subjects.forEach(s => {
-        s.notes.forEach(n => {
-            if (n.title.toLowerCase().includes(query.toLowerCase()) || s.name.toLowerCase().includes(query.toLowerCase())) {
-                results.push({ note: n, subject: s });
+        try {
+            if (this.github && this.github.isAuthenticated()) {
+                const relativePath = `notes/${subject.name}/${note.title}.md`.replace(/ /g, '%20');
+                const repoUrl = `${window.location.origin}${window.location.pathname}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
+                if (repoUrl.length < 2000) return repoUrl;
             }
-        });
-    });
 
-    container.innerHTML = results.map(res => `
+            const gistUrl = await this.createGist(shareData);
+            if (gistUrl) return gistUrl;
+
+            return `${window.location.origin}${window.location.pathname}?share=${this.utf8ToBase64(JSON.stringify(shareData))}`;
+        } catch (error) {
+            console.error('Share URL generation failed:', error);
+            return '';
+        }
+    }
+
+    async createGist(shareData) {
+        try {
+            const gistData = {
+                description: `📚 Escriba Note: ${shareData.t} (${shareData.s})`,
+                public: true,
+                files: {
+                    "escriba-note.json": {
+                        content: JSON.stringify(shareData, null, 2)
+                    }
+                }
+            };
+
+            const response = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(gistData)
+            });
+
+            if (response.ok) {
+                const gist = await response.json();
+                return `${window.location.origin}${window.location.pathname}?gist=${gist.id}`;
+            }
+        } catch (error) {
+            console.error('Gist creation failed:', error);
+        }
+        return null;
+    }
+
+    generateQRCode(url) {
+        const canvas = document.getElementById('qrCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&format=png&data=${encodeURIComponent(url)}`;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            ctx.clearRect(0, 0, 200, 200);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 200, 200);
+            ctx.drawImage(img, 5, 5, 190, 190);
+            ctx.strokeStyle = '#e9ecef';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(1, 1, 198, 198);
+        };
+        img.src = qrApiUrl;
+    }
+
+    getNoteById(noteId) {
+        for (const s of this.subjects) {
+            const note = s.notes.find(n => n.id === noteId);
+            if (note) return note;
+        }
+        return null;
+    }
+
+    getSubjectOfNote(noteId) {
+        return this.subjects.find(s => s.notes.some(n => n.id === noteId));
+    }
+
+    createInternalLink() {
+        const selectedNoteId = document.querySelector('.link-note-item.selected')?.dataset.noteId;
+        const linkText = document.getElementById('linkText').value.trim();
+
+        if (!selectedNoteId || !linkText) {
+            showToast('Seleccioná un apunte y escribí un texto', 'error');
+            return;
+        }
+
+        const linkHtml = `<a href="#" class="internal-link" data-note-id="${selectedNoteId}">${escapeHtml(linkText)}</a>`;
+        document.execCommand('insertHTML', false, linkHtml);
+        hideModal('linkModal');
+        showToast('Enlace creado', 'success');
+    }
+
+    searchNotesForLink(query) {
+        const container = document.getElementById('linkNotesList');
+        if (!container) return;
+
+        const results = [];
+        this.subjects.forEach(s => {
+            s.notes.forEach(n => {
+                if (n.title.toLowerCase().includes(query.toLowerCase()) || s.name.toLowerCase().includes(query.toLowerCase())) {
+                    results.push({ note: n, subject: s });
+                }
+            });
+        });
+
+        container.innerHTML = results.map(res => `
             <div class="link-note-item" data-note-id="${res.note.id}">
                 <div class="subject-icon" style="background: ${res.subject.color}"></div>
                 <div class="link-note-info">
@@ -1732,290 +1738,314 @@ searchNotesForLink(query) {
             </div>
         `).join('');
 
-    container.querySelectorAll('.link-note-item').forEach(item => {
-        item.addEventListener('click', () => {
-            container.querySelectorAll('.link-note-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
-            document.getElementById('createLink').disabled = false;
+        container.querySelectorAll('.link-note-item').forEach(item => {
+            item.addEventListener('click', () => {
+                container.querySelectorAll('.link-note-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                document.getElementById('createLink').disabled = false;
+            });
         });
-    });
-}
+    }
 
-populateEventSubjectDropdown() {
-    const select = document.getElementById('eventSubject');
-    if (!select) return;
+    populateEventSubjectDropdown() {
+        const select = document.getElementById('eventSubject');
+        if (!select) return;
 
-    const options = this.subjects.map(s => `
+        const options = this.subjects.map(s => `
             <option value="${s.id}">${escapeHtml(s.name)}</option>
         `).join('');
 
-    select.innerHTML = '<option value="">Seleccionar materia...</option>' + options;
-}
-
-handleGitHubStatusChange(status, error) {
-    const githubStatus = document.getElementById('githubStatus');
-    const statusText = document.getElementById('githubStatusText');
-    const syncButtons = document.getElementById('syncButtons');
-    const dropdownDisconnect = document.getElementById('disconnectButton');
-    const modalDisconnect = document.getElementById('disconnectGitHub');
-    const dropdownConnect = document.getElementById('syncButton');
-    const settingsSyncStatus = document.getElementById('settingsSyncStatus');
-    const settingsSyncButton = document.getElementById('settingsSyncButton');
-
-    if (!githubStatus || !statusText) return;
-
-    githubStatus.classList.remove('connected', 'syncing', 'error', 'disconnected');
-
-    let iconHtml = '<i class="fab fa-github"></i> ';
-
-    switch (status) {
-        case 'connected':
-            githubStatus.classList.add('connected');
-            statusText.textContent = this.github.username || 'Conectado';
-            if (syncButtons) syncButtons.style.display = 'flex';
-            if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
-            if (modalDisconnect) modalDisconnect.style.display = 'flex';
-            if (dropdownConnect) dropdownConnect.style.display = 'none';
-            if (settingsSyncStatus) settingsSyncStatus.textContent = 'Conectado como ' + (this.github.username || 'usuario');
-            if (settingsSyncButton) settingsSyncButton.style.display = 'none';
-            break;
-        case 'syncing':
-            githubStatus.classList.add('syncing');
-            statusText.textContent = 'Sincronizando...';
-            iconHtml = '<i class="fas fa-sync fa-spin"></i> ';
-            if (syncButtons) syncButtons.style.display = 'flex';
-            if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
-            if (modalDisconnect) modalDisconnect.style.display = 'block';
-            if (dropdownConnect) dropdownConnect.style.display = 'none';
-            break;
-        case 'error':
-            githubStatus.classList.add('error');
-            statusText.textContent = 'Error';
-            iconHtml = '<i class="fas fa-exclamation-circle"></i> ';
-            if (syncButtons) syncButtons.style.display = 'flex';
-            if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
-            if (modalDisconnect) modalDisconnect.style.display = 'block';
-            if (dropdownConnect) dropdownConnect.style.display = 'none';
-            break;
-        case 'disconnected':
-        default:
-            githubStatus.classList.add('disconnected');
-            statusText.textContent = 'No conectado';
-            if (syncButtons) syncButtons.style.display = 'none';
-            if (dropdownDisconnect) dropdownDisconnect.style.display = 'none';
-            if (modalDisconnect) modalDisconnect.style.display = 'none';
-            if (dropdownConnect) dropdownConnect.style.display = 'flex';
-            if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
-            if (settingsSyncButton) settingsSyncButton.style.display = 'flex';
-            break;
+        select.innerHTML = '<option value="">Seleccionar materia...</option>' + options;
     }
 
-    githubStatus.innerHTML = iconHtml + `<span id="githubStatusText">${statusText.textContent}</span>`;
-}
+    handleGitHubStatusChange(status, error) {
+        const githubStatus = document.getElementById('githubStatus');
+        const statusText = document.getElementById('githubStatusText');
+        const syncButtons = document.getElementById('syncButtons');
+        const dropdownDisconnect = document.getElementById('disconnectButton');
+        const modalDisconnect = document.getElementById('disconnectGitHub');
+        const dropdownConnect = document.getElementById('syncButton');
+        const settingsSyncStatus = document.getElementById('settingsSyncStatus');
+        const settingsSyncButton = document.getElementById('settingsSyncButton');
 
-insertCodeBlock() {
-    const content = document.getElementById('noteContent');
-    const br = document.createElement('br');
-    const codeBlock = document.createElement('div');
-    codeBlock.className = 'inline-ace-editor';
-    codeBlock.id = `ace-${Date.now()}`;
-    codeBlock.textContent = '// Escribí tu código acá';
+        if (!githubStatus || !statusText) return;
 
-    content.appendChild(br);
-    content.appendChild(codeBlock);
-    content.appendChild(document.createElement('br'));
+        githubStatus.classList.remove('connected', 'syncing', 'error', 'disconnected');
 
-    initializeAceEditor(codeBlock);
-}
+        let iconHtml = '<i class="fab fa-github"></i> ';
 
-confirmDeleteSubject(subjectId) {
-    const subject = this.subjects.find(s => s.id === subjectId);
-    if (!subject) return;
+        switch (status) {
+            case 'connected':
+                githubStatus.classList.add('connected');
+                statusText.textContent = this.github.username || 'Conectado';
+                if (syncButtons) syncButtons.style.display = 'flex';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
+                if (modalDisconnect) modalDisconnect.style.display = 'flex';
+                if (dropdownConnect) dropdownConnect.style.display = 'none';
+                if (settingsSyncStatus) settingsSyncStatus.textContent = 'Conectado como ' + (this.github.username || 'usuario');
+                if (settingsSyncButton) settingsSyncButton.style.display = 'none';
+                break;
+            case 'syncing':
+                githubStatus.classList.add('syncing');
+                statusText.textContent = 'Sincronizando...';
+                iconHtml = '<i class="fas fa-sync fa-spin"></i> ';
+                if (syncButtons) syncButtons.style.display = 'flex';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
+                if (modalDisconnect) modalDisconnect.style.display = 'block';
+                if (dropdownConnect) dropdownConnect.style.display = 'none';
+                break;
+            case 'error':
+                githubStatus.classList.add('error');
+                statusText.textContent = 'Error';
+                iconHtml = '<i class="fas fa-exclamation-circle"></i> ';
+                if (syncButtons) syncButtons.style.display = 'flex';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
+                if (modalDisconnect) modalDisconnect.style.display = 'block';
+                if (dropdownConnect) dropdownConnect.style.display = 'none';
+                break;
+            case 'disconnected':
+            default:
+                githubStatus.classList.add('disconnected');
+                statusText.textContent = 'No conectado';
+                if (syncButtons) syncButtons.style.display = 'none';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'none';
+                if (modalDisconnect) modalDisconnect.style.display = 'none';
+                if (dropdownConnect) dropdownConnect.style.display = 'flex';
+                if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
+                if (settingsSyncButton) settingsSyncButton.style.display = 'flex';
+                break;
+        }
 
-    const noteCount = subject.notes.length;
-    let message = `¿Estás seguro de que querés eliminar la materia "${subject.name}"?`;
-
-    if (noteCount > 0) {
-        message += `\n\nEsto también eliminará ${noteCount} apunte${noteCount !== 1 ? 's' : ''} asociado${noteCount !== 1 ? 's' : ''}.`;
+        githubStatus.innerHTML = iconHtml + `<span id="githubStatusText">${statusText.textContent}</span>`;
     }
 
-    message += '\n\nEsta acción no se puede deshacer.';
+    insertCodeBlock() {
+        const content = document.getElementById('noteContent');
+        const br = document.createElement('br');
+        const codeBlock = document.createElement('div');
+        codeBlock.className = 'inline-ace-editor';
+        codeBlock.id = `ace-${Date.now()}`;
+        codeBlock.textContent = '// Escribí tu código acá';
 
-    if (confirm(message)) {
-        this.deleteSubject(subjectId);
+        content.appendChild(br);
+        content.appendChild(codeBlock);
+        content.appendChild(document.createElement('br'));
+
+        initializeAceEditor(codeBlock);
     }
-}
 
-deleteSubject(subjectId) {
-    const index = this.subjects.findIndex(s => s.id === subjectId);
-    if (index === -1) return;
+    confirmDeleteSubject(subjectId) {
+        const subject = this.subjects.find(s => s.id === subjectId);
+        if (!subject) return;
 
-    const subject = this.subjects[index];
+        const noteCount = subject.notes.length;
+        let message = `¿Estás seguro de que querés eliminar la materia "${subject.name}"?`;
 
-    if (this.currentNoteId) {
-        const hasNote = subject.notes.some(n => n.id === this.currentNoteId);
-        if (hasNote) {
-            this.currentNoteId = null;
-            document.getElementById('noteEditor').style.display = 'none';
+        if (noteCount > 0) {
+            message += `\n\nEsto también eliminará ${noteCount} apunte${noteCount !== 1 ? 's' : ''} asociado${noteCount !== 1 ? 's' : ''}.`;
+        }
+
+        message += '\n\nEsta acción no se puede deshacer.';
+
+        if (confirm(message)) {
+            this.deleteSubject(subjectId);
+        }
+    }
+
+    deleteSubject(subjectId) {
+        const index = this.subjects.findIndex(s => s.id === subjectId);
+        if (index === -1) return;
+
+        const subject = this.subjects[index];
+
+        if (this.currentNoteId) {
+            const hasNote = subject.notes.some(n => n.id === this.currentNoteId);
+            if (hasNote) {
+                this.currentNoteId = null;
+                document.getElementById('noteEditor').style.display = 'none';
+                showWelcomeScreen(true);
+            }
+        }
+
+        this.subjects.splice(index, 1);
+        saveSubjects(this.subjects);
+        this.renderSubjects();
+        showToast(`Materia "${subject.name}" eliminada`, 'success');
+
+        if (this.subjects.length === 0) {
             showWelcomeScreen(true);
         }
     }
 
-    this.subjects.splice(index, 1);
-    saveSubjects(this.subjects);
-    this.renderSubjects();
-    showToast(`Materia "${subject.name}" eliminada`, 'success');
+    handleJsonImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-    if (this.subjects.length === 0) {
-        showWelcomeScreen(true);
-    }
-}
-
-handleJsonImport(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const noteData = JSON.parse(e.target.result);
-            if (!noteData.app || noteData.app !== 'escriba') {
-                showToast('Este archivo no es un apunte válido de Escriba', 'error');
-                return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const noteData = JSON.parse(e.target.result);
+                if (!noteData.app || noteData.app !== 'escriba') {
+                    showToast('Este archivo no es un apunte válido de Escriba', 'error');
+                    return;
+                }
+                this.importNoteFromJson(noteData);
+            } catch (error) {
+                showToast('Error al leer el archivo JSON', 'error');
             }
-            this.importNoteFromJson(noteData);
-        } catch (error) {
-            showToast('Error al leer el archivo JSON', 'error');
-        }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-}
-
-importNoteFromJson(noteData) {
-    let subject = this.subjects.find(s => s.name === noteData.s);
-
-    if (!subject) {
-        subject = {
-            id: generateId(),
-            name: noteData.s,
-            code: '',
-            professor: '',
-            color: noteData.sc || '#3b82f6',
-            notes: [],
-            expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
-            createdAt: new Date().toISOString(),
-            lastModified: new Date().toISOString()
         };
-        this.subjects.push(subject);
+        reader.readAsText(file);
+        event.target.value = '';
     }
 
-    const newNote = {
-        id: generateId(),
-        title: noteData.t || 'Apunte importado',
-        content: noteData.c || '',
-        createdAt: noteData.cd || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        favorite: false,
-        type: noteData.ty || 'lecture'
-    };
+    importNoteFromJson(noteData) {
+        let subject = this.subjects.find(s => s.name === noteData.s);
 
-    subject.notes.unshift(newNote);
-    subject.lastModified = new Date().toISOString();
-    saveSubjects(this.subjects);
-    this.renderSubjects();
-    this.loadNote(newNote.id);
-    showToast('Apunte importado correctamente', 'success');
-}
+        if (!subject) {
+            subject = {
+                id: generateId(),
+                name: noteData.s,
+                code: '',
+                professor: '',
+                color: noteData.sc || '#3b82f6',
+                notes: [],
+                expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
+                createdAt: new Date().toISOString(),
+                lastModified: new Date().toISOString()
+            };
+            this.subjects.push(subject);
+        }
 
-toggleInlineCode() {
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
+        const newNote = {
+            id: generateId(),
+            title: noteData.t || 'Apunte importado',
+            content: noteData.c || '',
+            createdAt: noteData.cd || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            favorite: false,
+            type: noteData.ty || 'lecture'
+        };
 
-    const range = selection.getRangeAt(0);
-    const node = range.commonAncestorContainer;
-    const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-
-    if (parent.tagName === 'CODE' || parent.closest('code')) {
-        document.execCommand('formatBlock', false, 'p');
-    } else {
-        const code = document.createElement('code');
-        code.appendChild(range.extractContents());
-        range.insertNode(code);
+        subject.notes.unshift(newNote);
+        subject.lastModified = new Date().toISOString();
+        saveSubjects(this.subjects);
+        this.renderSubjects();
+        this.loadNote(newNote.id);
+        showToast('Apunte importado correctamente', 'success');
     }
-    updateToolbarStates();
-}
 
-toggleMathMode() {
-    const select = document.getElementById('noteTypeSelect');
-    if (select) {
-        select.value = select.value === 'math' ? 'lecture' : 'math';
+    toggleInlineCode() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        const range = selection.getRangeAt(0);
+        const node = range.commonAncestorContainer;
+        const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+
+        if (parent.tagName === 'CODE' || parent.closest('code')) {
+            document.execCommand('formatBlock', false, 'p');
+        } else {
+            const code = document.createElement('code');
+            code.appendChild(range.extractContents());
+            range.insertNode(code);
+        }
         updateToolbarStates();
     }
-}
 
-toggleSidebar() {
-    if (window.innerWidth <= 768) {
-        this.toggleMobileMenu();
-        return;
-    }
-
-    const sidebar = document.querySelector('.sidebar');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-
-    if (!sidebar || !sidebarToggle) return;
-
-    const isCompact = sidebar.classList.contains('compact');
-    const icon = sidebarToggle.querySelector('i');
-
-    if (isCompact) {
-        sidebar.classList.remove('compact');
-        sidebarToggle.classList.remove('compact');
-        if (icon) icon.className = 'fas fa-angles-left';
-        sidebarToggle.title = 'Alternar modo compacto (Ctrl+\\)';
-        localStorage.setItem('sidebarCompact', 'false');
-    } else {
-        sidebar.classList.add('compact');
-        sidebarToggle.classList.add('compact');
-        if (icon) icon.className = 'fas fa-angles-right';
-        sidebarToggle.title = 'Expandir sidebar (Ctrl+\\)';
-        localStorage.setItem('sidebarCompact', 'true');
-    }
-}
-
-toggleMobileMenu() {
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.getElementById('mobileOverlay');
-    const toggle = document.getElementById('mobileMenuToggle');
-
-    if (!sidebar || !overlay || !toggle) return;
-
-    const isOpen = sidebar.classList.contains('mobile-active');
-
-    if (isOpen) {
-        sidebar.classList.remove('mobile-active');
-        overlay.classList.remove('active');
-        toggle.innerHTML = '<i class="fas fa-bars"></i>';
-    } else {
-        sidebar.classList.add('mobile-active');
-        overlay.classList.add('active');
-        toggle.innerHTML = '<i class="fas fa-times"></i>';
-    }
-}
-
-loadSidebarState() {
-    const isCompact = localStorage.getItem('sidebarCompact') === 'true';
-    if (isCompact && window.innerWidth > 768) {
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        if (sidebar && sidebarToggle) {
-            sidebar.classList.add('compact');
-            sidebarToggle.classList.add('compact');
-            const icon = sidebarToggle.querySelector('i');
-            if (icon) icon.className = 'fas fa-angles-right';
+    toggleMathMode() {
+        const select = document.getElementById('noteTypeSelect');
+        if (select) {
+            select.value = select.value === 'math' ? 'lecture' : 'math';
+            updateToolbarStates();
         }
     }
-}
+
+    toggleSidebar() {
+        if (window.innerWidth <= 768) {
+            this.toggleMobileMenu();
+            return;
+        }
+
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        if (!sidebar || !sidebarToggle) return;
+
+        const isCompact = sidebar.classList.contains('compact');
+        const icon = sidebarToggle.querySelector('i');
+
+        if (isCompact) {
+            sidebar.classList.remove('compact');
+            sidebarToggle.classList.remove('compact');
+            if (icon) icon.className = 'fas fa-angles-left';
+            sidebarToggle.title = 'Alternar modo compacto (Ctrl+\\)';
+            localStorage.setItem('sidebarCompact', 'false');
+        } else {
+            sidebar.classList.add('compact');
+            sidebarToggle.classList.add('compact');
+            if (icon) icon.className = 'fas fa-angles-right';
+            sidebarToggle.title = 'Expandir sidebar (Ctrl+\\)';
+            localStorage.setItem('sidebarCompact', 'true');
+        }
+    }
+
+    toggleMobileMenu() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileMenuToggle');
+
+        if (!sidebar || !overlay || !toggle) return;
+
+        const isOpen = sidebar.classList.contains('mobile-active');
+
+        if (isOpen) {
+            sidebar.classList.remove('mobile-active');
+            overlay.classList.remove('active');
+            toggle.innerHTML = '<i class="fas fa-bars"></i>';
+        } else {
+            sidebar.classList.add('mobile-active');
+            overlay.classList.add('active');
+            toggle.innerHTML = '<i class="fas fa-times"></i>';
+        }
+    }
+
+    loadSidebarState() {
+        const isCompact = localStorage.getItem('sidebarCompact') === 'true';
+        if (isCompact && window.innerWidth > 768) {
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (sidebar && sidebarToggle) {
+                sidebar.classList.add('compact');
+                sidebarToggle.classList.add('compact');
+                const icon = sidebarToggle.querySelector('i');
+                if (icon) icon.className = 'fas fa-angles-right';
+            }
+        }
+    }
+
+    editUMLDiagram(btn) {
+        const container = btn.closest('.uml-diagram-container');
+        if (container) {
+            const code = container.getAttribute('data-uml-code');
+            const umlCodeInput = document.getElementById('umlCode');
+            if (umlCodeInput) umlCodeInput.value = code || '';
+
+            showModal('umlModal');
+            container.remove();
+            this.debouncedSave();
+
+            const preview = document.getElementById('umlPreview');
+            if (preview && code) updateUMLPreview({ getValue: () => code }, preview);
+        }
+    }
+
+    deleteUMLDiagram(btn) {
+        const container = btn.closest('.uml-diagram-container');
+        if (container && confirm('¿Eliminar este diagrama?')) {
+            container.remove();
+            this.debouncedSave();
+        }
+    }
 }
 
 const app = new EscribaApp();

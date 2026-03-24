@@ -98,6 +98,8 @@ class EscribaApp {
         }, 100);
 
         const hasGitHubToken = !!localStorage.getItem('github_access_token');
+        this.handleGitHubStatusChange(hasGitHubToken ? 'connected' : 'disconnected');
+
         if (hasGitHubToken) {
             this.handleGitHubAuth(true);
         }
@@ -1531,8 +1533,43 @@ class EscribaApp {
     }
 
     handleGitHubStatusChange(status, error) {
+        const githubStatus = document.getElementById('githubStatus');
         const statusText = document.getElementById('githubStatusText');
-        if (statusText) statusText.textContent = status;
+        const syncButtons = document.getElementById('syncButtons');
+
+        if (!githubStatus || !statusText) return;
+
+        githubStatus.classList.remove('connected', 'syncing', 'error', 'disconnected');
+
+        let iconHtml = '<i class="fab fa-github"></i> ';
+
+        switch (status) {
+            case 'connected':
+                githubStatus.classList.add('connected');
+                statusText.textContent = this.github.username || 'Conectado';
+                if (syncButtons) syncButtons.style.display = 'flex';
+                break;
+            case 'syncing':
+                githubStatus.classList.add('syncing');
+                statusText.textContent = 'Sincronizando...';
+                iconHtml = '<i class="fas fa-sync fa-spin"></i> ';
+                if (syncButtons) syncButtons.style.display = 'flex';
+                break;
+            case 'error':
+                githubStatus.classList.add('error');
+                statusText.textContent = 'Error';
+                iconHtml = '<i class="fas fa-exclamation-circle"></i> ';
+                if (syncButtons) syncButtons.style.display = 'flex';
+                break;
+            case 'disconnected':
+            default:
+                githubStatus.classList.add('disconnected');
+                statusText.textContent = 'No conectado';
+                if (syncButtons) syncButtons.style.display = 'none';
+                break;
+        }
+
+        githubStatus.innerHTML = iconHtml + `<span id="githubStatusText">${statusText.textContent}</span>`;
     }
 
     insertCodeBlock() {

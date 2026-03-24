@@ -117,7 +117,8 @@ class EscribaApp {
     bindEvents() {
         document.getElementById('newSubjectBtn').addEventListener('click', () => showModal('subjectModal'));
         document.getElementById('newNoteBtn').addEventListener('click', () => this.createNewNote());
-        document.getElementById('welcomeNewSubject').addEventListener('click', () => showModal('subjectModal'));
+        const welcomeBtn = document.getElementById('welcomeNewSubject') || document.getElementById('welcomeNewSubjectBtn');
+        if (welcomeBtn) welcomeBtn.addEventListener('click', () => showModal('subjectModal'));
         document.getElementById('sidebarToggle').addEventListener('click', () => this.toggleSidebar());
 
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
@@ -315,7 +316,8 @@ class EscribaApp {
             onSubjectClick: (id) => this.toggleSubject(id),
             onNoteClick: (id) => this.loadNote(id),
             onAddNote: (id) => this.addNoteToSubject(id),
-            onDeleteSubject: (id) => this.deleteSubject(id)
+            onDeleteSubject: (id) => this.deleteSubject(id),
+            onAddSubject: () => showModal('subjectModal')
         });
 
         if (this.currentView === 'recent') this.renderRecentView();
@@ -467,8 +469,13 @@ class EscribaApp {
             );
         });
 
-        const container = document.getElementById('subjectsContainer');
-        renderSubjects(container, filteredSubjects.filter(s => s.notes.length > 0));
+        renderSubjects(container, filteredSubjects.filter(s => s.notes.length > 0), {
+            onSubjectClick: (id) => this.toggleSubject(id),
+            onNoteClick: (id) => this.loadNote(id),
+            onAddNote: (id) => this.addNoteToSubject(id),
+            onDeleteSubject: (id) => this.deleteSubject(id),
+            onAddSubject: () => showModal('subjectModal')
+        });
     }
 
     handleKeyboardShortcuts(e) {
@@ -659,14 +666,18 @@ class EscribaApp {
     renderRecentView() {
         const container = document.getElementById('recentContainer');
         if (container) {
-            renderRecentNotes(container, this.subjects, this.currentNoteId);
+            renderRecentNotes(container, this.subjects, this.currentNoteId, {
+                onNoteClick: (id) => this.loadNote(id)
+            });
         }
     }
 
     renderFavoritesView() {
         const container = document.getElementById('favoritesContainer');
         if (container) {
-            renderFavoriteNotes(container, this.subjects, this.currentNoteId);
+            renderFavoriteNotes(container, this.subjects, this.currentNoteId, {
+                onNoteClick: (id) => this.loadNote(id)
+            });
         }
     }
 

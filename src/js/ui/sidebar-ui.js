@@ -51,6 +51,34 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
             </div>
         </div>
     `).join('');
+
+    container.querySelectorAll('.subject-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-add-note')) return;
+            const subjectId = header.closest('.subject-folder').dataset.subjectId;
+            if (callbacks.onSubjectClick) callbacks.onSubjectClick(subjectId);
+        });
+    });
+
+    container.querySelectorAll('.btn-add-note').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const subjectId = btn.dataset.subjectId;
+            if (callbacks.onAddNote) callbacks.onAddNote(subjectId);
+        });
+    });
+
+    container.querySelectorAll('.note-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const noteId = item.dataset.noteId;
+            if (callbacks.onNoteClick) callbacks.onNoteClick(noteId);
+        });
+    });
+
+    const welcomeBtn = container.querySelector('#welcomeNewSubjectBtn');
+    if (welcomeBtn && callbacks.onAddSubject) {
+        welcomeBtn.addEventListener('click', callbacks.onAddSubject);
+    }
 };
 
 export const updateSemesterInfo = (element) => {
@@ -72,7 +100,7 @@ export const updateSemesterInfo = (element) => {
     element.textContent = semester;
 };
 
-export const renderRecentNotes = (container, subjects, currentNoteId) => {
+export const renderRecentNotes = (container, subjects, currentNoteId, callbacks = {}) => {
     if (!container) return;
 
     const allNotes = [];
@@ -114,9 +142,16 @@ export const renderRecentNotes = (container, subjects, currentNoteId) => {
             `).join('')}
         </div>
     `;
+
+    container.querySelectorAll('.recent-note-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const noteId = item.dataset.noteId;
+            if (callbacks.onNoteClick) callbacks.onNoteClick(noteId);
+        });
+    });
 };
 
-export const renderFavoriteNotes = (container, subjects, currentNoteId) => {
+export const renderFavoriteNotes = (container, subjects, currentNoteId, callbacks = {}) => {
     if (!container) return;
 
     const favoriteNotes = [];
@@ -159,4 +194,11 @@ export const renderFavoriteNotes = (container, subjects, currentNoteId) => {
             `).join('')}
         </div>
     `;
+
+    container.querySelectorAll('.favorite-note-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const noteId = item.dataset.noteId;
+            if (callbacks.onNoteClick) callbacks.onNoteClick(noteId);
+        });
+    });
 };

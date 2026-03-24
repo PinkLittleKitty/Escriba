@@ -89,7 +89,7 @@ header h1 i {
 .github-status.connected {
     color: var(--accent-green);
     border-color: var(--accent-green);
-    background: rgba(34, 197, 94, 0.1);
+    background: var(--accent-green-bg);
 }
 
 .github-status.connected i {
@@ -99,7 +99,7 @@ header h1 i {
 .github-status.syncing {
     color: var(--accent-blue);
     border-color: var(--accent-blue);
-    background: rgba(59, 130, 246, 0.1);
+    background: var(--accent-blue-bg);
 }
 
 .github-status.syncing i {
@@ -110,7 +110,7 @@ header h1 i {
 .github-status.error {
     color: var(--accent-red);
     border-color: var(--accent-red);
-    background: rgba(239, 68, 68, 0.1);
+    background: var(--accent-red-bg);
 }
 
 .github-status.error i {
@@ -204,9 +204,9 @@ header h1 i {
 
 .sidebar-toggle.compact {
     background: var(--accent-blue);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+    box-shadow: 0 0 0 2px var(--accent-blue-bg);
 }
 
 .sidebar-toggle.compact:hover {

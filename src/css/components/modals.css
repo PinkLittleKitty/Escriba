@@ -44,7 +44,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-green));
+    background: var(--accent-blue);
 }
 
 .modal.active .modal-content {
@@ -57,7 +57,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+    background: var(--bg-secondary);
     position: relative;
 }
 
@@ -74,10 +74,10 @@
 .modal-header h3 i {
     font-size: 1.75rem;
     padding: 0.75rem;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    color: white;
+    background: var(--accent-focus);
+    color: var(--accent-blue);
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px var(--accent-shadow);
 }
 
 .modal-close {
@@ -110,7 +110,7 @@
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
-    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+    background: var(--bg-secondary);
 }
 
 .form-group {
@@ -139,7 +139,7 @@
 .form-group input:focus {
     outline: none;
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px var(--accent-focus);
 }
 
 .modal-large {
@@ -182,6 +182,6 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: white;
+    color: var(--text-on-accent);
     font-weight: bold;
 }

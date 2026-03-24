@@ -135,9 +135,9 @@
 
 .view-btn.active {
     background: var(--accent-blue);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--accent-blue);
-    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
+    box-shadow: 0 4px 12px var(--accent-blue-bg);
 }
 
 .view-btn i {

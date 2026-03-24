@@ -52,7 +52,6 @@
 }
 
 .toast.success .toast-icon {
-    background: rgba(34, 197, 94, 0.1);
     color: var(--accent-green);
 }
 
@@ -61,7 +60,6 @@
 }
 
 .toast.error .toast-icon {
-    background: rgba(239, 68, 68, 0.1);
     color: var(--accent-red);
 }
 
@@ -70,7 +68,6 @@
 }
 
 .toast.warning .toast-icon {
-    background: rgba(251, 191, 36, 0.1);
     color: var(--accent-orange);
 }
 
@@ -79,7 +76,6 @@
 }
 
 .toast.info .toast-icon {
-    background: rgba(59, 130, 246, 0.1);
     color: var(--accent-blue);
 }
 

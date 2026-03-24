@@ -53,7 +53,7 @@
 
 .uml-template-btn.active {
     background: var(--accent-blue);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--accent-blue);
 }
 
@@ -133,27 +133,94 @@
 }
 
 .uml-diagram-container {
-    margin: 1rem 0;
+    margin: 1.5rem 0;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
     background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.uml-diagram-container:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--accent-blue);
 }
 
 .uml-diagram-header {
-    background: var(--bg-tertiary);
-    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    padding: 0.6rem 1rem;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
+.uml-diagram-type {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.uml-diagram-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.uml-edit-btn,
+.uml-delete-btn,
+.uml-diagram-btn {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-secondary) !important;
+    cursor: pointer !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    font-size: 0.85rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.uml-edit-btn:hover,
+.uml-diagram-btn:first-child:hover {
+    background: var(--accent-blue) !important;
+    color: white !important;
+    border-color: var(--accent-blue) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3) !important;
+}
+
+.uml-delete-btn:hover,
+.uml-diagram-btn:last-child:hover {
+    background: var(--accent-red, #ef4444) !important;
+    color: white !important;
+    border-color: var(--accent-red, #ef4444) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
 .uml-diagram-content {
-    padding: 1.5rem;
-    background: white;
+    padding: 2rem;
+    background: var(--bg-primary);
     overflow: auto;
-    max-height: 600px;
+    max-height: 700px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .uml-diagram-content svg {

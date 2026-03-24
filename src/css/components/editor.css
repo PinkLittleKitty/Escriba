@@ -101,7 +101,7 @@
 }
 
 .shared-note-banner {
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    background: var(--bg-tertiary);
     color: white;
     padding: 1rem 2rem;
     border-bottom: 1px solid var(--border-color);
@@ -110,14 +110,7 @@
 }
 
 .shared-note-banner::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    animation: shimmer 2s infinite;
+    content: none;
 }
 
 @keyframes shimmer {
@@ -267,15 +260,15 @@
 
 .toolbar-btn.active {
     background: var(--accent-blue);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--accent-blue);
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 4px var(--accent-blue-bg);
 }
 
 #mathModeBtn.active {
     background: #8b5cf6;
     border-color: #8b5cf6;
-    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 2px 4px var(--accent-purple-bg);
 }
 
 .note-content {

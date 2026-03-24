@@ -117,18 +117,18 @@
 
 .btn-add-note:hover {
     background: var(--accent-blue);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--accent-blue);
     transform: scale(1.1);
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 4px var(--accent-shadow);
 }
 
 .btn-delete-subject:hover {
     background: var(--accent-red);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--accent-red);
     transform: scale(1.1);
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 2px 4px var(--accent-shadow);
 }
 
 .subject-toggle {
@@ -183,7 +183,8 @@
     left: 0;
     right: 0;
     height: 20px;
-    background: linear-gradient(transparent, var(--bg-card));
+    background: var(--bg-card);
+    opacity: 0.95;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s ease;
@@ -212,7 +213,7 @@
 }
 
 .note-item.active {
-    background: rgba(59, 130, 246, 0.1);
+    background: var(--accent-focus);
     border-left: 3px solid var(--accent-blue);
 }
 

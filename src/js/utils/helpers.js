@@ -1,0 +1,56 @@
+export const sanitizeText = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    return text.normalize('NFC');
+};
+
+export const cleanNoteContent = (content) => {
+    if (!content || typeof content !== 'string') return content;
+
+    let cleaned = content.normalize('NFC');
+    cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+
+    return cleaned;
+};
+
+export const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+        return 'Hoy';
+    } else if (diffDays === 2) {
+        return 'Ayer';
+    } else if (diffDays <= 7) {
+        return `Hace ${diffDays - 1} día${diffDays - 1 !== 1 ? 's' : ''}`;
+    } else {
+        return date.toLocaleDateString('es-AR', {
+            day: 'numeric',
+            month: 'short',
+            year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        });
+    }
+};
+
+export const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+};
+
+export const generateId = (prefix = 'id') => {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
+export const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+};

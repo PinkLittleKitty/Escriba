@@ -1,0 +1,185 @@
+.sidebar {
+    width: 320px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.sidebar.compact {
+    width: 60px;
+    min-width: 60px;
+}
+
+.sidebar.compact .search-section,
+.sidebar.compact .subjects-container,
+.sidebar.compact .recent-container,
+.sidebar.compact .favorites-container,
+.sidebar.compact .calendar-container {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.sidebar.compact::before {
+    content: '\f0c9';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.sidebar.compact::before:hover {
+    color: var(--accent-blue);
+    background: var(--bg-hover);
+}
+
+.sidebar.compact::after {
+    content: 'Expandir sidebar';
+    position: absolute;
+    left: 70px;
+    top: 20px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+.sidebar.compact:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.search-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.search-box {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.search-box i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--accent-focus);
+}
+
+.view-toggles {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.view-btn {
+    flex: 0 0 auto;
+    width: 34px;
+    padding: 0.4rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, width 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.view-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.view-btn.active {
+    flex: 1;
+    background: var(--accent-blue);
+    color: var(--text-on-accent);
+    border-color: var(--accent-blue);
+    justify-content: flex-start;
+    padding: 0.4rem 0.75rem;
+}
+
+.view-btn i {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.view-btn-label {
+    display: none;
+}
+
+.view-btn.active .view-btn-label {
+    display: inline;
+}
+
+.subjects-container,
+.recent-container,
+.favorites-container,
+.calendar-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: -320px;
+        top: 71px;
+        bottom: 0;
+        z-index: 1000;
+        width: 280px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .sidebar.mobile-active {
+        left: 0;
+    }
+}

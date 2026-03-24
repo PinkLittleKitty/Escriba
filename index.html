@@ -4,25 +4,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escriba - Tu cuaderno digital</title>
+    <title>Escriba - Tu carpeta digital</title>
     <meta name="description" content="Organizá tus apuntes como en una carpeta real.">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="src/css/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+
+    <script type="module" src="src/js/app.js"></script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-html.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-github.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-monokai.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-tomorrow_night.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ext-language_tools.min.js"></script>
+
+    <link rel="icon" type="image/x-icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23334155'><path d='M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z'/></svg>">
 </head>
 
 <body>
     <div class="container">
         <header>
+            <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="header-left">
+                <button id="sidebarToggle" class="sidebar-toggle" title="Alternar modo compacto (Ctrl+\)">
+                    <i class="fas fa-angles-left"></i>
+                </button>
                 <h1><i class="fas fa-book-open"></i> Escriba</h1>
                 <div class="semester-info">
                     <span id="currentSemester">1er Cuatrimestre</span>
                 </div>
             </div>
             <div class="header-controls">
+                <div class="github-controls">
+                    <div id="githubStatus" class="github-status">
+                        <i class="fab fa-github"></i>
+                        <span id="githubStatusText">No conectado</span>
+                    </div>
+                    <div class="sync-buttons" id="syncButtons" style="display: none;">
+                        <button id="pullButton" class="btn btn-sync" title="Pull: Descargar cambios desde GitHub">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button id="pushButton" class="btn btn-sync" title="Push: Subir cambios a GitHub (forzado)">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                    </div>
+                </div>
                 <button id="newSubjectBtn" class="btn btn-accent" title="Crear nueva materia">
                     <i class="fas fa-folder-plus"></i> Nueva Materia
                 </button>
@@ -34,17 +72,22 @@
                         <i class="fas fa-cog"></i> Opciones
                     </button>
                     <div class="dropdown-menu">
+                        <button id="syncButton"><i class="fab fa-github"></i> Conectar GitHub</button>
+                        <button id="disconnectButton" style="display: none;"><i class="fas fa-unlink"></i> Desconectar
+                            GitHub</button>
                         <button id="exportBtn"><i class="fas fa-download"></i> Exportar Carpeta</button>
                         <button id="importBtn"><i class="fas fa-upload"></i> Importar Carpeta</button>
+                        <button id="importJsonBtn"><i class="fas fa-file-import"></i> Importar Apunte JSON</button>
                         <button id="settingsBtn"><i class="fas fa-palette"></i> Personalizar</button>
                         <button id="printBtn"><i class="fas fa-print"></i> Imprimir Apunte</button>
-                        <hr style="margin: 0.5rem 0; border: none; border-top: 1px solid var(--border-color);">
-                        <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
                     </div>
                 </div>
                 <input type="file" id="importFile" accept=".json" style="display: none;">
+                <input type="file" id="importJsonFile" accept=".json" style="display: none;">
             </div>
         </header>
+
+        <div id="mobileOverlay" class="mobile-overlay"></div>
 
         <div class="main-content">
             <aside class="sidebar">
@@ -55,18 +98,62 @@
                     </div>
                     <div class="view-toggles">
                         <button class="view-btn active" data-view="subjects" title="Ver por materias">
-                            <i class="fas fa-folder"></i> Materias
+                            <i class="fas fa-folder"></i><span class="view-btn-label">Materias</span>
                         </button>
                         <button class="view-btn" data-view="recent" title="Ver apuntes recientes">
-                            <i class="fas fa-clock"></i>
+                            <i class="fas fa-clock"></i><span class="view-btn-label">Recientes</span>
                         </button>
                         <button class="view-btn" data-view="favorites" title="Ver apuntes favoritos">
-                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i><span class="view-btn-label">Favoritos</span>
+                        </button>
+                        <button class="view-btn" data-view="calendar" title="Ver calendario de exámenes">
+                            <i class="fas fa-calendar-alt"></i><span class="view-btn-label">Calendario</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="subjects-container" id="subjectsContainer">
+                    <!-- Las materias y apuntes se cargan acá -->
+                </div>
+
+                <div class="recent-container" id="recentContainer" style="display: none;">
+                    <div class="recent-notes-list">
+                        <!-- Los apuntes recientes se cargan acá -->
+                    </div>
+                </div>
+
+                <div class="favorites-container" id="favoritesContainer" style="display: none;">
+                    <div class="favorites-notes-list">
+                        <!-- Los apuntes favoritos se cargan acá -->
+                    </div>
+                </div>
+
+                <div class="calendar-container" id="calendarContainer" style="display: none;">
+                    <div class="calendar-section">
+                        <div class="calendar-header">
+                            <button id="prevMonth" class="btn btn-icon">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 id="currentMonth"></h3>
+                            <button id="nextMonth" class="btn btn-icon">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- El calendario se genera acá -->
+                        </div>
+                    </div>
+                    <div class="calendar-events">
+                        <div class="events-header">
+                            <h4><i class="fas fa-calendar-check"></i> Próximos Exámenes</h4>
+                            <button id="addEventBtn" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> Agregar
+                            </button>
+                        </div>
+                        <div id="eventsList" class="events-list">
+                            <!-- Los eventos se cargan acá -->
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -84,6 +171,10 @@
                             <div class="stat-item">
                                 <i class="fas fa-search"></i>
                                 <span>Buscá rápidamente</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fab fa-github"></i>
+                                <span>Sincronizá con GitHub</span>
                             </div>
                             <div class="stat-item">
                                 <i class="fas fa-cloud"></i>
@@ -110,19 +201,33 @@
                             </div>
                         </div>
                         <div class="note-actions">
+                            <select id="noteLanguageSelect" class="note-type-select"
+                                title="Lenguaje para bloques de código" style="display: none;">
+                                <option value="javascript">JavaScript</option>
+                                <option value="python">Python</option>
+                                <option value="html">HTML</option>
+                                <option value="css">CSS</option>
+                                <option value="json">JSON</option>
+                                <option value="markdown">Markdown</option>
+                                <option value="text"><i class="fas fa-file-alt"></i> Texto plano</option>
+                            </select>
                             <select id="noteTypeSelect" class="note-type-select" title="Tipo de apunte">
-                                <option value="lecture">📝 Apuntes de Clase</option>
-                                <option value="assignment">📋 Trabajo Práctico</option>
-                                <option value="study">📚 Guía de Estudio</option>
-                                <option value="lab">🧪 Informe de Lab</option>
-                                <option value="project">🚀 Proyecto</option>
-                                <option value="exam">📊 Preparación Parcial</option>
-                                <option value="summary">📄 Resumen</option>
-                                <option value="exercise">✏️ Ejercicios</option>
+                                <option value="lecture"><i class="fas fa-edit"></i> Apuntes de Clase</option>
+                                <option value="assignment"><i class="fas fa-tasks"></i> Trabajo Práctico</option>
+                                <option value="study"><i class="fas fa-book-reader"></i> Guía de Estudio</option>
+                                <option value="lab"><i class="fas fa-flask"></i> Informe de Lab</option>
+                                <option value="project"><i class="fas fa-rocket"></i> Proyecto</option>
+                                <option value="exam"><i class="fas fa-chart-bar"></i> Preparación Parcial</option>
+                                <option value="summary"><i class="fas fa-file-alt"></i> Resumen</option>
+                                <option value="exercise"><i class="fas fa-pencil-alt"></i> Ejercicios</option>
+                                <option value="math"><i class="fas fa-calculator"></i> Matemáticas</option>
                             </select>
                             <div class="note-meta">
                                 <button id="favoriteBtn" class="btn btn-icon" title="Marcar como favorito">
                                     <i class="fas fa-star"></i>
+                                </button>
+                                <button id="shareNoteBtn" class="btn btn-icon" title="Compartir apunte">
+                                    <i class="fas fa-share-alt"></i>
                                 </button>
                                 <span id="noteDate"></span>
                                 <button id="deleteNoteBtn" class="btn btn-danger-subtle" title="Eliminar apunte">
@@ -149,24 +254,32 @@
                                     class="fas fa-list-ul"></i></button>
                             <button class="toolbar-btn" data-command="insertOrderedList" title="Lista numerada"><i
                                     class="fas fa-list-ol"></i></button>
-                            <button class="toolbar-btn" data-command="indent" title="Aumentar sangría"><i
+                            <button class="toolbar-btn" data-command="indent" title="Aumentar sangría (o usá Tab)"><i
                                     class="fas fa-indent"></i></button>
-                            <button class="toolbar-btn" data-command="outdent" title="Reducir sangría"><i
-                                    class="fas fa-outdent"></i></button>
+                            <button class="toolbar-btn" data-command="outdent"
+                                title="Reducir sangría (o usá Shift+Tab)"><i class="fas fa-outdent"></i></button>
                         </div>
                         <div class="toolbar-separator"></div>
                         <div class="toolbar-group">
                             <button class="toolbar-btn" id="highlightBtn" title="Resaltar texto"><i
                                     class="fas fa-highlighter"></i></button>
+                            <button class="toolbar-btn" id="inlineCodeBtn" title="Código inline (Ctrl+`)"><i
+                                    class="fas fa-terminal"></i></button>
+                            <button class="toolbar-btn" id="insertCodeBtn" title="Insertar bloque de código"><i
+                                    class="fas fa-code"></i></button>
                             <button class="toolbar-btn" data-command="removeFormat" title="Limpiar formato"><i
                                     class="fas fa-remove-format"></i></button>
-                            <button class="toolbar-btn" id="insertDateBtn" title="Insertar fecha"><i
-                                    class="fas fa-calendar"></i></button>
+                            <button class="toolbar-btn" id="insertLinkBtn" title="Enlazar apunte"><i
+                                    class="fas fa-link"></i></button>
+                            <button class="toolbar-btn" id="mathModeBtn" title="Modo matemático (Ctrl+M)"><i
+                                    class="fas fa-square-root-alt"></i></button>
+                            <button class="toolbar-btn" id="insertUMLBtn" title="Insertar diagrama UML"><i
+                                    class="fas fa-project-diagram"></i></button>
                         </div>
                     </div>
 
                     <div id="noteContent" class="note-content" contenteditable="true"
-                        placeholder="Empezá a escribir tus apuntes... Usá Ctrl+B para negrita, Ctrl+I para cursiva">
+                        placeholder="Empezá a escribir tus apuntes... Usá Tab para indentar, Ctrl+B para negrita, Ctrl+I para cursiva">
                     </div>
                 </div>
             </main>
@@ -233,66 +346,82 @@
                             <div class="theme-option active" data-theme="dark">
                                 <div class="theme-preview dark-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Oscuro</span>
                             </div>
                             <div class="theme-option" data-theme="light">
                                 <div class="theme-preview light-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Claro</span>
                             </div>
                             <div class="theme-option" data-theme="blue">
                                 <div class="theme-preview blue-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Azul</span>
                             </div>
                             <div class="theme-option" data-theme="unq">
                                 <div class="theme-preview unq-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>UNQ</span>
                             </div>
                             <div class="theme-option" data-theme="forest">
                                 <div class="theme-preview forest-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Bosque</span>
                             </div>
                             <div class="theme-option" data-theme="sunset">
                                 <div class="theme-preview sunset-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
                                 <span>Atardecer</span>
                             </div>
-                            <div class="theme-option" data-theme="ocean">
-                                <div class="theme-preview ocean-preview">
+                            <div class="theme-option" data-theme="zenith">
+                                <div class="theme-preview zenith-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
-                                <span>Océano</span>
+                                <span>Zenit</span>
                             </div>
-                            <div class="theme-option" data-theme="cyberpunk">
-                                <div class="theme-preview cyberpunk-preview">
+                            <div class="theme-option" data-theme="carbon">
+                                <div class="theme-preview carbon-preview">
                                     <div class="preview-header"></div>
-                                    <div class="preview-sidebar"></div>
-                                    <div class="preview-content"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
                                 </div>
-                                <span>Cyberpunk</span>
+                                <span>Carbon</span>
                             </div>
                         </div>
                     </div>
@@ -325,43 +454,80 @@
                             <label class="checkbox-label">
                                 <input type="checkbox" id="autoSave" checked>
                                 <span class="checkmark"></span>
-                                Auto-guardado cada 2 segundos
+                                <span class="toggle-text">Auto-guardado cada 2 segundos</span>
                             </label>
                         </div>
                         <div class="form-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="expandSubjects" checked>
                                 <span class="checkmark"></span>
-                                Expandir materias por defecto
+                                <span class="toggle-text">Expandir materias por defecto</span>
                             </label>
                         </div>
                         <div class="form-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="showWelcome" checked>
                                 <span class="checkmark"></span>
-                                Mostrar pantalla de bienvenida
+                                <span class="toggle-text">Mostrar pantalla de bienvenida</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="settings-section">
+                        <h4><i class="fab fa-github"></i> Sincronización</h4>
+                        <div class="sync-settings">
+                            <div class="form-group">
+                                <div class="sync-info" id="syncInfo">
+                                    <div class="sync-status-display">
+                                        <span id="settingsSyncStatus">No conectado a GitHub</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="autoSync" checked>
+                                    <span class="checkmark"></span>
+                                    <span class="toggle-text">Sincronización automática cada 5 minutos</span>
+                                </label>
+                            </div>
+                            <div class="sync-actions">
+                                <button class="btn btn-primary" id="settingsSyncButton">
+                                    <i class="fab fa-github"></i> Conectar GitHub
+                                </button>
+                                <button class="btn btn-secondary" id="disconnectGitHub" style="display: none;">
+                                    <i class="fas fa-unlink"></i> Desconectar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
                         <h4><i class="fas fa-database"></i> Datos</h4>
-                        <div class="data-stats">
-                            <div class="stat">
-                                <span class="stat-number" id="totalSubjects">0</span>
-                                <span class="stat-label">Materias</span>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-folder"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="countSubjects">0</span>
+                                    <span class="stat-label">Materias</span>
+                                </div>
                             </div>
-                            <div class="stat">
-                                <span class="stat-number" id="totalNotes">0</span>
-                                <span class="stat-label">Apuntes</span>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-sticky-note"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="countNotes">0</span>
+                                    <span class="stat-label">Apuntes</span>
+                                </div>
                             </div>
-                            <div class="stat">
-                                <span class="stat-number" id="totalWords">0</span>
-                                <span class="stat-label">Palabras</span>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="countWords">0</span>
+                                    <span class="stat-label">Palabras</span>
+                                </div>
                             </div>
                         </div>
                         <div class="data-actions">
-                            <button class="btn btn-secondary" id="clearAllData">
+                            <button class="btn btn-danger" id="clearAllData">
                                 <i class="fas fa-trash"></i> Limpiar Todo
                             </button>
                             <button class="btn btn-secondary" id="resetSettings">
@@ -377,6 +543,344 @@
             </div>
         </div>
 
+        <div id="subjectPickerModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-file-plus"></i> Crear Nuevo Apunte</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Seleccioná la materia para el nuevo apunte:</label>
+                        <div id="subjectPickerList" class="subject-picker-list">
+                            <!-- Las materias se cargan acá -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelSubjectPicker">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="linkModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-link"></i> Enlazar Apunte</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="linkText">Texto del enlace</label>
+                        <input type="text" id="linkText" placeholder="ej: como vimos la semana pasada"
+                            autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Buscar apunte para enlazar:</label>
+                        <div class="search-box">
+                            <input type="text" id="linkSearchInput" placeholder="Buscar por título o materia..."
+                                autocomplete="off">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Seleccionar apunte:</label>
+                        <div id="linkNotesList" class="link-notes-list">
+                            <!-- Los apuntes se cargan acá -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelLink">Cancelar</button>
+                    <button class="btn btn-primary" id="createLink" disabled>Crear Enlace</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="eventModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-calendar-plus"></i> <span id="eventModalTitle">Agregar Examen</span></h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="eventTitle">Título del Examen</label>
+                        <input type="text" id="eventTitle" placeholder="ej: Parcial de Análisis Matemático"
+                            autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="eventSubject">Materia</label>
+                        <select id="eventSubject" class="settings-select">
+                            <option value="">Seleccionar materia...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventDate">Fecha</label>
+                        <input type="date" id="eventDate" class="date-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Hora (opcional)</label>
+                        <input type="time" id="eventTime" class="time-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="eventType">Tipo de Examen</label>
+                        <select id="eventType" class="settings-select">
+                            <option value="parcial"><i class="fas fa-chart-bar"></i> Parcial</option>
+                            <option value="final"><i class="fas fa-bullseye"></i> Final</option>
+                            <option value="tp"><i class="fas fa-tasks"></i> Trabajo Práctico</option>
+                            <option value="entrega"><i class="fas fa-paper-plane"></i> Entrega</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventNotes">Notas (opcional)</label>
+                        <textarea id="eventNotes" placeholder="Temas a estudiar, aula, etc." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelEvent">Cancelar</button>
+                    <button class="btn btn-danger" id="deleteEvent" style="display: none;">Eliminar</button>
+                    <button class="btn btn-primary" id="saveEvent">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="umlModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3><i class="fas fa-project-diagram"></i> Insertar Diagrama UML</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="uml-editor-container">
+                        <div class="uml-sidebar">
+                            <h4><i class="fas fa-shapes"></i> Tipos de Diagrama</h4>
+                            <div class="uml-templates">
+                                <button class="uml-template-btn active" data-template="class">
+                                    <i class="fas fa-cube"></i>
+                                    <span>Diagrama de Clases</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="sequence">
+                                    <i class="fas fa-arrows-alt-h"></i>
+                                    <span>Diagrama de Secuencia</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="flowchart">
+                                    <i class="fas fa-sitemap"></i>
+                                    <span>Diagrama de Flujo</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="er">
+                                    <i class="fas fa-database"></i>
+                                    <span>Diagrama ER</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="state">
+                                    <i class="fas fa-circle-notch"></i>
+                                    <span>Diagrama de Estados</span>
+                                </button>
+                                <button class="uml-template-btn" data-template="usecase">
+                                    <i class="fas fa-user-circle"></i>
+                                    <span>Casos de Uso</span>
+                                </button>
+                            </div>
+
+                            <div class="uml-help">
+                                <h5><i class="fas fa-info-circle"></i> Ayuda Rápida</h5>
+                                <div class="help-content" id="umlHelpContent">
+                                    <p>Selecciona un tipo de diagrama para ver ejemplos y sintaxis.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="uml-main">
+                            <div class="uml-editor-section">
+                                <div class="uml-editor-header">
+                                    <h4><i class="fas fa-code"></i> Editor de Código</h4>
+                                    <div class="uml-editor-actions">
+                                        <button class="btn btn-sm btn-secondary" id="umlPreviewBtn">
+                                            <i class="fas fa-eye"></i> Vista Previa
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" id="umlFullscreenBtn">
+                                            <i class="fas fa-expand"></i> Pantalla Completa
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea id="umlCode" class="uml-code-editor"
+                                    placeholder="Escribí código Mermaid o seleccioná una plantilla..."></textarea>
+                            </div>
+
+                            <div class="uml-preview-section">
+                                <div class="uml-preview-header">
+                                    <h4><i class="fas fa-eye"></i> Vista Previa</h4>
+                                    <div class="uml-preview-actions">
+                                        <button class="btn btn-sm btn-secondary" id="umlZoomInBtn">
+                                            <i class="fas fa-search-plus"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" id="umlZoomOutBtn">
+                                            <i class="fas fa-search-minus"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" id="umlResetZoomBtn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="uml-preview-container">
+                                    <div class="uml-preview" id="umlPreview">
+                                        <div class="uml-preview-placeholder">
+                                            <i class="fas fa-project-diagram"></i>
+                                            <p>La vista previa aparecerá aquí</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelUML">Cancelar</button>
+                    <button class="btn btn-primary" id="insertUMLDiagram">Insertar Diagrama</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="shareModal" class="modal">
+            <div class="modal-content share-modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-share-alt"></i> Compartir Apunte</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body share-modal-body">
+
+                    <div class="share-github-banner" id="githubSyncShareInfo" style="display: none;">
+                        <div class="share-github-left">
+                            <i class="fab fa-github"></i>
+                            <div>
+                                <span class="share-github-title">Repositorio conectado</span>
+                                <span class="share-github-repo" id="githubRepoPath">username/escriba-notes</span>
+                            </div>
+                        </div>
+                        <div class="share-github-right">
+                            <span class="share-privacy-status" id="repoPrivacyStatus">Verificando...</span>
+                            <button class="btn btn-secondary btn-sm"
+                                onclick="window.open('https://github.com/' + document.getElementById('githubRepoPath').textContent, '_blank')">
+                                <i class="fas fa-external-link-alt"></i> Ver
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="githubWarning" class="share-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong id="warningTitle">Repositorio Público Requerido</strong>
+                            <p id="warningMessage">Para que los enlaces funcionen, tu repositorio debe ser
+                                <strong>público</strong>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="share-main">
+                        <div class="share-left">
+                            <div class="share-card">
+                                <div class="share-card-header">
+                                    <i class="fas fa-link"></i>
+                                    <span>Enlace para compartir</span>
+                                </div>
+                                <p class="share-description">Cualquiera con este enlace puede verlo en modo solo
+                                    lectura.</p>
+                                <div class="share-method-badge" id="shareMethodInfo">
+                                    <i class="fas fa-spinner fa-spin"></i> Generando enlace...
+                                </div>
+                                <div class="share-url-row">
+                                    <input type="text" id="shareUrl" class="share-url-input" readonly
+                                        placeholder="Generando enlace...">
+                                    <button id="copyUrlBtn" class="btn btn-primary share-copy-btn"
+                                        title="Copiar enlace">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="share-card">
+                                <div class="share-card-header">
+                                    <i class="fas fa-share"></i>
+                                    <span>Compartir</span>
+                                </div>
+                                <div class="share-actions-row">
+                                    <button id="shareWhatsApp" class="share-action-btn whatsapp">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </button>
+                                    <button id="shareEmail" class="share-action-btn email">
+                                        <i class="fas fa-envelope"></i> Email
+                                    </button>
+                                    <button id="exportJsonBtn" class="share-action-btn export">
+                                        <i class="fas fa-download"></i> JSON
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="share-qr-panel">
+                            <div class="share-card-header">
+                                <i class="fas fa-qrcode"></i>
+                                <span>Código QR</span>
+                            </div>
+                            <canvas id="qrCanvas" width="180" height="180"></canvas>
+                            <p class="qr-hint">Escaneá con la cámara de tu teléfono</p>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelShare">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="githubTokenModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fab fa-github"></i> Conectar con GitHub</h3>
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="token-auth-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <p>Generá un <strong>Personal Access Token (Classic)</strong> en tu cuenta de GitHub.
+                                </p>
+                                <a href="https://github.com/settings/tokens/new?scopes=gist,repo&description=Escriba%20App"
+                                    target="_blank" class="help-link">
+                                    <i class="fas fa-external-link-alt"></i> Crear token ahora
+                                </a>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <p>Asegurate de seleccionar los permisos <strong>'gist'</strong> y
+                                    <strong>'repo'</strong>.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <p>Pegá el token generado a continuación:</p>
+                                <div class="token-input-group">
+                                    <input type="password" id="githubTokenInput" class="token-input"
+                                        placeholder="ghp_xxxxxxxxxxxx" autocomplete="one-time-code" spellcheck="false">
+                                </div>
+                                <span class="help-text">Tu token se guarda de forma segura en este navegador.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelToken">Cancelar</button>
+                    <button class="btn btn-primary" id="confirmToken">Conectar GitHub</button>
+                </div>
+            </div>
+        </div>
+
         <div id="toast" class="toast">
             <div class="toast-content">
                 <i class="toast-icon"></i>
@@ -385,13 +889,7 @@
         </div>
     </div>
 
-    <script src="api.js"></script>
-    <script src="script.js"></script>
-    <script>
-        if (!api.isAuthenticated()) {
-            window.location.href = '/auth.html';
-        }
-    </script>
 </body>
+
 
 </html>

@@ -1,0 +1,126 @@
+.sync-settings {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.sync-status-display {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.sync-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.sync-actions .btn {
+    flex: 1;
+    min-width: 140px;
+}
+
+.token-auth-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.step {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.step-number {
+    width: 28px;
+    height: 28px;
+    background: var(--accent-blue);
+    color: var(--text-on-accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px var(--accent-shadow);
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-content p {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.step-content strong {
+    color: var(--accent-blue);
+}
+
+.help-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    padding: 4px 0;
+}
+
+.help-link:hover {
+    color: var(--text-primary);
+    transform: translateX(3px);
+}
+
+.token-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.token-input {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.token-input:-webkit-autofill,
+.token-input:-webkit-autofill:hover,
+.token-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-primary);
+    -webkit-box-shadow: 0 0 0px 1000px var(--bg-secondary) inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.token-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    background: var(--bg-tertiary) !important;
+    box-shadow: 0 0 0 4px var(--accent-focus);
+}
+
+.help-text {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}

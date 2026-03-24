@@ -220,7 +220,9 @@ class EscribaApp {
         if (githubStatus) githubStatus.addEventListener('click', () => this.handleGitHubAuth());
 
         const settingsSyncButton = document.getElementById('settingsSyncButton');
+        const syncButton = document.getElementById('syncButton');
         if (settingsSyncButton) settingsSyncButton.addEventListener('click', () => this.handleGitHubAuth());
+        if (syncButton) syncButton.addEventListener('click', () => this.handleGitHubAuth());
 
         const pullButton = document.getElementById('pullButton');
         if (pullButton) pullButton.addEventListener('click', () => this.handleForcePull());
@@ -228,8 +230,10 @@ class EscribaApp {
         const pushButton = document.getElementById('pushButton');
         if (pushButton) pushButton.addEventListener('click', () => this.handleForcePush());
 
-        const disconnectGitHub = document.getElementById('disconnectGitHub') || document.getElementById('disconnectButton');
-        if (disconnectGitHub) disconnectGitHub.addEventListener('click', () => this.disconnectGitHub());
+        const disconnectModal = document.getElementById('disconnectGitHub');
+        const disconnectDropdown = document.getElementById('disconnectButton');
+        if (disconnectModal) disconnectModal.addEventListener('click', () => this.disconnectGitHub());
+        if (disconnectDropdown) disconnectDropdown.addEventListener('click', () => this.disconnectGitHub());
 
         document.getElementById('cancelShare').addEventListener('click', () => hideModal('shareModal'));
         document.getElementById('copyUrlBtn').addEventListener('click', () => this.copyShareUrl());
@@ -1536,6 +1540,9 @@ class EscribaApp {
         const githubStatus = document.getElementById('githubStatus');
         const statusText = document.getElementById('githubStatusText');
         const syncButtons = document.getElementById('syncButtons');
+        const dropdownDisconnect = document.getElementById('disconnectButton');
+        const modalDisconnect = document.getElementById('disconnectGitHub');
+        const dropdownConnect = document.getElementById('syncButton');
 
         if (!githubStatus || !statusText) return;
 
@@ -1548,24 +1555,36 @@ class EscribaApp {
                 githubStatus.classList.add('connected');
                 statusText.textContent = this.github.username || 'Conectado';
                 if (syncButtons) syncButtons.style.display = 'flex';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
+                if (modalDisconnect) modalDisconnect.style.display = 'block';
+                if (dropdownConnect) dropdownConnect.style.display = 'none';
                 break;
             case 'syncing':
                 githubStatus.classList.add('syncing');
                 statusText.textContent = 'Sincronizando...';
                 iconHtml = '<i class="fas fa-sync fa-spin"></i> ';
                 if (syncButtons) syncButtons.style.display = 'flex';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
+                if (modalDisconnect) modalDisconnect.style.display = 'block';
+                if (dropdownConnect) dropdownConnect.style.display = 'none';
                 break;
             case 'error':
                 githubStatus.classList.add('error');
                 statusText.textContent = 'Error';
                 iconHtml = '<i class="fas fa-exclamation-circle"></i> ';
                 if (syncButtons) syncButtons.style.display = 'flex';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
+                if (modalDisconnect) modalDisconnect.style.display = 'block';
+                if (dropdownConnect) dropdownConnect.style.display = 'none';
                 break;
             case 'disconnected':
             default:
                 githubStatus.classList.add('disconnected');
                 statusText.textContent = 'No conectado';
                 if (syncButtons) syncButtons.style.display = 'none';
+                if (dropdownDisconnect) dropdownDisconnect.style.display = 'none';
+                if (modalDisconnect) modalDisconnect.style.display = 'none';
+                if (dropdownConnect) dropdownConnect.style.display = 'flex';
                 break;
         }
 

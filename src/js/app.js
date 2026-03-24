@@ -415,6 +415,7 @@ class EscribaApp {
         };
 
         subject.notes.unshift(newNote);
+        subject.lastModified = new Date().toISOString();
         saveSubjects(this.subjects);
         this.renderSubjects();
         this.loadNote(newNote.id);
@@ -458,10 +459,34 @@ class EscribaApp {
         updateToolbarStates();
     }
 
+    async saveCurrentNote() {
+        if (!this.currentNoteId) return;
+
+        const title = document.getElementById('noteTitle').value.trim() || 'Apunte sin título';
+        const content = document.getElementById('noteContent').innerHTML;
+        const typeSelect = document.getElementById('noteTypeSelect');
+        const type = typeSelect ? typeSelect.value : 'lecture';
+
+        this.subjects.forEach(s => {
+            const note = s.notes.find(n => n.id === this.currentNoteId);
+            if (note) {
+                note.title = title;
+                note.content = content;
+                note.updatedAt = new Date().toISOString();
+                note.type = type;
+                s.lastModified = new Date().toISOString();
+            }
+        });
+
+        saveSubjects(this.subjects);
+        this.updateSettingsStats();
+    }
+
     toggleSubject(id) {
         const subject = this.subjects.find(s => s.id === id);
         if (subject) {
             subject.expanded = !subject.expanded;
+            subject.lastModified = new Date().toISOString();
             saveSubjects(this.subjects);
             this.renderSubjects();
         }
@@ -484,8 +509,9 @@ class EscribaApp {
             professor,
             color: this.selectedColor || '#3b82f6',
             notes: [],
-            expanded: true,
-            createdAt: new Date().toISOString()
+            expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString()
         };
 
         this.subjects.push(newSubject);
@@ -507,6 +533,7 @@ class EscribaApp {
             const index = s.notes.findIndex(n => n.id === this.currentNoteId);
             if (index !== -1) {
                 s.notes.splice(index, 1);
+                s.lastModified = new Date().toISOString();
             }
         });
 
@@ -526,6 +553,7 @@ class EscribaApp {
             const note = s.notes.find(n => n.id === this.currentNoteId);
             if (note) {
                 note.favorite = !note.favorite;
+                s.lastModified = new Date().toISOString();
                 showToast(note.favorite ? 'Agregado a favoritos' : 'Eliminado de favoritos', 'info');
             }
         });
@@ -943,6 +971,7 @@ class EscribaApp {
                     this.subjects = merged.subjects;
                     this.events = merged.events;
                     this.settings = merged.settings;
+
                     saveSubjects(this.subjects);
                     saveEvents(this.events);
                     saveSettings(this.settings);
@@ -1308,8 +1337,9 @@ importSharedNote(noteData) {
             name: noteData.subject || 'Importados',
             color: noteData.subjectColor || '#3b82f6',
             notes: [],
-            expanded: true,
-            createdAt: new Date().toISOString()
+            expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString()
         };
         this.subjects.unshift(subject);
     }
@@ -1325,6 +1355,7 @@ importSharedNote(noteData) {
     };
 
     subject.notes.unshift(note);
+    subject.lastModified = new Date().toISOString();
     saveSubjects(this.subjects);
     window.location.href = window.location.pathname;
 }
@@ -1366,6 +1397,7 @@ base64ToUtf8(str) {
         this.subjects = remoteData.subjects;
         this.events = remoteData.events;
         this.settings = remoteData.settings;
+
         saveSubjects(this.subjects);
         saveEvents(this.events);
         saveSettings(this.settings);
@@ -1871,8 +1903,9 @@ importNoteFromJson(noteData) {
             professor: '',
             color: noteData.sc || '#3b82f6',
             notes: [],
-            expanded: true,
-            createdAt: new Date().toISOString()
+            expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString()
         };
         this.subjects.push(subject);
     }
@@ -1888,6 +1921,7 @@ importNoteFromJson(noteData) {
     };
 
     subject.notes.unshift(newNote);
+    subject.lastModified = new Date().toISOString();
     saveSubjects(this.subjects);
     this.renderSubjects();
     this.loadNote(newNote.id);

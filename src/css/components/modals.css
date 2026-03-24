@@ -184,3 +184,252 @@
     color: var(--text-on-accent);
     font-weight: bold;
 }
+
+.share-modal-content {
+    max-width: 680px;
+}
+
+.share-modal-body {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.share-github-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.share-github-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-primary);
+}
+
+.share-github-left i {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+}
+
+.share-github-left>div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.share-github-title {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.share-github-repo {
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.share-github-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.share-privacy-status {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.share-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--accent-orange-bg);
+    border: 1px solid var(--accent-orange);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.share-warning i {
+    color: var(--accent-orange);
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+
+.share-warning p {
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.share-main {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.share-left {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.share-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.share-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.1rem;
+}
+
+.share-card-header i {
+    color: var(--accent-blue);
+    font-size: 0.85rem;
+}
+
+.share-description {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.share-method-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    width: fit-content;
+}
+
+.share-url-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.share-url-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-family: 'Consolas', monospace;
+    min-width: 0;
+}
+
+.share-copy-btn {
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+}
+
+.share-actions-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.share-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.share-action-btn:hover {
+    background: var(--bg-hover);
+}
+
+.share-action-btn.whatsapp {
+    color: #25d366;
+    border-color: rgba(37, 211, 102, 0.3);
+}
+
+.share-action-btn.whatsapp:hover {
+    background: rgba(37, 211, 102, 0.08);
+}
+
+.share-action-btn.email {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue-bg);
+}
+
+.share-action-btn.email:hover {
+    background: var(--accent-blue-bg);
+}
+
+.share-qr-panel {
+    width: 200px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.share-qr-panel .share-card-header {
+    align-self: flex-start;
+    margin-bottom: 0;
+}
+
+.share-qr-panel canvas {
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.qr-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.3;
+}

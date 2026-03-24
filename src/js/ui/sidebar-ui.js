@@ -131,12 +131,14 @@ export const renderRecentNotes = (container, subjects, currentNoteId, callbacks 
         <div class="recent-notes-list">
             ${recentNotes.map(note => `
                 <div class="recent-note-item ${currentNoteId === note.id ? 'active' : ''}" data-note-id="${note.id}">
-                    <div class="note-item-header">
+                    <div class="note-color-dot" style="background: ${note.subjectColor}"></div>
+                    <div class="note-item-body">
                         <span class="note-item-title">${escapeHtml(note.title || 'Sin título')}</span>
-                    </div>
-                    <div class="note-item-meta">
-                        <span class="note-subject" style="color: ${note.subjectColor}">${escapeHtml(note.subjectName)}</span>
-                        <span class="note-date">${formatDate(note.updatedAt)}</span>
+                        <div class="note-item-meta">
+                            <span class="note-subject">${escapeHtml(note.subjectName)}</span>
+                            <span class="note-meta-sep">·</span>
+                            <span class="note-date">${formatDate(note.updatedAt)}</span>
+                        </div>
                     </div>
                 </div>
             `).join('')}
@@ -183,12 +185,14 @@ export const renderFavoriteNotes = (container, subjects, currentNoteId, callback
         <div class="favorites-notes-list">
             ${favoriteNotes.map(note => `
                 <div class="favorite-note-item ${currentNoteId === note.id ? 'active' : ''}" data-note-id="${note.id}">
-                    <div class="note-item-header">
+                    <div class="note-color-dot" style="background: ${note.subjectColor}"></div>
+                    <div class="note-item-body">
                         <span class="note-item-title">${escapeHtml(note.title || 'Sin título')}</span>
-                    </div>
-                    <div class="note-item-meta">
-                        <span class="note-subject" style="color: ${note.subjectColor}">${escapeHtml(note.subjectName)}</span>
-                        <span class="note-date">${formatDate(note.updatedAt)}</span>
+                        <div class="note-item-meta">
+                            <span class="note-subject">${escapeHtml(note.subjectName)}</span>
+                            <span class="note-meta-sep">·</span>
+                            <span class="note-date">${formatDate(note.updatedAt)}</span>
+                        </div>
                     </div>
                 </div>
             `).join('')}

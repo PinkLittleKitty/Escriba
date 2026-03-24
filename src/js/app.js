@@ -1088,12 +1088,12 @@ class EscribaApp {
         updateCalendarHeader(header, this.currentDate);
         renderCalendarGrid(grid, this.currentDate, this.events, (day, date, isDiffMonth, isToday) => {
             const dayElement = document.createElement('div');
-            dayElement.className = `calendar - day ${isDiffMonth ? 'different-month' : ''} ${isToday ? 'today' : ''} `;
+            dayElement.className = `calendar-day${isDiffMonth ? ' other-month' : ''}${isToday ? ' today' : ''}`;
 
             const hasEvents = this.events.some(e => new Date(e.date).toDateString() === date.toDateString());
             if (hasEvents) dayElement.classList.add('has-events');
 
-            dayElement.innerHTML = `< span class="day-number" > ${day}</span > `;
+            dayElement.innerHTML = `<span class="day-number">${day}</span>`;
             dayElement.addEventListener('click', () => this.showEventModal(date));
 
             return dayElement;
@@ -1110,10 +1110,10 @@ class EscribaApp {
 
         if (upcomingEvents.length === 0) {
             eventsList.innerHTML = `
-            < div class="empty-events" >
+                <div class="empty-events">
                     <i class="fas fa-calendar-check"></i>
                     <p>No hay exámenes próximos</p>
-                </div >
+                </div>
             `;
             return;
         }
@@ -1122,7 +1122,7 @@ class EscribaApp {
             const timeLeft = this.getTimeLeft(event.date);
             const subject = this.subjects.find(s => s.id === event.subjectId);
             return `
-            < div class="event-item" data - event - id="${event.id}" >
+                <div class="event-item" data-event-id="${event.id}">
                     <div class="event-icon">${this.getEventTypeIcon(event.type)}</div>
                     <div class="event-details">
                         <div class="event-title">${escapeHtml(event.title)}</div>
@@ -1131,7 +1131,7 @@ class EscribaApp {
                             <span><i class="fas fa-book"></i> ${escapeHtml(subject ? subject.name : 'Sin materia')}</span>
                         </div>
                     </div>
-                </div >
+                </div>
             `;
         }).join('');
     }
@@ -1550,7 +1550,7 @@ class EscribaApp {
         showModal('shareModal');
 
         const githubSyncInfo = document.getElementById('githubSyncShareInfo');
-        if (this.github && this.github.isAuthenticated()) {
+        if (this.github && this.github.isAuthenticated) {
             githubSyncInfo.style.display = 'block';
             const repoPath = `${this.github.username}/${this.github.repoName}`;
             document.getElementById('githubRepoPath').textContent = repoPath;
@@ -1624,7 +1624,7 @@ class EscribaApp {
         };
 
         try {
-            if (this.github && this.github.isAuthenticated()) {
+            if (this.github && this.github.isAuthenticated) {
                 const relativePath = `notes/${subject.name}/${note.title}.md`.replace(/ /g, '%20');
                 const repoUrl = `${window.location.origin}${window.location.pathname}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
                 if (repoUrl.length < 2000) return repoUrl;

@@ -98,16 +98,16 @@
                     </div>
                     <div class="view-toggles">
                         <button class="view-btn active" data-view="subjects" title="Ver por materias">
-                            <i class="fas fa-folder"></i> Materias
+                            <i class="fas fa-folder"></i><span class="view-btn-label">Materias</span>
                         </button>
                         <button class="view-btn" data-view="recent" title="Ver apuntes recientes">
-                            <i class="fas fa-clock"></i>
+                            <i class="fas fa-clock"></i><span class="view-btn-label">Recientes</span>
                         </button>
                         <button class="view-btn" data-view="favorites" title="Ver apuntes favoritos">
-                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i><span class="view-btn-label">Favoritos</span>
                         </button>
                         <button class="view-btn" data-view="calendar" title="Ver calendario de exámenes">
-                            <i class="fas fa-calendar-alt"></i>
+                            <i class="fas fa-calendar-alt"></i><span class="view-btn-label">Calendario</span>
                         </button>
                     </div>
                 </div>
@@ -413,16 +413,16 @@
                                 </div>
                                 <span>Zenit</span>
                             </div>
-                             <div class="theme-option" data-theme="carbon">
-                                 <div class="theme-preview carbon-preview">
-                                     <div class="preview-header"></div>
-                                     <div class="preview-body">
-                                         <div class="preview-sidebar"></div>
-                                         <div class="preview-content"></div>
-                                     </div>
-                                 </div>
-                                 <span>Carbon</span>
-                             </div>
+                            <div class="theme-option" data-theme="carbon">
+                                <div class="theme-preview carbon-preview">
+                                    <div class="preview-header"></div>
+                                    <div class="preview-body">
+                                        <div class="preview-sidebar"></div>
+                                        <div class="preview-content"></div>
+                                    </div>
+                                </div>
+                                <span>Carbon</span>
+                            </div>
                         </div>
                     </div>
 
@@ -703,7 +703,8 @@
                                         </button>
                                     </div>
                                 </div>
-                                <textarea id="umlCode" class="uml-code-editor" placeholder="Escribí código Mermaid o seleccioná una plantilla..."></textarea>
+                                <textarea id="umlCode" class="uml-code-editor"
+                                    placeholder="Escribí código Mermaid o seleccioná una plantilla..."></textarea>
                             </div>
 
                             <div class="uml-preview-section">
@@ -741,97 +742,91 @@
         </div>
 
         <div id="shareModal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content share-modal-content">
                 <div class="modal-header">
                     <h3><i class="fas fa-share-alt"></i> Compartir Apunte</h3>
                     <button class="modal-close" title="Cerrar">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <div class="share-section" id="githubSyncShareInfo" style="display: none;">
-                        <h4><i class="fab fa-github"></i> Sincronización con GitHub</h4>
-                        <p class="share-description">Tu apunte está sincronizado con GitHub. Los enlaces compartidos
-                            apuntarán directamente a tu repositorio.</p>
+                <div class="modal-body share-modal-body">
 
-                        <div id="githubWarning" class="github-warning" style="display: none;">
-                            <div class="warning-card">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <div class="warning-content">
-                                    <h5 id="warningTitle">Repositorio Público Requerido</h5>
-                                    <p id="warningMessage">Para que los enlaces funcionen, tu repositorio debe ser
-                                        <strong>público</strong>. Si tu repositorio es privado, los enlaces no
-                                        funcionarán para otras personas.
-                                    </p>
-                                    <div class="warning-actions">
-                                        <button class="btn btn-warning btn-sm"
-                                            onclick="window.open('https://docs.github.com/es/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility', '_blank')">
-                                            <i class="fas fa-book"></i> Cómo hacer público el repositorio
-                                        </button>
-                                    </div>
-                                </div>
+                    <div class="share-github-banner" id="githubSyncShareInfo" style="display: none;">
+                        <div class="share-github-left">
+                            <i class="fab fa-github"></i>
+                            <div>
+                                <span class="share-github-title">Repositorio conectado</span>
+                                <span class="share-github-repo" id="githubRepoPath">username/escriba-notes</span>
                             </div>
                         </div>
-
-                        <div class="github-share-info">
-                            <div class="github-repo-info">
-                                <i class="fab fa-github"></i>
-                                <span id="githubRepoPath">username/escriba-notes</span>
-                                <button class="btn btn-secondary btn-sm"
-                                    onclick="window.open('https://github.com/' + document.getElementById('githubRepoPath').textContent, '_blank')">
-                                    <i class="fas fa-external-link-alt"></i> Ver en GitHub
-                                </button>
-                            </div>
-                            <div class="privacy-info">
-                                <i class="fas fa-info-circle"></i>
-                                <span class="privacy-status" id="repoPrivacyStatus">Verificando visibilidad del
-                                    repositorio...</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="share-section">
-                        <h4><i class="fas fa-link"></i> Enlace para Compartir</h4>
-                        <p class="share-description">Copiá este enlace para compartir tu apunte. Cualquiera con el
-                            enlace podrá verlo en modo solo lectura.</p>
-                        <div class="share-info">
-                            <div class="share-method" id="shareMethodInfo">
-                                <i class="fas fa-info-circle"></i>
-                                <span>Generando enlace optimizado...</span>
-                            </div>
-                        </div>
-                        <div class="share-url-container">
-                            <input type="text" id="shareUrl" class="share-url-input" readonly>
-                            <button id="copyUrlBtn" class="btn btn-primary" title="Copiar enlace">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="share-options">
-                            <button id="exportJsonBtn" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-download"></i> Exportar como JSON
+                        <div class="share-github-right">
+                            <span class="share-privacy-status" id="repoPrivacyStatus">Verificando...</span>
+                            <button class="btn btn-secondary btn-sm"
+                                onclick="window.open('https://github.com/' + document.getElementById('githubRepoPath').textContent, '_blank')">
+                                <i class="fas fa-external-link-alt"></i> Ver
                             </button>
                         </div>
                     </div>
 
-                    <div class="share-section">
-                        <h4><i class="fas fa-qrcode"></i> Código QR</h4>
-                        <p class="share-description">Escaneá este código QR para abrir el apunte en tu teléfono.</p>
-                        <div class="qr-container">
-                            <canvas id="qrCanvas" width="200" height="200"></canvas>
-                            <p class="qr-instructions">Usá la cámara de tu teléfono o cualquier app de QR para escanear
+                    <div id="githubWarning" class="share-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong id="warningTitle">Repositorio Público Requerido</strong>
+                            <p id="warningMessage">Para que los enlaces funcionen, tu repositorio debe ser
+                                <strong>público</strong>.
                             </p>
                         </div>
                     </div>
 
-                    <div class="share-section">
-                        <h4><i class="fas fa-share"></i> Compartir en Redes</h4>
-                        <div class="social-share-buttons">
-                            <button id="shareWhatsApp" class="btn btn-social whatsapp">
-                                <i class="fab fa-whatsapp"></i> WhatsApp
-                            </button>
-                            <button id="shareEmail" class="btn btn-social email">
-                                <i class="fas fa-envelope"></i> Email
-                            </button>
+                    <div class="share-main">
+                        <div class="share-left">
+                            <div class="share-card">
+                                <div class="share-card-header">
+                                    <i class="fas fa-link"></i>
+                                    <span>Enlace para compartir</span>
+                                </div>
+                                <p class="share-description">Cualquiera con este enlace puede verlo en modo solo
+                                    lectura.</p>
+                                <div class="share-method-badge" id="shareMethodInfo">
+                                    <i class="fas fa-spinner fa-spin"></i> Generando enlace...
+                                </div>
+                                <div class="share-url-row">
+                                    <input type="text" id="shareUrl" class="share-url-input" readonly
+                                        placeholder="Generando enlace...">
+                                    <button id="copyUrlBtn" class="btn btn-primary share-copy-btn"
+                                        title="Copiar enlace">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="share-card">
+                                <div class="share-card-header">
+                                    <i class="fas fa-share"></i>
+                                    <span>Compartir</span>
+                                </div>
+                                <div class="share-actions-row">
+                                    <button id="shareWhatsApp" class="share-action-btn whatsapp">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </button>
+                                    <button id="shareEmail" class="share-action-btn email">
+                                        <i class="fas fa-envelope"></i> Email
+                                    </button>
+                                    <button id="exportJsonBtn" class="share-action-btn export">
+                                        <i class="fas fa-download"></i> JSON
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="share-qr-panel">
+                            <div class="share-card-header">
+                                <i class="fas fa-qrcode"></i>
+                                <span>Código QR</span>
+                            </div>
+                            <canvas id="qrCanvas" width="180" height="180"></canvas>
+                            <p class="qr-hint">Escaneá con la cámara de tu teléfono</p>
                         </div>
                     </div>
+
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="cancelShare">Cerrar</button>

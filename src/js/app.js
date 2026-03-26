@@ -196,6 +196,13 @@ class EscribaApp {
             showModal('settingsModal');
         });
 
+        document.getElementById('graphBtn').addEventListener('click', () => {
+            showModal('graphModal');
+            this.renderKnowledgeGraph();
+        });
+
+        document.getElementById('closeGraph').addEventListener('click', () => hideModal('graphModal'));
+
         const cancelSettings = document.getElementById('cancelSettings');
         if (cancelSettings) cancelSettings.addEventListener('click', () => this.cancelSettings());
 
@@ -234,14 +241,15 @@ class EscribaApp {
             }
         });
 
-        document.getElementById('noteTitle').addEventListener('input', () => this.debouncedSave());
         document.getElementById('noteContent').addEventListener('input', (e) => {
             if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n')) {
                 this.handleMarkdownAutoFormat(e);
             }
             updateToolbarStates();
+            this.updateNoteStats();
             this.debouncedSave();
         });
+        document.getElementById('noteTitle').addEventListener('input', () => this.debouncedSave());
 
         document.getElementById('noteContent').addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('.uml-delete-btn');
@@ -277,6 +285,14 @@ class EscribaApp {
                     document.execCommand('delete', false, null);
                     this.debouncedSave();
                 }
+            }
+        });
+
+        document.getElementById('backlinksList').addEventListener('click', (e) => {
+            const item = e.target.closest('.backlink-item');
+            if (item) {
+                const noteId = item.dataset.noteId;
+                if (noteId) this.loadNote(noteId);
             }
         });
 
@@ -489,6 +505,7 @@ class EscribaApp {
 
         document.getElementById('welcomeScreen').style.display = 'none';
         document.getElementById('noteEditor').style.display = 'flex';
+        document.getElementById('editorFooter').style.display = 'flex';
 
         document.querySelectorAll('.note-item').forEach(item => {
             item.classList.toggle('active', item.dataset.noteId === noteId);
@@ -496,6 +513,8 @@ class EscribaApp {
 
         this.reRenderAllDiagrams();
         this.mathManager.sync(foundNote);
+        this.updateNoteStats();
+        this.updateBacklinks(noteId);
         clearHighlights(document.getElementById('noteContent'));
         updateToolbarStates();
     }
@@ -2421,6 +2440,348 @@ class EscribaApp {
         this.floatingToolbar.style.opacity = '1';
 
         updateToolbarStates();
+    }
+
+    updateNoteStats() {
+        const content = document.getElementById('noteContent');
+        if (!content) return;
+
+        const text = content.innerText || '';
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+        const readingTime = Math.max(1, Math.ceil(words / 200));
+
+        const wordEl = document.getElementById('wordCount');
+        const charEl = document.getElementById('charCount');
+        const timeEl = document.getElementById('readingTime');
+
+        if (wordEl) wordEl.textContent = `${words} palabra${words !== 1 ? 's' : ''}`;
+        if (charEl) charEl.textContent = `${chars} caractere${chars !== 1 ? 's' : ''}`;
+        if (timeEl) timeEl.textContent = `${readingTime} min lectura`;
+    }
+
+    updateBacklinks(noteId) {
+        const panel = document.getElementById('backlinksPanel');
+        const list = document.getElementById('backlinksList');
+        if (!panel || !list) return;
+
+        const backlinks = [];
+        this.subjects.forEach(s => {
+            s.notes.forEach(n => {
+                if (n.id === noteId || !n.content) return;
+                if (n.content.includes(`data-note-id="${noteId}"`)) {
+                    backlinks.push({ note: n, subject: s });
+                }
+            });
+        });
+
+        if (backlinks.length > 0) {
+            panel.style.display = 'block';
+            list.innerHTML = backlinks.map(bl => `
+                <div class="backlink-item" data-note-id="${bl.note.id}" title="Ver apunte">
+                    <div class="subject-icon" style="background: ${bl.subject.color}; width: 8px; height: 8px; border-radius: 50%;"></div>
+                    <div class="backlink-info">
+                        <span class="backlink-title">${escapeHtml(bl.note.title)}</span>
+                        <span class="backlink-subject">${escapeHtml(bl.subject.name)}</span>
+                    </div>
+                    <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 0.7rem; color: var(--text-muted);"></i>
+                </div>
+            `).join('');
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    renderKnowledgeGraph() {
+        const svg = document.getElementById('graphSvg');
+        if (!svg) return;
+
+        const width = svg.clientWidth || 800;
+        const height = svg.clientHeight || 600;
+
+        const nodes = [];
+        const links = [];
+        const noteToNode = new Map();
+
+        this.subjects.forEach((s, sIdx) => {
+            const subjectAngle = (sIdx / this.subjects.length) * Math.PI * 2;
+            const subjectRadius = Math.min(width, height) * 0.35;
+
+            s.notes.forEach((n, nIdx) => {
+                const noteAngle = (nIdx / s.notes.length) * Math.PI * 2;
+                const noteRadius = 40;
+
+                const baseX = width / 2 + Math.cos(subjectAngle) * subjectRadius;
+                const baseY = height / 2 + Math.sin(subjectAngle) * subjectRadius;
+
+                const node = {
+                    id: n.id,
+                    title: n.title,
+                    color: s.color,
+                    x: baseX + Math.cos(noteAngle) * noteRadius + (Math.random() - 0.5) * 20,
+                    y: baseY + Math.sin(noteAngle) * noteRadius + (Math.random() - 0.5) * 20,
+                    vx: 0,
+                    vy: 0
+                };
+                nodes.push(node);
+                noteToNode.set(n.id, node);
+            });
+        });
+
+        this.subjects.forEach(s => {
+            s.notes.forEach(n => {
+                const sourceNode = noteToNode.get(n.id);
+                if (!sourceNode || !n.content) return;
+
+                const regex = /data-note-id="([^"]+)"/g;
+                let match;
+                while ((match = regex.exec(n.content)) !== null) {
+                    const targetNoteId = match[1];
+                    const targetNode = noteToNode.get(targetNoteId);
+                    if (targetNode && targetNode.id !== sourceNode.id) {
+                        links.push({ source: sourceNode, target: targetNode });
+                    }
+                }
+            });
+        });
+
+        if (!this.graphEngine) {
+            this.graphEngine = new EscribaGraph(
+                svg,
+                (noteId) => {
+                    hideModal('graphModal');
+                    this.loadNote(noteId);
+                }
+            );
+        }
+        this.graphEngine.setData(nodes, links);
+    }
+}
+
+class EscribaGraph {
+    constructor(svg, onNodeClick) {
+        this.svg = svg;
+        this.onNodeClick = onNodeClick;
+        this.viewport = svg.querySelector('#graphViewport');
+        this.nodesGroup = svg.querySelector('#graphNodes');
+        this.edgesGroup = svg.querySelector('#graphEdges');
+
+        this.nodes = [];
+        this.links = [];
+        this.running = false;
+
+        this.draggedNode = null;
+        this.isPanning = false;
+        this.panX = 0;
+        this.panY = 0;
+        this.scale = 1;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+
+        this.initEvents();
+    }
+
+    setData(nodes, links) {
+        this.nodes = nodes;
+        this.links = links;
+        this.render();
+        if (!this.running) {
+            this.running = true;
+            this.animate();
+        }
+    }
+
+    initEvents() {
+        this.svg.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            const nodeEl = e.target.closest('.graph-node');
+
+            if (nodeEl) {
+                const id = nodeEl.dataset.id;
+                this.draggedNode = this.nodes.find(n => n.id === id);
+                this.svg.style.cursor = 'grabbing';
+            } else {
+                this.isPanning = true;
+                this.svg.style.cursor = 'move';
+            }
+            this.lastMouseX = e.clientX;
+            this.lastMouseY = e.clientY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (this.draggedNode) {
+                const dx = (e.clientX - this.lastMouseX) / this.scale;
+                const dy = (e.clientY - this.lastMouseY) / this.scale;
+                this.draggedNode.x += dx;
+                this.draggedNode.y += dy;
+            } else if (this.isPanning) {
+                this.panX += e.clientX - this.lastMouseX;
+                this.panY += e.clientY - this.lastMouseY;
+                this.updateViewportTransform();
+            }
+            this.lastMouseX = e.clientX;
+            this.lastMouseY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            this.draggedNode = null;
+            this.isPanning = false;
+            this.svg.style.cursor = 'grab';
+        });
+
+        this.svg.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomSpeed = 0.001;
+            const delta = -e.deltaY;
+            const newScale = Math.min(Math.max(this.scale + delta * zoomSpeed * this.scale, 0.1), 5);
+
+            const rect = this.svg.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            this.panX -= (mouseX - this.panX) * (newScale / this.scale - 1);
+            this.panY -= (mouseY - this.panY) * (newScale / this.scale - 1);
+
+            this.scale = newScale;
+            this.updateViewportTransform();
+        }, { passive: false });
+
+        this.svg.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const nodeEl = e.target.closest('.graph-node');
+            if (nodeEl && !this.isPanning && !this.draggedNode) {
+                const id = nodeEl.dataset.id;
+                this.onNodeClick(id);
+            }
+        });
+    }
+
+    updateViewportTransform() {
+        if (this.viewport) {
+            this.viewport.setAttribute('transform', `translate(${this.panX},${this.panY}) scale(${this.scale})`);
+        }
+    }
+
+    render() {
+        this.nodesGroup.innerHTML = '';
+        this.edgesGroup.innerHTML = '';
+        this.updateViewportTransform();
+
+        this.nodes.forEach(n => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('class', 'graph-node');
+            g.setAttribute('data-id', n.id);
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', '6');
+            circle.setAttribute('fill', n.color);
+            circle.setAttribute('stroke', 'rgba(255,255,255,0.2)');
+            circle.setAttribute('stroke-width', '1');
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('dy', '18');
+            text.style.fontSize = '10px';
+            text.style.fontWeight = '500';
+            text.style.pointerEvents = 'none';
+            text.style.userSelect = 'none';
+            text.style.fill = 'var(--text-primary)';
+            text.style.textAnchor = 'middle';
+            text.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)';
+            text.textContent = n.title.length > 20 ? n.title.substring(0, 17) + '...' : n.title;
+
+            g.appendChild(circle);
+            g.appendChild(text);
+            this.nodesGroup.appendChild(g);
+            n.el = g;
+        });
+
+        this.links.forEach(l => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('class', 'graph-edge');
+            line.setAttribute('stroke', 'var(--border-color)');
+            line.setAttribute('stroke-opacity', '0.4');
+            line.setAttribute('stroke-width', '1.5');
+            this.edgesGroup.appendChild(line);
+            l.el = line;
+        });
+    }
+
+    animate() {
+        if (!this.running) return;
+
+        const width = this.svg.clientWidth || 800;
+        const height = this.svg.clientHeight || 600;
+
+        const repulsion = 4000;
+        const attraction = 0.05;
+        const damping = 0.9;
+        const restDistance = 140;
+
+        for (let i = 0; i < this.nodes.length; i++) {
+            const n1 = this.nodes[i];
+            for (let j = i + 1; j < this.nodes.length; j++) {
+                const n2 = this.nodes[j];
+                const dx = n1.x - n2.x;
+                const dy = n1.y - n2.y;
+                const distSq = dx * dx + dy * dy + 0.1;
+                const dist = Math.sqrt(distSq);
+
+                if (dist < 500) {
+                    const force = repulsion / distSq;
+                    const fx = (dx / dist) * force;
+                    const fy = (dy / dist) * force;
+                    n1.vx += fx;
+                    n1.vy += fy;
+                    n2.vx -= fx;
+                    n2.vy -= fy;
+                }
+            }
+        }
+
+        this.links.forEach(l => {
+            const dx = l.source.x - l.target.x;
+            const dy = l.source.y - l.target.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+            const force = (dist - restDistance) * attraction;
+            const fx = (dx / dist) * force;
+            const fy = (dy / dist) * force;
+            l.source.vx -= fx;
+            l.source.vy -= fy;
+            l.target.vx += fx;
+            l.target.vy += fy;
+        });
+
+        this.nodes.forEach(n => {
+            n.vx += (width / 2 - n.x) * 0.005;
+            n.vy += (height / 2 - n.y) * 0.005;
+        });
+
+        this.nodes.forEach(n => {
+            if (n === this.draggedNode) {
+                n.vx = 0;
+                n.vy = 0;
+            } else {
+                n.x += n.vx;
+                n.y += n.vy;
+                n.vx *= damping;
+                n.vy *= damping;
+            }
+
+            if (n.el) {
+                n.el.setAttribute('transform', `translate(${n.x},${n.y})`);
+            }
+        });
+
+        this.links.forEach(l => {
+            if (l.el) {
+                l.el.setAttribute('x1', l.source.x);
+                l.el.setAttribute('y1', l.source.y);
+                l.el.setAttribute('x2', l.target.x);
+                l.el.setAttribute('y2', l.target.y);
+            }
+        });
+
+        requestAnimationFrame(() => this.animate());
     }
 }
 

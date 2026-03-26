@@ -1,0 +1,81 @@
+.code-block-container {
+    margin: 1.5rem 0;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-card);
+    transition: border-color 0.2s;
+}
+
+.code-block-container:hover {
+    border-color: var(--border-light);
+}
+
+.code-block-header {
+    background: var(--bg-secondary);
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.code-block-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.code-block-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.code-block-delete-btn {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-secondary) !important;
+    cursor: pointer !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+    font-size: 0.8rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.code-block-delete-btn:hover {
+    background: var(--accent-red-bg) !important;
+    color: var(--accent-red) !important;
+    border-color: var(--accent-red) !important;
+}
+
+.inline-ace-editor {
+    width: 100%;
+    min-height: 80px;
+    background: var(--bg-primary);
+}
+
+[data-theme="cyberpunk"] .code-block-container,
+[data-theme="matrix"] .code-block-container {
+    border-color: rgba(0, 255, 65, 0.3);
+}
+
+[data-theme="cyberpunk"] .code-block-header,
+[data-theme="matrix"] .code-block-header {
+    background: rgba(0, 255, 65, 0.05);
+}

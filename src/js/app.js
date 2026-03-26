@@ -246,6 +246,7 @@ class EscribaApp {
         document.getElementById('noteContent').addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('.uml-delete-btn');
             const editBtn = e.target.closest('.uml-edit-btn');
+            const codeDeleteBtn = e.target.closest('.code-block-delete-btn');
 
             if (deleteBtn) {
                 const container = deleteBtn.closest('.uml-diagram-container');
@@ -263,6 +264,18 @@ class EscribaApp {
 
                     const preview = document.getElementById('umlPreview');
                     if (preview && code) updateUMLPreview({ getValue: () => code }, preview);
+                }
+            } else if (codeDeleteBtn) {
+                const container = codeDeleteBtn.closest('.code-block-container');
+                if (container && confirm('¿Eliminar este bloque de código?')) {
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNode(container);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+
+                    document.execCommand('delete', false, null);
+                    this.debouncedSave();
                 }
             }
         });
@@ -1930,18 +1943,34 @@ class EscribaApp {
     }
 
     insertCodeBlock() {
-        const content = document.getElementById('noteContent');
-        const br = document.createElement('br');
-        const codeBlock = document.createElement('div');
-        codeBlock.className = 'inline-ace-editor';
-        codeBlock.id = `ace-${Date.now()}`;
-        codeBlock.textContent = '// Escribí tu código acá';
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
 
-        content.appendChild(br);
-        content.appendChild(codeBlock);
-        content.appendChild(document.createElement('br'));
+        const selectedText = selection.toString().trim();
+        const initialCode = selectedText || '// Escribí tu código acá';
+        const aceId = `ace-${Date.now()}`;
 
-        initializeAceEditor(codeBlock);
+        const html = `
+            <div class="code-block-container" contenteditable="false">
+                <div class="code-block-header">
+                    <span class="code-block-title"><i class="fas fa-terminal"></i> Bloque de Código</span>
+                    <div class="code-block-actions">
+                        <button class="code-block-delete-btn" title="Eliminar bloque"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div id="${aceId}" class="inline-ace-editor"></div>
+            </div>
+            <p><br></p>
+        `;
+
+        document.execCommand('insertHTML', false, html);
+
+        const editorElement = document.getElementById(aceId);
+        if (editorElement) {
+            initializeAceEditor(editorElement, initialCode);
+        }
+
+        this.debouncedSave();
     }
 
     confirmDeleteSubject(subjectId) {

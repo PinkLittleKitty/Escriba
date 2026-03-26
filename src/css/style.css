@@ -12,4 +12,5 @@
 @import url('components/settings.css');
 @import url('components/toasts.css');
 @import url('components/subjects.css');@import url('print.css');
+@import url('components/code-block.css');
 @import url('components/floating-toolbar.css');

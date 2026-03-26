@@ -201,8 +201,27 @@
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.note-type-indicator {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.note-item.active .note-type-indicator {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
 }
 
 .note-item:last-child {
@@ -274,8 +293,8 @@
 .recent-note-item,
 .favorite-note-item {
     display: flex;
-    align-items: flex-start;
-    gap: 0.625rem;
+    align-items: center;
+    gap: 0.75rem;
     padding: 0.6rem 0.75rem;
     border-radius: 4px;
     border: 1px solid transparent;
@@ -301,7 +320,16 @@
     height: 6px;
     border-radius: 50%;
     flex-shrink: 0;
-    margin-top: 0.45rem;
+    margin-top: 0;
+}
+
+.recent-note-item .note-type-indicator,
+.favorite-note-item .note-type-indicator {
+    background: transparent;
+    border: none;
+    width: 16px;
+    height: 16px;
+    font-size: 0.75rem;
 }
 
 .note-item-body {

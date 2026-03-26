@@ -31,6 +31,9 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
                     <button class="btn-add-note" data-subject-id="${subject.id}" title="Crear apunte">
                         <i class="fas fa-plus"></i>
                     </button>
+                    <button class="btn-delete-subject" data-subject-id="${subject.id}" title="Eliminar materia">
+                        <i class="fas fa-trash"></i>
+                    </button>
                     <i class="fas fa-chevron-right subject-toggle"></i>
                 </div>
             </div>
@@ -39,6 +42,9 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
             '<div class="empty-subject">No hay apuntes todavía</div>' :
             subject.notes.map(note => `
                         <div class="note-item ${note.favorite ? 'favorite' : ''} ${note.isActive ? 'active' : ''}" data-note-id="${note.id}">
+                            <div class="note-type-indicator">
+                                ${note.mathMode ? '<i class="fas fa-square-root-alt" title="Math Mode"></i>' : '<i class="far fa-file-alt"></i>'}
+                            </div>
                             <div class="note-details">
                                 <h3>${escapeHtml(note.title)}</h3>
                                 <div class="note-meta">
@@ -65,6 +71,14 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
             e.stopPropagation();
             const subjectId = btn.dataset.subjectId;
             if (callbacks.onAddNote) callbacks.onAddNote(subjectId);
+        });
+    });
+
+    container.querySelectorAll('.btn-delete-subject').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const subjectId = btn.dataset.subjectId;
+            if (callbacks.onDeleteSubject) callbacks.onDeleteSubject(subjectId);
         });
     });
 
@@ -132,6 +146,9 @@ export const renderRecentNotes = (container, subjects, currentNoteId, callbacks 
             ${recentNotes.map(note => `
                 <div class="recent-note-item ${currentNoteId === note.id ? 'active' : ''}" data-note-id="${note.id}">
                     <div class="note-color-dot" style="background: ${note.subjectColor}"></div>
+                    <div class="note-type-indicator">
+                        ${note.mathMode ? '<i class="fas fa-square-root-alt"></i>' : ''}
+                    </div>
                     <div class="note-item-body">
                         <span class="note-item-title">${escapeHtml(note.title || 'Sin título')}</span>
                         <div class="note-item-meta">
@@ -186,6 +203,9 @@ export const renderFavoriteNotes = (container, subjects, currentNoteId, callback
             ${favoriteNotes.map(note => `
                 <div class="favorite-note-item ${currentNoteId === note.id ? 'active' : ''}" data-note-id="${note.id}">
                     <div class="note-color-dot" style="background: ${note.subjectColor}"></div>
+                    <div class="note-type-indicator">
+                        ${note.mathMode ? '<i class="fas fa-square-root-alt"></i>' : ''}
+                    </div>
                     <div class="note-item-body">
                         <span class="note-item-title">${escapeHtml(note.title || 'Sin título')}</span>
                         <div class="note-item-meta">

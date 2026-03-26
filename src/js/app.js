@@ -411,7 +411,7 @@ class EscribaApp {
             onSubjectClick: (id) => this.toggleSubject(id),
             onNoteClick: (id) => this.loadNote(id),
             onAddNote: (id) => this.addNoteToSubject(id),
-            onDeleteSubject: (id) => this.deleteSubject(id),
+            onDeleteSubject: (id) => this.confirmDeleteSubject(id),
             onAddSubject: () => showModal('subjectModal')
         });
 
@@ -571,6 +571,8 @@ class EscribaApp {
                 note.favorite = !note.favorite;
                 s.lastModified = new Date().toISOString();
                 showToast(note.favorite ? 'Agregado a favoritos' : 'Eliminado de favoritos', 'info');
+                const favoriteBtn = document.getElementById('favoriteBtn');
+                if (favoriteBtn) favoriteBtn.classList.toggle('active', note.favorite);
             }
         });
 
@@ -584,6 +586,7 @@ class EscribaApp {
             return;
         }
 
+        const container = document.getElementById('subjectsContainer');
         const filteredSubjects = JSON.parse(JSON.stringify(this.subjects));
         filteredSubjects.forEach(s => {
             s.notes = s.notes.filter(n =>
@@ -596,7 +599,7 @@ class EscribaApp {
             onSubjectClick: (id) => this.toggleSubject(id),
             onNoteClick: (id) => this.loadNote(id),
             onAddNote: (id) => this.addNoteToSubject(id),
-            onDeleteSubject: (id) => this.deleteSubject(id),
+            onDeleteSubject: (id) => this.confirmDeleteSubject(id),
             onAddSubject: () => showModal('subjectModal')
         });
     }
@@ -945,25 +948,53 @@ class EscribaApp {
             return;
         }
 
+        const diagramType = detectDiagramType(umlCode);
+        const diagramTypeName = getDiagramTypeName(diagramType);
         const diagramId = 'uml-' + Date.now();
+
         const container = document.createElement('div');
         container.className = 'uml-diagram-container';
         container.setAttribute('data-uml-code', umlCode);
+        container.setAttribute('data-diagram-type', diagramType);
         container.contentEditable = false;
 
         container.innerHTML = `
             <div class="uml-diagram-header">
-                <span class="uml-diagram-type"><i class="fas fa-project-diagram"></i> Diagrama UML</span>
+                <span class="uml-diagram-type"><i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}</span>
                 <div class="uml-diagram-actions">
                     <button class="uml-edit-btn" title="Editar diagrama"><i class="fas fa-edit"></i></button>
                     <button class="uml-delete-btn" title="Eliminar diagrama"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
-            <div id="${diagramId}" class="uml-diagram-content"></div>
+            <div id="${diagramId}" class="uml-diagram-content">
+                <div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Generando diagrama...</div>
+            </div>
         `;
+
         const noteContent = document.getElementById('noteContent');
-        noteContent.appendChild(container);
-        noteContent.appendChild(document.createElement('br'));
+        const selection = window.getSelection();
+        let inserted = false;
+
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (noteContent.contains(range.commonAncestorContainer)) {
+                range.deleteContents();
+                range.insertNode(container);
+
+                const brBefore = document.createElement('br');
+                const brAfter = document.createElement('br');
+                container.before(brBefore);
+                container.after(brAfter);
+
+                inserted = true;
+            }
+        }
+
+        if (!inserted) {
+            noteContent.appendChild(document.createElement('br'));
+            noteContent.appendChild(container);
+            noteContent.appendChild(document.createElement('br'));
+        }
 
         await renderUMLDiagram(diagramId, umlCode);
 

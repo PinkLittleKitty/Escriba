@@ -207,20 +207,28 @@ export class GitHubManager {
             content: JSON.stringify(noteIds, null, 2)
         });
 
-        try {
-            console.log(`Iniciando sincronización por lotes de ${files.length} archivos...`);
-            const branch = 'main';
-            const headSha = await this.getBranchHead(branch);
-            const baseTreeSha = await this.getTreeSha(headSha);
-            const newTreeSha = await this.createTree(files, baseTreeSha);
-            const commitSha = await this.createCommit(`Sync data - ${new Date().toISOString()}`, newTreeSha, headSha);
-            await this.updateRef(branch, commitSha);
-            console.log('Sincronización por lotes completada con éxito.');
-        } catch (error) {
-            console.error('La sincronización por lotes falló, intentando actualización secuencial (lento):', error);
-            // Fallback to sequential updates if tree API fails
-            for (const file of files) {
-                await this.updateFile(file.path, file.content);
+        const maxBatchRetries = 3;
+        for (let batchAttempt = 1; batchAttempt <= maxBatchRetries; batchAttempt++) {
+            try {
+                console.log(`Iniciando sincronización por lotes de ${files.length} archivos (Intento ${batchAttempt}/${maxBatchRetries})...`);
+                const branch = 'main';
+                const headSha = await this.getBranchHead(branch);
+                const baseTreeSha = await this.getTreeSha(headSha);
+                const newTreeSha = await this.createTree(files, baseTreeSha);
+                const commitSha = await this.createCommit(`Sync data - ${new Date().toISOString()}`, newTreeSha, headSha);
+                await this.updateRef(branch, commitSha);
+                console.log('Sincronización por lotes completada con éxito.');
+                return;
+            } catch (error) {
+                console.warn(`Intento ${batchAttempt} de sincronización por lotes falló:`, error.message);
+                if (batchAttempt === maxBatchRetries) {
+                    console.error('Sincronización por lotes falló definitivamente, intentando fallback secuencial (lento)...');
+                    for (const file of files) {
+                        await this.updateFile(file.path, file.content);
+                    }
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * batchAttempt));
+                }
             }
         }
     }
@@ -235,7 +243,6 @@ export class GitHubManager {
 
         if (response.status === 404) {
             await this.createRepository();
-            // Esperar un momento para que GitHub inicialice la rama principal
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
@@ -381,7 +388,7 @@ export class GitHubManager {
             },
             body: JSON.stringify({
                 sha: commitSha,
-                force: false
+                force: true
             })
         });
 

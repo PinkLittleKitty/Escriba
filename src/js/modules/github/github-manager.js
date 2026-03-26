@@ -181,14 +181,47 @@ export class GitHubManager {
     async uploadData(data) {
         await this.ensureRepository();
 
-        const filesToUpload = [
+        const files = [
             { path: 'data/subjects.json', content: JSON.stringify(data.subjects, null, 2) },
             { path: 'data/events.json', content: JSON.stringify(data.events, null, 2) },
             { path: 'data/settings.json', content: JSON.stringify(data.settings, null, 2) }
         ];
 
-        for (const file of filesToUpload) {
-            await this.updateFile(file.path, file.content);
+        const noteIds = [];
+        for (const subject of data.subjects) {
+            for (const note of subject.notes) {
+                noteIds.push(note.id);
+                const noteData = {
+                    ...note,
+                    subjectId: subject.id
+                };
+                files.push({
+                    path: `data/notes/${note.id}.json`,
+                    content: JSON.stringify(noteData, null, 2)
+                });
+            }
+        }
+
+        files.push({
+            path: 'data/notes-index.json',
+            content: JSON.stringify(noteIds, null, 2)
+        });
+
+        try {
+            console.log(`Iniciando sincronización por lotes de ${files.length} archivos...`);
+            const branch = 'main';
+            const headSha = await this.getBranchHead(branch);
+            const baseTreeSha = await this.getTreeSha(headSha);
+            const newTreeSha = await this.createTree(files, baseTreeSha);
+            const commitSha = await this.createCommit(`Sync data - ${new Date().toISOString()}`, newTreeSha, headSha);
+            await this.updateRef(branch, commitSha);
+            console.log('Sincronización por lotes completada con éxito.');
+        } catch (error) {
+            console.error('La sincronización por lotes falló, intentando actualización secuencial (lento):', error);
+            // Fallback to sequential updates if tree API fails
+            for (const file of files) {
+                await this.updateFile(file.path, file.content);
+            }
         }
     }
 
@@ -202,11 +235,13 @@ export class GitHubManager {
 
         if (response.status === 404) {
             await this.createRepository();
+            // Esperar un momento para que GitHub inicialice la rama principal
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
 
     async createRepository() {
-        await fetch('https://api.github.com/user/repos', {
+        const response = await fetch('https://api.github.com/user/repos', {
             method: 'POST',
             headers: {
                 'Authorization': `token ${this.accessToken}`,
@@ -218,36 +253,145 @@ export class GitHubManager {
                 auto_init: true
             })
         });
+        if (!response.ok) throw new Error(`Error al crear repositorio: ${response.status}`);
     }
 
-    async updateFile(path, content, retry = true) {
-        const existing = await this.getFile(path);
-        const body = {
-            message: `Sync ${path} - ${new Date().toISOString()}`,
-            content: this.encodeContent(content)
-        };
-        if (existing) body.sha = existing.sha;
+    async updateFile(path, content, retries = 3) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const existing = await this.getFile(path);
+                const body = {
+                    message: `Sync ${path} - ${new Date().toISOString()}`,
+                    content: this.encodeContent(content)
+                };
+                if (existing) body.sha = existing.sha;
 
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
-            method: 'PUT',
+                const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${this.accessToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (response.status === 409) {
+                    if (attempt < retries) {
+                        console.log(`Conflicto (409) para ${path}, reintentando en 1s (Intento ${attempt}/${retries})...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        continue;
+                    }
+                }
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                    throw new Error(`Error actualizando ${path}: ${response.status} - ${errorData.message}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                if (attempt === retries) throw error;
+                console.warn(`Intento ${attempt} fallido para ${path}:`, error.message);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    async getBranchHead(branch) {
+        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/refs/heads/${branch}`, {
+            headers: {
+                'Authorization': `token ${this.accessToken}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        if (!response.ok) throw new Error(`Error al obtener head de la rama: ${response.status}`);
+        const data = await response.json();
+        return data.object.sha;
+    }
+
+    async getTreeSha(commitSha) {
+        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/commits/${commitSha}`, {
+            headers: {
+                'Authorization': `token ${this.accessToken}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        if (!response.ok) throw new Error(`Error al obtener tree sha: ${response.status}`);
+        const data = await response.json();
+        return data.tree.sha;
+    }
+
+    async createTree(files, baseTreeSha) {
+        const tree = files.map(file => ({
+            path: file.path,
+            mode: '100644',
+            type: 'blob',
+            content: file.content
+        }));
+
+        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/trees`, {
+            method: 'POST',
             headers: {
                 'Authorization': `token ${this.accessToken}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.github.v3+json'
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                base_tree: baseTreeSha,
+                tree: tree
+            })
         });
 
-        if (response.status === 409 && retry) {
-            console.log(`Conflict (409) detected for ${path}, retrying...`);
-            return this.updateFile(path, content, false);
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(`Error al crear árbol: ${response.status} - ${err.message}`);
         }
+        const data = await response.json();
+        return data.sha;
+    }
+
+    async createCommit(message, treeSha, parentSha) {
+        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/commits`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${this.accessToken}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                message: message,
+                tree: treeSha,
+                parents: [parentSha]
+            })
+        });
+
+        if (!response.ok) throw new Error(`Error al crear commit: ${response.status}`);
+        const data = await response.json();
+        return data.sha;
+    }
+
+    async updateRef(branch, commitSha) {
+        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/refs/heads/${branch}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${this.accessToken}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                sha: commitSha,
+                force: false
+            })
+        });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: response.statusText }));
-            throw new Error(`Error updating ${path}: ${response.status} - ${errorData.message}`);
+            const err = await response.json();
+            if (response.status === 422) {
+                throw new Error(`Error al actualizar referencia (posiblemente conflicto de rama): ${err.message}`);
+            }
+            throw new Error(`Error al actualizar referencia: ${response.status} - ${err.message}`);
         }
-
         return await response.json();
     }
 

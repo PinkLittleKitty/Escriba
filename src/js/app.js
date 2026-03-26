@@ -87,6 +87,7 @@ class EscribaApp {
 
         updateSemesterInfo(document.getElementById('currentSemester'));
         this.renderSubjects();
+        saveSubjects(this.subjects);
 
         if (this.subjects.length === 0 && !this.isViewingSharedNote) {
             showWelcomeScreen(true);

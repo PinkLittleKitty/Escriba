@@ -1,13 +1,52 @@
-import { sanitizeText, cleanNoteContent } from '../utils/helpers.js';
+import { sanitizeText, cleanNoteContent, generateId } from '../utils/helpers.js';
 
 const STORAGE_KEY = 'cuadernoDigital';
 const EVENTS_KEY = 'cuadernoEvents';
 const SETTINGS_KEY = 'escribaSettings';
 
+export const migrateNoteIds = (subjects) => {
+    if (!Array.isArray(subjects)) return subjects;
+
+    const idMap = new Map();
+
+    subjects.forEach(subject => {
+        if (Array.isArray(subject.notes)) {
+            subject.notes.forEach(note => {
+                if (/^\d+$/.test(note.id)) {
+                    const newId = generateId();
+                    idMap.set(note.id, newId);
+                    note.id = newId;
+                }
+            });
+        }
+    });
+
+    if (idMap.size === 0) return subjects;
+
+    subjects.forEach(subject => {
+        if (Array.isArray(subject.notes)) {
+            subject.notes.forEach(note => {
+                if (note.content && typeof note.content === 'string') {
+                    let updatedContent = note.content;
+                    idMap.forEach((newId, oldId) => {
+                        const regex = new RegExp(`data-note-id=["']${oldId}["']`, 'g');
+                        updatedContent = updatedContent.replace(regex, `data-note-id="${newId}"`);
+                    });
+                    note.content = updatedContent;
+                }
+            });
+        }
+    });
+
+    return subjects;
+};
+
 export const validateAndCleanSubjects = (subjects) => {
     if (!Array.isArray(subjects)) return [];
 
-    return subjects.map(subject => ({
+    const migratedSubjects = migrateNoteIds(subjects);
+
+    return migratedSubjects.map(subject => ({
         ...subject,
         name: sanitizeText(subject.name || 'Materia sin nombre'),
         code: subject.code ? sanitizeText(subject.code) : subject.code,

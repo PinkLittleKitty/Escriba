@@ -69,12 +69,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 0.25rem;
+    line-height: 1.4;
+    width: 100%;
 }
 
 .subject-code {
     font-size: 0.75rem;
     color: var(--text-muted);
     display: block;
+    line-height: 1.4;
 }
 
 .subject-count {
@@ -166,26 +169,30 @@
     background: var(--border-light);
 }
 
+.subject-folder.expanded {
+    position: relative;
+}
+
 .subject-folder.expanded .notes-list {
     position: relative;
 }
 
-.subject-folder.expanded .notes-list::after {
+.subject-folder.expanded::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 20px;
-    background: var(--bg-card);
-    opacity: 0.95;
+    height: 30px;
+    background: linear-gradient(to top, var(--bg-card), transparent);
     pointer-events: none;
-    opacity: 0;
+    opacity: 0.4;
     transition: opacity 0.2s ease;
+    z-index: 10;
 }
 
-.subject-folder.expanded .notes-list:hover::after {
-    opacity: 0.7;
+.subject-folder.expanded:hover::after {
+    opacity: 1;
 }
 
 .note-item {
@@ -214,16 +221,21 @@
 .note-details {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .note-item h3 {
     font-size: 0.9rem;
     font-weight: 500;
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.25rem;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.4;
+    display: block;
+    width: 100%;
 }
 
 .note-item .note-date {
@@ -309,6 +321,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     display: block;
+    line-height: 1.4;
+    width: 100%;
 }
 
 .recent-note-item.active .note-item-title,

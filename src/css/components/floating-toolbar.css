@@ -1,0 +1,88 @@
+.floating-toolbar {
+    position: fixed;
+    z-index: 1000;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 4px;
+    display: flex;
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: auto;
+}
+
+.floating-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.floating-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--accent-blue);
+}
+
+.floating-btn.active {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.floating-btn i {
+    font-size: 0.9rem;
+}
+
+.floating-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: auto 4px;
+}
+
+[data-theme="cyberpunk"] .floating-toolbar {
+    background: rgba(2, 6, 23, 0.9);
+    border-color: var(--accent-green);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+}
+
+[data-theme="cyberpunk"] .floating-btn {
+    color: var(--accent-green);
+}
+
+[data-theme="cyberpunk"] .floating-btn:hover {
+    background: rgba(0, 255, 65, 0.1);
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.3);
+}
+
+[data-theme="cyberpunk"] .floating-btn.active {
+    background: var(--accent-green);
+    color: #020617;
+    box-shadow: 0 0 12px var(--accent-green);
+}
+
+[data-theme="matrix"] .floating-toolbar {
+    background: #000;
+    border-color: #00ff41;
+}
+
+[data-theme="matrix"] .floating-btn {
+    color: #00ff41;
+}
+
+[data-theme="matrix"] .floating-btn:hover {
+    background: rgba(0, 255, 65, 0.1);
+}
+
+[data-theme="matrix"] .floating-btn.active {
+    background: #00ff41;
+    color: #000;
+}

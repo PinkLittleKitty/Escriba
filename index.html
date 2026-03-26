@@ -213,6 +213,9 @@
                                 <button id="favoriteBtn" class="btn btn-icon" title="Marcar como favorito">
                                     <i class="fas fa-star"></i>
                                 </button>
+                                <button id="exportMarkdownBtn" class="btn btn-icon" title="Exportar como Markdown">
+                                    <i class="fab fa-markdown"></i>
+                                </button>
                                 <button id="shareNoteBtn" class="btn btn-icon" title="Compartir apunte">
                                     <i class="fas fa-share-alt"></i>
                                 </button>
@@ -876,7 +879,13 @@
         </div>
     </div>
 
+    <div id="floatingToolbar" class="floating-toolbar" style="display: none;">
+        <button class="floating-btn" data-command="bold" title="Negrita"><i class="fas fa-bold"></i></button>
+        <button class="floating-btn" data-command="italic" title="Cursiva"><i class="fas fa-italic"></i></button>
+        <button class="floating-btn" data-command="underline" title="Subrayado"><i class="fas fa-underline"></i></button>
+        <div class="floating-separator"></div>
+        <button class="floating-btn" id="floatingHighlightBtn" title="Resaltar"><i class="fas fa-highlighter"></i></button>
+        <button class="floating-btn" id="floatingCodeBtn" title="Código"><i class="fas fa-code"></i></button>
+    </div>
 </body>
-
-
 </html>

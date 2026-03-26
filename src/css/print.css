@@ -1,0 +1,91 @@
+@media print {
+
+    header,
+    .sidebar,
+    .mobile-menu-toggle,
+    .editor-toolbar,
+    .math-toolbar,
+    .note-actions,
+    .modal,
+    .shared-note-banner,
+    #mobileOverlay {
+        display: none !important;
+    }
+
+    body,
+    .container,
+    .main-content,
+    .editor-area,
+    .note-editor {
+        display: block !important;
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .note-content {
+        border: none !important;
+        padding: 0 !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+        color: black !important;
+        background: transparent !important;
+    }
+
+    .note-header {
+        border-bottom: 2px solid #333 !important;
+        margin-bottom: 2rem !important;
+        padding-bottom: 1rem !important;
+    }
+
+    .title-input {
+        font-size: 24pt !important;
+        font-weight: bold !important;
+        color: black !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .note-breadcrumb {
+        font-size: 12pt !important;
+        color: #666 !important;
+    }
+
+    .uml-diagram-container {
+        break-inside: avoid;
+        margin: 2rem 0 !important;
+        border: 1px solid #ddd !important;
+    }
+
+    .uml-diagram-header {
+        background: #f5f5f5 !important;
+        color: black !important;
+    }
+
+    .uml-diagram-actions {
+        display: none !important;
+    }
+
+    pre,
+    code {
+        background: #f8f8f8 !important;
+        color: black !important;
+        border: 1px solid #ddd !important;
+        white-space: pre-wrap !important;
+    }
+
+    h1,
+    h2,
+    h3 {
+        break-after: avoid;
+    }
+
+    p,
+    blockquote {
+        break-inside: avoid;
+    }
+}

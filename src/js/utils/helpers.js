@@ -54,3 +54,53 @@ export const debounce = (func, wait) => {
         timeout = setTimeout(later, wait);
     };
 };
+
+export const clearHighlights = (element) => {
+    if (!element) return;
+    const marks = element.querySelectorAll('mark.search-highlight');
+    marks.forEach(mark => {
+        const parent = mark.parentNode;
+        const text = document.createTextNode(mark.textContent);
+        parent.replaceChild(text, mark);
+        parent.normalize();
+    });
+};
+
+export const highlightElement = (element, query) => {
+    if (!element || !query) {
+        clearHighlights(element);
+        return;
+    }
+
+    clearHighlights(element);
+
+    const walk = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+    const nodes = [];
+    let node;
+    while (node = walk.nextNode()) {
+        const parent = node.parentNode;
+        if (parent.closest('.uml-diagram-container, .math-toolbar, .katex, .inline-ace-editor')) continue;
+        nodes.push(node);
+    }
+
+    const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+
+    nodes.forEach(node => {
+        const text = node.textContent;
+        if (text.match(regex)) {
+            const fragment = document.createDocumentFragment();
+            let lastIdx = 0;
+            text.replace(regex, (match, p1, offset) => {
+                fragment.appendChild(document.createTextNode(text.substring(lastIdx, offset)));
+                const mark = document.createElement('mark');
+                mark.className = 'search-highlight';
+                mark.textContent = match;
+                fragment.appendChild(mark);
+                lastIdx = offset + match.length;
+                return match;
+            });
+            fragment.appendChild(document.createTextNode(text.substring(lastIdx)));
+            node.parentNode.replaceChild(fragment, node);
+        }
+    });
+};

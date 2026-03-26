@@ -11,7 +11,9 @@ import {
     generateId,
     debounce,
     escapeHtml,
-    sanitizeText
+    sanitizeText,
+    highlightElement,
+    clearHighlights
 } from './utils/helpers.js';
 import {
     initializeAceEditor,
@@ -60,6 +62,7 @@ class EscribaApp {
         this.settings = data.settings || applySettings();
 
         this.currentNoteId = null;
+        this.editingUMLContainer = null;
         this.currentView = 'subjects';
         this.selectedColor = '#3b82f6';
         this.autoSaveInterval = null;
@@ -75,6 +78,8 @@ class EscribaApp {
 
         this.mathManager = new MathManager(this);
 
+        this.floatingToolbar = document.getElementById('floatingToolbar');
+
         this.debouncedSave = debounce(() => this.saveCurrentNote(), 500);
     }
 
@@ -85,6 +90,7 @@ class EscribaApp {
         applySettings();
         this.loadSidebarState();
         this.initMermaid();
+        this.initFloatingToolbar();
 
         await this.checkForSharedNote();
 
@@ -194,7 +200,9 @@ class EscribaApp {
         if (cancelSettings) cancelSettings.addEventListener('click', () => this.cancelSettings());
 
         initModalEvents((modalId) => {
-            if (modalId === 'subjectModal') {
+            if (modalId === 'umlModal') {
+                this.editingUMLContainer = null;
+            } else if (modalId === 'subjectModal') {
                 document.getElementById('subjectName').value = '';
                 document.getElementById('subjectCode').value = '';
                 document.getElementById('subjectProfessor').value = '';
@@ -250,9 +258,8 @@ class EscribaApp {
                 if (container) {
                     const code = container.getAttribute('data-uml-code');
                     document.getElementById('umlCode').value = code || '';
+                    this.editingUMLContainer = container;
                     showModal('umlModal');
-                    container.remove();
-                    this.debouncedSave();
 
                     const preview = document.getElementById('umlPreview');
                     if (preview && code) updateUMLPreview({ getValue: () => code }, preview);
@@ -262,6 +269,7 @@ class EscribaApp {
 
         document.getElementById('deleteNoteBtn').addEventListener('click', () => this.deleteCurrentNote());
         document.getElementById('favoriteBtn').addEventListener('click', () => this.toggleFavorite());
+        document.getElementById('exportMarkdownBtn').addEventListener('click', () => this.exportNoteToMarkdown());
         document.getElementById('shareNoteBtn').addEventListener('click', () => this.showShareModal());
 
         document.querySelectorAll('.toolbar-btn').forEach(btn => {
@@ -274,7 +282,7 @@ class EscribaApp {
             });
         });
 
-        document.getElementById('highlightBtn').addEventListener('click', () => document.execCommand('backColor', false, '#ffff00'));
+        document.getElementById('highlightBtn').addEventListener('click', () => this.toggleHighlight());
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertLinkBtn').addEventListener('click', () => showModal('linkModal'));
@@ -475,6 +483,7 @@ class EscribaApp {
 
         this.reRenderAllDiagrams();
         this.mathManager.sync(foundNote);
+        clearHighlights(document.getElementById('noteContent'));
         updateToolbarStates();
     }
 
@@ -602,6 +611,11 @@ class EscribaApp {
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
             onAddSubject: () => showModal('subjectModal')
         });
+
+        const activeNoteContent = document.getElementById('noteContent');
+        if (activeNoteContent) {
+            highlightElement(activeNoteContent, query);
+        }
     }
 
     handleKeyboardShortcuts(e) {
@@ -950,8 +964,26 @@ class EscribaApp {
 
         const diagramType = detectDiagramType(umlCode);
         const diagramTypeName = getDiagramTypeName(diagramType);
-        const diagramId = 'uml-' + Date.now();
 
+        if (this.editingUMLContainer) {
+            const diagramId = this.editingUMLContainer.querySelector('.uml-diagram-content').id;
+            this.editingUMLContainer.setAttribute('data-uml-code', umlCode);
+            this.editingUMLContainer.setAttribute('data-diagram-type', diagramType);
+            this.editingUMLContainer.querySelector('.uml-diagram-type').innerHTML = `<i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}`;
+
+            const content = this.editingUMLContainer.querySelector('.uml-diagram-content');
+            content.innerHTML = `<div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Actualizando diagrama...</div>`;
+
+            await renderUMLDiagram(diagramId, umlCode);
+            this.editingUMLContainer = null;
+
+            hideModal('umlModal');
+            document.getElementById('umlCode').value = '';
+            this.debouncedSave();
+            return;
+        }
+
+        const diagramId = 'uml-' + Date.now();
         const container = document.createElement('div');
         container.className = 'uml-diagram-container';
         container.setAttribute('data-uml-code', umlCode);
@@ -2018,17 +2050,85 @@ class EscribaApp {
         if (!selection.rangeCount) return;
 
         const range = selection.getRangeAt(0);
-        const node = range.commonAncestorContainer;
-        const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
 
-        if (parent.tagName === 'CODE' || parent.closest('code')) {
-            document.execCommand('formatBlock', false, 'p');
+        let container = range.commonAncestorContainer;
+        if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
+
+        const codeElement = container.closest('code') ||
+            (range.startContainer.nodeType === Node.ELEMENT_NODE ? range.startContainer.closest('code') : range.startContainer.parentElement?.closest('code')) ||
+            (range.endContainer.nodeType === Node.ELEMENT_NODE ? range.endContainer.closest('code') : range.endContainer.parentElement?.closest('code'));
+
+        if (codeElement) {
+            const parent = codeElement.parentNode;
+            if (!parent) return;
+
+            const fragment = document.createDocumentFragment();
+            const children = Array.from(codeElement.childNodes);
+            children.forEach(child => fragment.appendChild(child));
+
+            const firstChild = children[0];
+            const lastChild = children[children.length - 1];
+
+            parent.replaceChild(fragment, codeElement);
+
+            if (firstChild && lastChild) {
+                const newRange = document.createRange();
+                newRange.setStartBefore(firstChild);
+                newRange.setEndAfter(lastChild);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+            }
         } else {
             const code = document.createElement('code');
-            code.appendChild(range.extractContents());
-            range.insertNode(code);
+            code.className = 'inline-code';
+
+            if (range.isCollapsed) {
+                code.innerHTML = '&#8203;';
+                range.insertNode(code);
+                range.setStart(code, 1);
+                range.collapse(true);
+            } else {
+                const content = range.extractContents();
+
+                content.querySelectorAll('code').forEach(c => {
+                    const frag = document.createDocumentFragment();
+                    while (c.firstChild) frag.appendChild(c.firstChild);
+                    c.parentNode.replaceChild(frag, c);
+                });
+
+                code.appendChild(content);
+                range.insertNode(code);
+
+                const newRange = document.createRange();
+                newRange.selectNodeContents(code);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+            }
         }
+
         updateToolbarStates();
+        this.debouncedSave();
+    }
+
+    toggleHighlight() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        let container = selection.getRangeAt(0).commonAncestorContainer;
+        if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
+
+        const isHighlighted = container.style.backgroundColor === 'rgb(255, 241, 118)' ||
+            container.closest('[style*="background-color: rgb(255, 241, 118)"]') ||
+            container.closest('mark');
+
+        if (isHighlighted) {
+            document.execCommand('backColor', false, 'inherit');
+        } else {
+            document.execCommand('backColor', false, '#fff176');
+        }
+
+        updateToolbarStates();
+        this.debouncedSave();
     }
 
     toggleMathMode() {
@@ -2130,6 +2230,168 @@ class EscribaApp {
             container.remove();
             this.debouncedSave();
         }
+    }
+
+    exportNoteToMarkdown() {
+        if (!this.currentNoteId) return;
+
+        let foundNote = null;
+        let foundSubject = null;
+        this.subjects.forEach(s => {
+            const note = s.notes.find(n => n.id === this.currentNoteId);
+            if (note) {
+                foundNote = note;
+                foundSubject = s;
+            }
+        });
+
+        if (!foundNote) return;
+
+        const contentElement = document.getElementById('noteContent');
+        const markdown = this.htmlToMarkdown(contentElement);
+        const fullMarkdown = `# ${foundNote.title}\n\n*Materia: ${foundSubject.name}*\n*Fecha: ${formatDate(foundNote.updatedAt)}*\n\n---\n\n${markdown}`;
+
+        const blob = new Blob([fullMarkdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        a.download = `${foundNote.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('Apunte exportado como Markdown', 'success');
+    }
+
+    htmlToMarkdown(element) {
+        let md = '';
+        const children = element.childNodes;
+
+        children.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                md += node.textContent;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tag = node.tagName.toLowerCase();
+
+                if (node.classList.contains('uml-diagram-container')) {
+                    const code = node.getAttribute('data-uml-code');
+                    md += `\n\n\`\`\`mermaid\n${code}\n\`\`\`\n\n`;
+                    return;
+                }
+
+                if (node.classList.contains('math-toolbar') || node.classList.contains('katex-display')) {
+                    return;
+                }
+
+                switch (tag) {
+                    case 'b': case 'strong': md += `**${this.htmlToMarkdown(node)}**`; break;
+                    case 'i': case 'em': md += `*${this.htmlToMarkdown(node)}*`; break;
+                    case 'u': md += `<u>${this.htmlToMarkdown(node)}</u>`; break;
+                    case 'h1': md += `\n# ${this.htmlToMarkdown(node)}\n`; break;
+                    case 'h2': md += `\n## ${this.htmlToMarkdown(node)}\n`; break;
+                    case 'h3': md += `\n### ${this.htmlToMarkdown(node)}\n`; break;
+                    case 'p': md += `\n${this.htmlToMarkdown(node)}\n`; break;
+                    case 'br': md += '\n'; break;
+                    case 'ul': md += `\n${this.htmlToMarkdown(node)}\n`; break;
+                    case 'ol': md += `\n${this.htmlToMarkdown(node)}\n`; break;
+                    case 'li': md += `- ${this.htmlToMarkdown(node)}\n`; break;
+                    case 'div': md += `\n${this.htmlToMarkdown(node)}\n`; break;
+                    case 'code': md += `\`${node.textContent}\``; break;
+                    case 'pre':
+                        const codeBlock = node.querySelector('code');
+                        md += `\n\`\`\`\n${codeBlock ? codeBlock.textContent : node.textContent}\n\`\`\`\n`;
+                        break;
+                    default: md += this.htmlToMarkdown(node); break;
+                }
+            }
+        });
+
+        // Clean up excessive newlines
+        return md.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    initFloatingToolbar() {
+        if (!this.floatingToolbar) {
+            this.floatingToolbar = document.getElementById('floatingToolbar');
+        }
+        if (!this.floatingToolbar) return;
+
+        // Button clicks
+        this.floatingToolbar.querySelectorAll('.floating-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const command = e.currentTarget.dataset.command;
+                const id = e.currentTarget.id;
+
+                if (command) {
+                    document.execCommand(command, false, null);
+                } else if (id === 'floatingHighlightBtn') {
+                    this.toggleHighlight();
+                } else if (id === 'floatingCodeBtn') {
+                    this.toggleInlineCode();
+                }
+
+                updateToolbarStates();
+                this.debouncedSave();
+
+                // Keep selection and toolbar visible
+                setTimeout(() => this.updateFloatingToolbar(), 10);
+            });
+        });
+
+        document.addEventListener('selectionchange', () => {
+            this.updateFloatingToolbar();
+        });
+    }
+
+    updateFloatingToolbar() {
+        if (!this.floatingToolbar) return;
+
+        const selection = window.getSelection();
+        const noteContent = document.getElementById('noteContent');
+
+        if (!selection.rangeCount || selection.isCollapsed) {
+            this.floatingToolbar.style.display = 'none';
+            return;
+        }
+
+        const range = selection.getRangeAt(0);
+        if (!noteContent || !noteContent.contains(range.commonAncestorContainer)) {
+            this.floatingToolbar.style.display = 'none';
+            return;
+        }
+
+        // Only show if there is non-whitespace text selected
+        if (selection.toString().trim().length === 0) {
+            this.floatingToolbar.style.display = 'none';
+            return;
+        }
+
+        const rect = range.getBoundingClientRect();
+
+        // Show temporarily to get dimensions
+        this.floatingToolbar.style.display = 'flex';
+        this.floatingToolbar.style.visibility = 'hidden';
+
+        const toolbarRect = this.floatingToolbar.getBoundingClientRect();
+
+        let top = rect.top - toolbarRect.height - 10;
+        let left = rect.left + (rect.width / 2) - (toolbarRect.width / 2);
+
+        // Keep within viewport
+        if (top < 10) top = rect.bottom + 10;
+        if (left < 10) left = 10;
+        if (left + toolbarRect.width > window.innerWidth - 10) {
+            left = window.innerWidth - toolbarRect.width - 10;
+        }
+
+        this.floatingToolbar.style.top = `${top}px`;
+        this.floatingToolbar.style.left = `${left}px`;
+        this.floatingToolbar.style.visibility = 'visible';
+        this.floatingToolbar.style.opacity = '1';
+
+        updateToolbarStates();
     }
 }
 

@@ -50,6 +50,7 @@ import {
     loadSettingsToModal,
     getCurrentSettings
 } from './modules/settings.js';
+import { MathManager } from './modules/editor/math-manager.js';
 
 class EscribaApp {
     constructor() {
@@ -71,6 +72,8 @@ class EscribaApp {
             onStatusChange: (status, error) => this.handleGitHubStatusChange(status, error),
             showToast: (msg, type) => showToast(msg, type)
         });
+
+        this.mathManager = new MathManager(this);
 
         this.debouncedSave = debounce(() => this.saveCurrentNote(), 500);
     }
@@ -471,7 +474,7 @@ class EscribaApp {
         });
 
         this.reRenderAllDiagrams();
-
+        this.mathManager.sync(foundNote);
         updateToolbarStates();
     }
 
@@ -480,8 +483,6 @@ class EscribaApp {
 
         const title = document.getElementById('noteTitle').value.trim() || 'Apunte sin título';
         const content = document.getElementById('noteContent').innerHTML;
-        const typeSelect = document.getElementById('noteTypeSelect');
-        const type = typeSelect ? typeSelect.value : 'lecture';
 
         this.subjects.forEach(s => {
             const note = s.notes.find(n => n.id === this.currentNoteId);
@@ -489,7 +490,6 @@ class EscribaApp {
                 note.title = title;
                 note.content = content;
                 note.updatedAt = new Date().toISOString();
-                note.type = type;
                 s.lastModified = new Date().toISOString();
             }
         });
@@ -1537,7 +1537,8 @@ class EscribaApp {
                 s: subject.name,
                 sc: subject.color,
                 cd: note.createdAt,
-                ty: note.type
+                ty: note.type,
+                m: note.mathMode
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1969,7 +1970,8 @@ class EscribaApp {
             createdAt: noteData.cd || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             favorite: false,
-            type: noteData.ty || 'lecture'
+            type: noteData.ty || 'lecture',
+            mathMode: noteData.m || false
         };
 
         subject.notes.unshift(newNote);
@@ -1999,9 +2001,15 @@ class EscribaApp {
     }
 
     toggleMathMode() {
-        const select = document.getElementById('noteTypeSelect');
-        if (select) {
-            select.value = select.value === 'math' ? 'lecture' : 'math';
+        if (!this.currentNoteId) {
+            showToast('Abrir un apunte primero', 'error');
+            return;
+        }
+
+        const note = this.getNoteById(this.currentNoteId);
+        if (note) {
+            this.mathManager.toggle(note);
+            this.saveCurrentNote();
             updateToolbarStates();
         }
     }

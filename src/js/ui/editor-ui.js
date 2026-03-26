@@ -25,8 +25,8 @@ export const updateToolbarStates = () => {
 
     const mathModeBtn = document.getElementById('mathModeBtn');
     if (mathModeBtn) {
-        const noteTypeSelect = document.getElementById('noteTypeSelect');
-        mathModeBtn.classList.toggle('active', noteTypeSelect && noteTypeSelect.value === 'math');
+        const noteContent = document.getElementById('noteContent');
+        mathModeBtn.classList.toggle('active', noteContent && noteContent.classList.contains('math-mode'));
     }
 };
 

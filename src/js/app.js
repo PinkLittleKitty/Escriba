@@ -62,6 +62,7 @@ class EscribaApp {
         this.currentView = 'subjects';
         this.selectedColor = '#3b82f6';
         this.autoSaveInterval = null;
+        this.autoSyncInterval = null;
         this.currentDate = new Date();
         this.currentEventId = null;
         this.isViewingSharedNote = false;
@@ -96,6 +97,8 @@ class EscribaApp {
         setTimeout(() => {
             document.body.classList.remove('loading');
         }, 100);
+
+        this.setupAutoSync();
 
         const hasGitHubToken = !!localStorage.getItem('github_access_token');
         this.handleGitHubStatusChange(hasGitHubToken ? 'connected' : 'disconnected');
@@ -203,6 +206,15 @@ class EscribaApp {
         if (cancelSubjectPickerBtn) cancelSubjectPickerBtn.addEventListener('click', () => hideModal('subjectPickerModal'));
 
         document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
+
+        const autoSyncCheckbox = document.getElementById('autoSync');
+        if (autoSyncCheckbox) {
+            autoSyncCheckbox.addEventListener('change', () => {
+                if (autoSyncCheckbox.checked) this.startAutoSync();
+                else this.stopAutoSync();
+            });
+        }
+
         document.getElementById('clearAllData').addEventListener('click', () => {
             if (confirm('¿Estás seguro de que querés borrar todos tus datos? Esta acción es irreversible.')) {
                 localStorage.clear();
@@ -831,6 +843,7 @@ class EscribaApp {
         const fontFamily = document.getElementById('fontFamily').value;
         const fontSize = parseInt(document.getElementById('fontSize').value);
         const autoSave = document.getElementById('autoSave').checked;
+        const autoSync = document.getElementById('autoSync').checked;
         const expandSubjects = document.getElementById('expandSubjects').checked;
         const showWelcome = document.getElementById('showWelcome').checked;
 
@@ -839,6 +852,7 @@ class EscribaApp {
             fontFamily,
             fontSize,
             autoSave,
+            autoSync,
             expandSubjects,
             showWelcome
         };
@@ -965,6 +979,10 @@ class EscribaApp {
     }
 
     async handleGitHubAuth(silent = false) {
+        if (this.currentNoteId) {
+            await this.saveCurrentNote();
+        }
+
         if (this.github.isAuthenticated) {
             try {
                 const data = {
@@ -1430,8 +1448,34 @@ class EscribaApp {
 
     disconnectGitHub() {
         if (confirm('¿Estás seguro de que querés desconectar tu cuenta de GitHub?')) {
+            this.stopAutoSync();
             this.github.logout();
             showToast('Cuenta desconectada', 'info');
+        }
+    }
+
+    setupAutoSync() {
+        if (this.settings && this.settings.autoSync) {
+            this.startAutoSync();
+        }
+    }
+
+    startAutoSync() {
+        this.stopAutoSync();
+        if (!this.github.isAuthenticated) return;
+
+        console.log('Starting auto-sync interval (5 minutes)');
+        this.autoSyncInterval = setInterval(() => {
+            if (this.github.isAuthenticated) {
+                this.handleGitHubAuth(true);
+            }
+        }, 5 * 60 * 1000);
+    }
+
+    stopAutoSync() {
+        if (this.autoSyncInterval) {
+            clearInterval(this.autoSyncInterval);
+            this.autoSyncInterval = null;
         }
     }
 
@@ -1784,6 +1828,7 @@ class EscribaApp {
                 if (dropdownConnect) dropdownConnect.style.display = 'none';
                 if (settingsSyncStatus) settingsSyncStatus.textContent = 'Conectado como ' + (this.github.username || 'usuario');
                 if (settingsSyncButton) settingsSyncButton.style.display = 'none';
+                this.setupAutoSync();
                 break;
             case 'syncing':
                 githubStatus.classList.add('syncing');

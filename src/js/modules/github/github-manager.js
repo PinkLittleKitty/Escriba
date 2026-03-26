@@ -114,11 +114,46 @@ export class GitHubManager {
         local.subjects.forEach(localSub => {
             const idx = merged.subjects.findIndex(s => s.id === localSub.id);
             if (idx >= 0) {
-                if (new Date(localSub.lastModified || 0) > new Date(merged.subjects[idx].lastModified || 0)) {
-                    merged.subjects[idx] = localSub;
+                const remoteSub = merged.subjects[idx];
+
+                const mergedNotes = [...remoteSub.notes];
+                localSub.notes.forEach(localNote => {
+                    const noteIdx = mergedNotes.findIndex(n => n.id === localNote.id);
+                    if (noteIdx >= 0) {
+                        const localUpdate = new Date(localNote.updatedAt || localNote.createdAt || 0);
+                        const remoteUpdate = new Date(mergedNotes[noteIdx].updatedAt || mergedNotes[noteIdx].createdAt || 0);
+
+                        if (localUpdate > remoteUpdate) {
+                            mergedNotes[noteIdx] = localNote;
+                        }
+                    } else {
+                        mergedNotes.push(localNote);
+                    }
+                });
+
+                const localSubUpdate = new Date(localSub.lastModified || 0);
+                const remoteSubUpdate = new Date(remoteSub.lastModified || 0);
+
+                if (localSubUpdate > remoteSubUpdate) {
+                    merged.subjects[idx] = {
+                        ...localSub,
+                        notes: mergedNotes
+                    };
+                } else {
+                    merged.subjects[idx] = {
+                        ...remoteSub,
+                        notes: mergedNotes
+                    };
                 }
             } else {
                 merged.subjects.push(localSub);
+            }
+        });
+
+        local.events.forEach(localEvent => {
+            const idx = merged.events.findIndex(e => e.id === localEvent.id);
+            if (idx === -1) {
+                merged.events.push(localEvent);
             }
         });
 
@@ -185,7 +220,7 @@ export class GitHubManager {
         });
     }
 
-    async updateFile(path, content) {
+    async updateFile(path, content, retry = true) {
         const existing = await this.getFile(path);
         const body = {
             message: `Sync ${path} - ${new Date().toISOString()}`,
@@ -193,14 +228,27 @@ export class GitHubManager {
         };
         if (existing) body.sha = existing.sha;
 
-        await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
+        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `token ${this.accessToken}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
             },
             body: JSON.stringify(body)
         });
+
+        if (response.status === 409 && retry) {
+            console.log(`Conflict (409) detected for ${path}, retrying...`);
+            return this.updateFile(path, content, false);
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: response.statusText }));
+            throw new Error(`Error updating ${path}: ${response.status} - ${errorData.message}`);
+        }
+
+        return await response.json();
     }
 
     encodeContent(str) {

@@ -32,6 +32,9 @@ export const loadSettingsToModal = (settings) => {
     const autoSaveEl = document.getElementById('autoSave');
     if (autoSaveEl) autoSaveEl.checked = settings.autoSave !== false;
 
+    const autoSyncEl = document.getElementById('autoSync');
+    if (autoSyncEl) autoSyncEl.checked = settings.autoSync !== false;
+
     const expandSubjectsEl = document.getElementById('expandSubjects');
     if (expandSubjectsEl) expandSubjectsEl.checked = settings.expandSubjects !== false;
 

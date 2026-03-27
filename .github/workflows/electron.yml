@@ -78,6 +78,17 @@ jobs:
           find artifacts -name "*.AppImage" -exec cp {} release-files/ \;
           find artifacts -name "*.dmg" -exec cp {} release-files/ \;
 
+      - name: Clear Old Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          assets=$(gh release view nightly --json assets --jq '.assets[].name' || echo "")
+          if [ -n "$assets" ]; then
+            for asset in $assets; do
+              gh release delete-asset nightly "$asset" -y
+            done
+          fi
+
       - name: Update Nightly Tag
         run: |
           git config user.name "github-actions[bot]"

@@ -1,155 +1,65 @@
-# 📚 Cuaderno Digital
+# 📚 Escriba
 
-A modern, cross-device digital notebook application with real-time synchronization and multiple themes.
+Escriba is a modern, offline-ready digital notebook designed for students and power users. It offers a seamless experience across web and desktop, with powerful synchronization features.
 
-## ✨ Features
+## ✨ Key Features
 
-- 🔐 **User Authentication** - Secure login and registration
-- 📱 **Cross-Device Sync** - Access your notes from anywhere
-- 🎨 **Multiple Themes** - 8 themes
-- 📝 **Rich Note Taking** - Support for different note types
-- ⭐ **Favorites System** - Mark important notes
-- 🔍 **Search & Filter** - Find notes quickly
-- 📊 **Statistics** - Track your note-taking progress
-- 🌙 **Dark/Light Mode** - Easy on the eyes
-- 📱 **Responsive Design** - Works on all devices
+- 🌐 **Web First** - Recommended version for most users. Access your notes anywhere via GitHub Pages.
+- 💾 **100% Offline** - Data is saved locally in your browser or desktop app (no cloud required).
+- 🔄 **GitHub Sync** - Sync your notes across devices using your own private GitHub repository as a secure backend.
+- 🖥️ **Desktop App** - Optimized for offline use at university or areas with poor connection.
+- 🎨 **Rich Aesthetics** - 8 beautiful themes including Dark, Light, Cyberpunk, and more.
+- 📝 **Advanced Editing** - Support for UML diagrams, code blocks, and rich text.
+- 📊 **Smart Statistics** - Track your word counts, notes, and subjects.
+- 🚀 **Nightly Builds** - Automatically generated binaries on every update.
 
-## 🚀 Deploy on DanBotHosting
+## 🌐 Web Version (Recommended)
 
-### Step 1: Upload Files
+The web version is the easiest way to use Escriba. Your notes are saved in your browser's local storage and can be synced to GitHub for cross-device access.
 
-1. Upload all files to your DBH server via FTP/SFTP
-2. Make sure `package.json` and `server.js` are in the root directory
+👉 [**Visit Escriba Web**](https://pinklittlekitty.github.io/Escriba/)
 
-### Step 2: Install Dependencies
+## 🖥️ Desktop App
 
-```bash
-npm install
-```
+The desktop version is recommended for users who need a dedicated window or work frequently without an internet connection.
 
-### Step 3: Start the Application
+1. Go to the [Releases](https://github.com/PinkLittleKitty/Escriba/releases) section.
+2. Download the latest **Nightly** build for your OS (`.exe`, `.AppImage`, or `.dmg`).
+3. Run the installer and start taking notes!
 
-```bash
-npm start
-```
+## 🔄 GitHub Synchronization
 
-### Step 4: Configure Domain
+Escriba allows you to use your own GitHub account as a private cloud:
 
-- Set up your domain/subdomain to point to your DBH server
-- The app will run on the port specified in your DBH panel (it may not detect it, so you may need to change the port manually in server.js)
+1. Go to **Settings** (Opciones) in the app.
+2. Connect your GitHub account using a **Personal Access Token**.
+3. Escriba will create a private repository named `escriba-notes` to safely store and sync your data across all your devices.
 
 ## 🛠️ Local Development
 
-1. **Clone the repository**
+If you want to run or build the app locally:
 
+1. **Clone the repository**
    ```bash
    git clone https://github.com/PinkLittleKitty/Escriba
    cd Escriba
    ```
 
 2. **Install dependencies**
-
    ```bash
    npm install
    ```
 
-3. **Start the development server**
-
+3. **Run Electron app**
    ```bash
-   npm run dev
+   npm run electron:start
    ```
 
-4. **Open your browser**
-   Navigate to `http://localhost:3000`
+4. **Build for production**
+   ```bash
+   npm run electron:build
+   ```
 
-## � DanBoctHosting Setup
+## 🏗️ Build Pipeline
 
-### File Structure
-
-```
-project-folder/
-├── server.js          # Main server file
-├── package.json       # Dependencies
-├── index.html         # Main app page
-├── auth.html          # Login/register page
-├── script.js          # Main app logic
-├── api.js             # API client
-├── styles.css         # All styles
-└── cuaderno.db        # SQLite database (created automatically)
-```
-
-### Database
-
-- Uses SQLite database stored as `cuaderno.db`
-- Database and tables are created automatically on first run
-- No additional database setup required
-
-### Troubleshooting
-
-- Make sure Node.js is enabled in your DBH panel
-- Check that all files uploaded correctly
-- Verify `npm install` completed without errors
-- Check DBH console for any error messages
-
-## 🎨 Themes
-
-- 🌙 **Dark** - Neutral dark theme
-- ☀️ **Light** - Clean bright theme  
-- 💙 **Blue** - Professional blue tones
-- 🏫 **UNQ** - inspired by Universidad Nacional de Quilmes
-- 🌲 **Forest** - Natural green tones
-- 🌅 **Sunset** - Warm orange and pink
-- 🌊 **Ocean** - Deep blue and teal
-- 🤖 **Cyberpunk** - Neon matrix style
-
-## 🔧 API Endpoints
-
-### Authentication
-
-- `POST /api/register` - Create new user account
-- `POST /api/login` - User login
-
-### Data Management
-
-- `GET /api/subjects` - Get user's subjects
-- `POST /api/subjects` - Create new subject
-- `GET /api/notes` - Get user's notes
-- `POST /api/notes` - Create new note
-- `PUT /api/notes/:id` - Update note
-- `DELETE /api/notes/:id` - Delete note
-
-### Settings
-
-- `GET /api/settings` - Get user settings
-- `PUT /api/settings` - Update user settings
-
-## 🔒 Security Features
-
-- JWT-based authentication
-- Password hashing with bcrypt
-- Rate limiting
-- CORS protection
-- Helmet security headers
-- Input validation
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-If you encounter any issues or have questions:
-
-1. Check the GitHub Issues page
-2. Create a new issue with detailed information
-3. Include steps to reproduce any bugs
-
----
+This project uses **GitHub Actions** to automatically build and release the desktop app on every push to the `main` branch.

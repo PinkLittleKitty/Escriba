@@ -1363,8 +1363,30 @@ class EscribaApp {
             }
 
             const fileData = await response.json();
-            const noteData = JSON.parse(atob(fileData.content));
-            if (noteData.app !== 'escriba') throw new Error('Invalid Escriba note');
+            const decodedContent = this.base64ToUtf8(fileData.content);
+
+            let noteData;
+            if (filePath.endsWith('.md')) {
+                const filename = filePath.split('/').pop().replace('.md', '');
+                let subjectName = 'Materia';
+                if (filePath.startsWith('notes/')) {
+                    const parts = filePath.split('/');
+                    if (parts.length > 2) {
+                        subjectName = decodeURIComponent(parts[1]);
+                    }
+                }
+                noteData = {
+                    title: decodeURIComponent(filename),
+                    content: decodedContent,
+                    type: 'lecture',
+                    subject: subjectName
+                };
+            } else {
+                noteData = JSON.parse(decodedContent);
+                if (!noteData.content && !noteData.c) {
+                    throw new Error('Formato de apunte inválido');
+                }
+            }
 
             noteData.shared_from = {
                 type: 'github_repo',
@@ -1766,7 +1788,7 @@ class EscribaApp {
 
         try {
             if (this.github && this.github.isAuthenticated) {
-                const relativePath = `notes/${subject.name}/${note.title}.md`.replace(/ /g, '%20');
+                const relativePath = `data/notes/${note.id}.json`;
                 const repoUrl = `${window.location.origin}${window.location.pathname}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
                 if (repoUrl.length < 2000) return repoUrl;
             }

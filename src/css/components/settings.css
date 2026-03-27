@@ -538,3 +538,12 @@
 .data-actions .btn {
     flex: 1;
 }
+
+.settings-version {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}

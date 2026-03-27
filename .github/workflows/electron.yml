@@ -25,6 +25,7 @@ jobs:
           VERSION=$(date +%Y.%-m.%-d)-${GITHUB_SHA::7}
           echo "Setting version to $VERSION"
           npm version $VERSION --allow-same-version --no-git-tag-version
+          sed -i 's/id="appVersion">.*<\/span>/id="appVersion">'$VERSION'<\/span>/g' index.html
 
       - name: Install Dependencies
         run: npm install

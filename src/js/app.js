@@ -1745,13 +1745,13 @@ class EscribaApp {
         const canvas = document.getElementById('qrCanvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, 200, 200);
+        ctx.clearRect(0, 0, 180, 180);
         ctx.fillStyle = '#f8f9fa';
-        ctx.fillRect(0, 0, 200, 200);
+        ctx.fillRect(0, 0, 180, 180);
         ctx.fillStyle = '#6c757d';
         ctx.font = '14px Inter, Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Generando QR...', 100, 100);
+        ctx.fillText('Generando QR...', 90, 90);
     }
 
     async generateShareUrlWithInfo() {
@@ -1835,18 +1835,18 @@ class EscribaApp {
         const canvas = document.getElementById('qrCanvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&format=png&data=${encodeURIComponent(url)}`;
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&ecc=M&format=png&data=${encodeURIComponent(url)}`;
 
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
-            ctx.clearRect(0, 0, 200, 200);
+            ctx.clearRect(0, 0, 180, 180);
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, 200, 200);
-            ctx.drawImage(img, 5, 5, 190, 190);
+            ctx.fillRect(0, 0, 180, 180);
+            ctx.drawImage(img, 5, 5, 170, 170);
             ctx.strokeStyle = '#e9ecef';
             ctx.lineWidth = 2;
-            ctx.strokeRect(1, 1, 198, 198);
+            ctx.strokeRect(1, 1, 178, 178);
         };
         img.src = qrApiUrl;
     }

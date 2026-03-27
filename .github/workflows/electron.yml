@@ -20,6 +20,12 @@ jobs:
         with:
           node-version: 20
 
+      - name: Set Dynamic Version
+        run: |
+          VERSION=$(date +%Y.%-m.%-d)-${GITHUB_SHA::7}
+          echo "Setting version to $VERSION"
+          npm version $VERSION --allow-same-version --no-git-tag-version
+
       - name: Install Dependencies
         run: npm install
 

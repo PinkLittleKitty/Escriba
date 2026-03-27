@@ -17,6 +17,7 @@
   "build": {
     "appId": "com.santiago.escriba",
     "productName": "Escriba",
+    "icon": "icon.png",
     "directories": {
       "output": "dist"
     },

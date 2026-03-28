@@ -56,6 +56,7 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
             '<div class="empty-subject">No hay apuntes todavía</div>' :
             subject.notes.map(note => `
                         <div class="note-item ${note.favorite ? 'favorite' : ''} ${note.isActive ? 'active' : ''}" data-note-id="${note.id}">
+                            <div class="note-connector-dot"></div>
                             <div class="note-type-indicator">
                                 ${note.mathMode ? '<i class="fas fa-square-root-alt" title="Math Mode"></i>' : '<i class="far fa-file-alt"></i>'}
                             </div>

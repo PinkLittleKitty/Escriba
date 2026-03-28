@@ -483,6 +483,12 @@ class EscribaApp {
         const container = document.getElementById('subjectsContainer');
         if (!container) return;
 
+        this.subjects.forEach(s => {
+            s.notes.forEach(n => {
+                n.isActive = (n.id === this.currentNoteId);
+            });
+        });
+
         renderSubjects(container, this.subjects, {
             onSubjectClick: (id) => this.toggleSubject(id),
             onNoteClick: (id) => this.loadNote(id),

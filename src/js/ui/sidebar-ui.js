@@ -25,7 +25,9 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
         <div class="subject-folder ${subject.expanded ? 'expanded' : ''}" data-subject-id="${subject.id}">
             <div class="subject-header">
                 <div class="subject-info">
-                    <div class="subject-icon" style="background: ${subject.color}" data-tooltip="${escapeHtml(subject.name)}"></div>
+                    <div class="subject-icon" style="background: ${subject.color}" data-tooltip="${escapeHtml(subject.name)}">
+                        ${subject.code ? escapeHtml(subject.code.slice(0, 3)) : escapeHtml(subject.name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase())}
+                    </div>
                     <div class="subject-details">
                         <span class="subject-name">${escapeHtml(subject.name)}</span>
                         ${subject.code ? `<span class="subject-code">${escapeHtml(subject.code)}</span>` : ''}

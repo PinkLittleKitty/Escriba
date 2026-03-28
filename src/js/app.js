@@ -73,6 +73,7 @@ class EscribaApp {
         this.currentDate = new Date();
         this.currentEventId = null;
         this.isViewingSharedNote = false;
+        this.showArchived = false;
 
         this.github = new GitHubManager({
             onStatusChange: (status, error) => this.handleGitHubStatusChange(status, error),
@@ -174,6 +175,17 @@ class EscribaApp {
         });
 
         document.getElementById('searchInput').addEventListener('input', (e) => this.searchContent(e.target.value));
+
+        const toggleArchivedBtn = document.getElementById('toggleArchivedBtn');
+        if (toggleArchivedBtn) {
+            toggleArchivedBtn.addEventListener('click', () => {
+                this.showArchived = !this.showArchived;
+                toggleArchivedBtn.classList.toggle('active', this.showArchived);
+                const label = toggleArchivedBtn.querySelector('span');
+                if (label) label.textContent = this.showArchived ? 'Ocultar materias archivadas' : 'Mostrar materias archivadas';
+                this.renderSubjects();
+            });
+        }
 
         document.querySelectorAll('.settings-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -475,9 +487,10 @@ class EscribaApp {
             onSubjectClick: (id) => this.toggleSubject(id),
             onNoteClick: (id) => this.loadNote(id),
             onAddNote: (id) => this.addNoteToSubject(id),
+            onArchiveSubject: (id) => this.toggleArchiveSubject(id),
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
             onAddSubject: () => showModal('subjectModal')
-        });
+        }, this.showArchived);
 
         if (this.currentView === 'recent') this.renderRecentView();
         if (this.currentView === 'favorites') this.renderFavoritesView();
@@ -581,6 +594,17 @@ class EscribaApp {
         }
     }
 
+    toggleArchiveSubject(id) {
+        const subject = this.subjects.find(s => s.id === id);
+        if (subject) {
+            subject.archived = !subject.archived;
+            subject.lastModified = new Date().toISOString();
+            saveSubjects(this.subjects);
+            this.renderSubjects();
+            showToast(subject.archived ? 'Materia archivada' : 'Materia desarchivada', 'info');
+        }
+    }
+
     createSubject() {
         const name = document.getElementById('subjectName').value.trim();
         const code = document.getElementById('subjectCode').value.trim();
@@ -598,6 +622,7 @@ class EscribaApp {
             professor,
             color: this.selectedColor || '#3b82f6',
             notes: [],
+            archived: false,
             expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
             createdAt: new Date().toISOString(),
             lastModified: new Date().toISOString()
@@ -1192,7 +1217,7 @@ class EscribaApp {
                     saveSubjects(this.subjects);
                     saveEvents(this.events);
                     saveSettings(this.settings);
-                    
+
                     const { saveDeletedItems } = await import('./modules/storage.js');
                     saveDeletedItems(this.deletedItems);
 
@@ -1376,6 +1401,10 @@ class EscribaApp {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return this.events
+            .filter(e => {
+                const subject = this.subjects.find(s => s.id === e.subjectId);
+                return !subject || !subject.archived;
+            })
             .filter(e => new Date(e.date) >= today)
             .sort((a, b) => new Date(a.date) - new Date(b.date))
             .slice(0, 10);
@@ -2669,8 +2698,9 @@ class EscribaApp {
         const links = [];
         const noteToNode = new Map();
 
-        this.subjects.forEach((s, sIdx) => {
-            const subjectAngle = (sIdx / this.subjects.length) * Math.PI * 2;
+        const activeSubjects = this.subjects.filter(s => !s.archived);
+        activeSubjects.forEach((s, sIdx) => {
+            const subjectAngle = (sIdx / activeSubjects.length) * Math.PI * 2;
             const subjectRadius = Math.min(width, height) * 0.35;
 
             s.notes.forEach((n, nIdx) => {

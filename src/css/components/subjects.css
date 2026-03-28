@@ -86,6 +86,7 @@
 }
 
 .btn-add-note,
+.btn-archive-subject,
 .btn-delete-subject {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -104,12 +105,14 @@
 }
 
 .subject-folder:hover .btn-add-note,
+.subject-folder:hover .btn-archive-subject,
 .subject-folder:hover .btn-delete-subject {
     opacity: 1;
     transform: scale(1);
 }
 
 .subject-header:hover .btn-add-note,
+.subject-header:hover .btn-archive-subject,
 .subject-header:hover .btn-delete-subject {
     opacity: 1;
 }
@@ -118,6 +121,12 @@
     background: var(--accent-blue-bg);
     color: var(--accent-blue);
     border-color: var(--accent-blue);
+}
+
+.btn-archive-subject:hover {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border-color: #8b5cf6;
 }
 
 .btn-delete-subject:hover {

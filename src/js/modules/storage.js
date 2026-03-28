@@ -52,6 +52,7 @@ export const validateAndCleanSubjects = (subjects) => {
         name: sanitizeText(subject.name || 'Materia sin nombre'),
         code: subject.code ? sanitizeText(subject.code) : subject.code,
         professor: subject.professor ? sanitizeText(subject.professor) : subject.professor,
+        archived: !!subject.archived,
         notes: Array.isArray(subject.notes) ? subject.notes.map(note => ({
             ...note,
             title: sanitizeText(note.title || 'Apunte sin título'),

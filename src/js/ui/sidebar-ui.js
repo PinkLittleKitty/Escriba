@@ -1,16 +1,20 @@
 import { escapeHtml, formatDate } from '../utils/helpers.js';
 
-export const renderSubjects = (container, subjects, callbacks = {}) => {
+export const renderSubjects = (container, subjects, callbacks = {}, showArchived = false) => {
     if (!container) return;
 
-    if (subjects.length === 0) {
+    const visibleSubjects = showArchived ? subjects : subjects.filter(s => !s.archived);
+
+    if (visibleSubjects.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-folder-open"></i>
-                <p>No tenés materias creadas todavía.</p>
+                <p>${showArchived ? 'No tenés materias archivadas.' : 'No tenés materias creadas todavía.'}</p>
+                ${!showArchived ? `
                 <button class="btn btn-primary" id="welcomeNewSubjectBtn">
                     <i class="fas fa-folder-plus"></i> Crear Primera Materia
                 </button>
+                ` : ''}
             </div>
         `;
 
@@ -21,8 +25,8 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
         return;
     }
 
-    container.innerHTML = subjects.map(subject => `
-        <div class="subject-folder ${subject.expanded ? 'expanded' : ''}" data-subject-id="${subject.id}">
+    container.innerHTML = visibleSubjects.map(subject => `
+        <div class="subject-folder ${subject.expanded ? 'expanded' : ''} ${subject.archived ? 'archived' : ''}" data-subject-id="${subject.id}">
             <div class="subject-header">
                 <div class="subject-info">
                     <div class="subject-icon" style="background: ${subject.color}" data-tooltip="${escapeHtml(subject.name)}">
@@ -37,6 +41,9 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
                 <div class="subject-actions">
                     <button class="btn-add-note" data-subject-id="${subject.id}" title="Crear apunte">
                         <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn-archive-subject" data-subject-id="${subject.id}" title="${subject.archived ? 'Desarchivar' : 'Archivar'} materia">
+                        <i class="fas ${subject.archived ? 'fa-box-open' : 'fa-box-archive'}"></i>
                     </button>
                     <button class="btn-delete-subject" data-subject-id="${subject.id}" title="Eliminar materia">
                         <i class="fas fa-trash"></i>
@@ -67,7 +74,7 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
 
     container.querySelectorAll('.subject-header').forEach(header => {
         header.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-add-note')) return;
+            if (e.target.closest('.subject-actions button')) return;
             const subjectId = header.closest('.subject-folder').dataset.subjectId;
             if (callbacks.onSubjectClick) callbacks.onSubjectClick(subjectId);
         });
@@ -78,6 +85,14 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
             e.stopPropagation();
             const subjectId = btn.dataset.subjectId;
             if (callbacks.onAddNote) callbacks.onAddNote(subjectId);
+        });
+    });
+
+    container.querySelectorAll('.btn-archive-subject').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const subjectId = btn.dataset.subjectId;
+            if (callbacks.onArchiveSubject) callbacks.onArchiveSubject(subjectId);
         });
     });
 
@@ -125,7 +140,7 @@ export const renderRecentNotes = (container, subjects, currentNoteId, callbacks 
     if (!container) return;
 
     const allNotes = [];
-    subjects.forEach(subject => {
+    subjects.filter(s => !s.archived).forEach(subject => {
         subject.notes.forEach(note => {
             allNotes.push({
                 ...note,
@@ -181,7 +196,7 @@ export const renderFavoriteNotes = (container, subjects, currentNoteId, callback
     if (!container) return;
 
     const favoriteNotes = [];
-    subjects.forEach(subject => {
+    subjects.filter(s => !s.archived).forEach(subject => {
         subject.notes.forEach(note => {
             if (note.favorite) {
                 favoriteNotes.push({

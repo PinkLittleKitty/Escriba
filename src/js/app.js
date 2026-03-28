@@ -167,25 +167,23 @@ class EscribaApp {
 
         document.getElementById('searchInput').addEventListener('input', (e) => this.searchContent(e.target.value));
 
-        const dropdownToggle = document.querySelector('.dropdown-toggle');
-        if (dropdownToggle) {
-            dropdownToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.querySelector('.dropdown').classList.toggle('active');
-            });
-        }
+        document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.dropdown-menu')) {
-                const dropdown = document.querySelector('.dropdown');
-                if (dropdown) dropdown.classList.remove('active');
-            }
+                document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                document.querySelectorAll('.settings-tab-panel').forEach(p => p.classList.remove('active'));
+                const panel = document.getElementById(targetTab);
+                if (panel) panel.classList.add('active');
+            });
         });
 
-        document.getElementById('exportBtn').addEventListener('click', () => this.exportCarpeta());
-        document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
-        document.getElementById('importJsonBtn').addEventListener('click', () => document.getElementById('importJsonFile').click());
-        document.getElementById('printBtn').addEventListener('click', () => window.print());
+        document.querySelectorAll('#exportBtn').forEach(btn => btn.addEventListener('click', () => this.exportCarpeta()));
+        document.querySelectorAll('#importBtn').forEach(btn => btn.addEventListener('click', () => document.getElementById('importFile').click()));
+        document.querySelectorAll('#importJsonBtn').forEach(btn => btn.addEventListener('click', () => document.getElementById('importJsonFile').click()));
+        document.querySelectorAll('#printBtn').forEach(btn => btn.addEventListener('click', () => window.print()));
 
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImport(e));
         document.getElementById('importJsonFile').addEventListener('change', (e) => this.handleJsonImport(e));
@@ -196,9 +194,11 @@ class EscribaApp {
             showModal('settingsModal');
         });
 
-        document.getElementById('graphBtn').addEventListener('click', () => {
-            showModal('graphModal');
-            this.renderKnowledgeGraph();
+        document.querySelectorAll('#graphBtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showModal('graphModal');
+                this.renderKnowledgeGraph();
+            });
         });
 
         document.getElementById('closeGraph').addEventListener('click', () => hideModal('graphModal'));
@@ -340,16 +340,16 @@ class EscribaApp {
         });
 
         document.addEventListener('click', (e) => {
-            const target = e.target.closest('#githubStatus, #settingsSyncButton, #syncButton');
-            if (target) {
-                console.log(`[NUCLEAR] Click detected on ${target.id}`);
+            const githubTarget = e.target.closest('#githubStatus, #settingsSyncButton, #syncButton');
+            if (githubTarget) {
+                console.log(`[AUTH] Click detected on ${githubTarget.id}`);
                 this.handleGitHubAuth();
             }
 
-            const pullTarget = e.target.closest('#pullButton');
+            const pullTarget = e.target.closest('#pullButton, #settingsPullBtn');
             if (pullTarget) this.handleForcePull();
 
-            const pushTarget = e.target.closest('#pushButton');
+            const pushTarget = e.target.closest('#pushButton, #settingsPushBtn');
             if (pushTarget) this.handleForcePush();
 
             const disconnectTarget = e.target.closest('#disconnectGitHub, #disconnectButton');
@@ -2011,11 +2011,10 @@ class EscribaApp {
         const statusText = document.getElementById('githubStatusText');
         const statusIcon = githubStatus?.querySelector('i');
         const syncButtons = document.getElementById('syncButtons');
-        const dropdownDisconnect = document.getElementById('disconnectButton');
         const modalDisconnect = document.getElementById('disconnectGitHub');
-        const dropdownConnect = document.getElementById('syncButton');
         const settingsSyncStatus = document.getElementById('settingsSyncStatus');
         const settingsSyncButton = document.getElementById('settingsSyncButton');
+        const cloudActions = document.getElementById('cloudActionsArea');
 
         if (!githubStatus || !statusText) return;
 
@@ -2032,41 +2031,61 @@ class EscribaApp {
                 githubStatus.classList.add('connected');
                 statusText.textContent = this.github.username || 'Conectado';
                 if (syncButtons) syncButtons.style.display = 'flex';
-                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
                 if (modalDisconnect) modalDisconnect.style.display = 'flex';
-                if (dropdownConnect) dropdownConnect.style.display = 'none';
                 if (settingsSyncStatus) settingsSyncStatus.textContent = 'Conectado como ' + (this.github.username || 'usuario');
                 if (settingsSyncButton) settingsSyncButton.style.display = 'none';
+                if (cloudActions) cloudActions.style.display = 'block';
                 this.setupAutoSync();
                 break;
             case 'syncing':
                 githubStatus.classList.add('syncing');
                 statusText.textContent = 'Sincronizando...';
                 if (syncButtons) syncButtons.style.display = 'flex';
-                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
-                if (modalDisconnect) modalDisconnect.style.display = 'block';
-                if (dropdownConnect) dropdownConnect.style.display = 'none';
+                if (modalDisconnect) modalDisconnect.style.display = 'flex';
+                if (cloudActions) cloudActions.style.display = 'block';
                 break;
             case 'error':
                 githubStatus.classList.add('error');
                 statusText.textContent = 'Error';
                 if (syncButtons) syncButtons.style.display = 'flex';
-                if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
-                if (modalDisconnect) modalDisconnect.style.display = 'block';
-                if (dropdownConnect) dropdownConnect.style.display = 'none';
+                if (modalDisconnect) modalDisconnect.style.display = 'flex';
+                if (cloudActions) cloudActions.style.display = 'block';
                 break;
             case 'disconnected':
             default:
                 githubStatus.classList.add('disconnected');
                 statusText.textContent = 'No conectado';
                 if (syncButtons) syncButtons.style.display = 'none';
-                if (dropdownDisconnect) dropdownDisconnect.style.display = 'none';
                 if (modalDisconnect) modalDisconnect.style.display = 'none';
-                if (dropdownConnect) dropdownConnect.style.display = 'flex';
                 if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
                 if (settingsSyncButton) settingsSyncButton.style.display = 'flex';
+                if (cloudActions) cloudActions.style.display = 'none';
                 break;
         }
+    }
+
+    updateSettingsStats() {
+        const countSubjects = document.getElementById('countSubjects');
+        const countNotes = document.getElementById('countNotes');
+        const countWords = document.getElementById('countWords');
+
+        if (!countSubjects || !countNotes || !countWords) return;
+
+        const subjectsCount = this.subjects.length;
+        let notesCount = 0;
+        let totalWords = 0;
+
+        this.subjects.forEach(s => {
+            notesCount += s.notes.length;
+            s.notes.forEach(n => {
+                const text = n.content.replace(/<[^>]*>/g, ' ');
+                totalWords += text.trim().split(/\s+/).filter(w => w.length > 0).length;
+            });
+        });
+
+        countSubjects.textContent = subjectsCount;
+        countNotes.textContent = notesCount;
+        countWords.textContent = totalWords.toLocaleString();
     }
 
     insertCodeBlock() {

@@ -13,6 +13,11 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
                 </button>
             </div>
         `;
+
+        const welcomeBtn = container.querySelector('#welcomeNewSubjectBtn');
+        if (welcomeBtn && callbacks.onAddSubject) {
+            welcomeBtn.addEventListener('click', callbacks.onAddSubject);
+        }
         return;
     }
 

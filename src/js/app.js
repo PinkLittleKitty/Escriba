@@ -145,10 +145,15 @@ class EscribaApp {
     }
 
     bindEvents() {
-        document.getElementById('newSubjectBtn').addEventListener('click', () => showModal('subjectModal'));
-        document.getElementById('newNoteBtn').addEventListener('click', () => this.createNewNote());
         const welcomeBtn = document.getElementById('welcomeNewSubject') || document.getElementById('welcomeNewSubjectBtn');
         if (welcomeBtn) welcomeBtn.addEventListener('click', () => showModal('subjectModal'));
+
+        const sidebarNewSubjectBtn = document.getElementById('sidebarNewSubjectBtn');
+        if (sidebarNewSubjectBtn) sidebarNewSubjectBtn.addEventListener('click', () => showModal('subjectModal'));
+
+        const sidebarNewNoteBtn = document.getElementById('sidebarNewNoteBtn');
+        if (sidebarNewNoteBtn) sidebarNewNoteBtn.addEventListener('click', () => this.createNewNote());
+
         document.getElementById('sidebarToggle').addEventListener('click', () => this.toggleSidebar());
 
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');

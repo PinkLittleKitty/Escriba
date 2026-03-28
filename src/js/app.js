@@ -2496,6 +2496,8 @@ class EscribaApp {
 
         const blob = new Blob([fullMarkdown], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
         a.download = `${foundNote.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
         document.body.appendChild(a);
         a.click();
@@ -2521,6 +2523,13 @@ class EscribaApp {
                     return;
                 }
 
+                if (node.classList.contains('code-block-container')) {
+                    const aceContainer = node.querySelector('.inline-ace-editor');
+                    const code = aceContainer && aceContainer.aceEditor ? aceContainer.aceEditor.getValue() : '';
+                    md += `\n\n\`\`\`\n${code}\n\`\`\`\n\n`;
+                    return;
+                }
+
                 if (node.classList.contains('math-toolbar') || node.classList.contains('katex-display')) {
                     return;
                 }
@@ -2536,7 +2545,16 @@ class EscribaApp {
                     case 'br': md += '\n'; break;
                     case 'ul': md += `\n${this.htmlToMarkdown(node)}\n`; break;
                     case 'ol': md += `\n${this.htmlToMarkdown(node)}\n`; break;
-                    case 'li': md += `- ${this.htmlToMarkdown(node)}\n`; break;
+                    case 'li':
+                        const isOrdered = node.parentElement && node.parentElement.tagName.toLowerCase() === 'ol';
+                        if (isOrdered) {
+                            const index = Array.from(node.parentElement.children).indexOf(node) + 1;
+                            md += `${index}. ${this.htmlToMarkdown(node)}\n`;
+                        } else {
+                            md += `- ${this.htmlToMarkdown(node)}\n`;
+                        }
+                        break;
+                    case 'mark': md += `==${this.htmlToMarkdown(node)}==`; break;
                     case 'div': md += `\n${this.htmlToMarkdown(node)}\n`; break;
                     case 'code': md += `\`${node.textContent}\``; break;
                     case 'pre':
@@ -2548,7 +2566,6 @@ class EscribaApp {
             }
         });
 
-        // Clean up excessive newlines
         return md.replace(/\n{3,}/g, '\n\n').trim();
     }
 

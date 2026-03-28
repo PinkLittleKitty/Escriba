@@ -515,7 +515,7 @@
                         </div>
                     </div>
 
-                    <div class="settings-section">
+                    <div class="settings-section section-no-border">
                         <h4><i class="fas fa-database"></i> Datos</h4>
                         <div class="stats-grid">
                             <div class="stat-card">
@@ -540,17 +540,21 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="data-actions">
-                            <button class="btn btn-danger" id="clearAllData">
-                                <i class="fas fa-trash"></i> Limpiar Todo
-                            </button>
-                            <button class="btn btn-secondary" id="deduplicateNotesBtn">
+
+                        <div class="settings-actions-group">
+                            <button class="btn-ghost" id="deduplicateNotesBtn">
                                 <i class="fas fa-broom"></i> Deduplicar <span class="debug-badge">DEBUG</span>
                             </button>
-                            <button class="btn btn-secondary" id="resetSettings">
+                            <button class="btn-ghost" id="resetSettings">
                                 <i class="fas fa-undo"></i> Restaurar Configuración
                             </button>
-                            <div class="settings-version">Versión: <span id="appVersion">1.0.0-dev</span></div>
+                        </div>
+
+                        <div class="settings-footer-vip">
+                            <div class="settings-version">Versión <span id="appVersion">1.0.1-dev</span></div>
+                            <button class="btn-danger-minimal" id="clearAllData">
+                                <i class="fas fa-trash-alt"></i> Borrar Todo el Contenido
+                            </button>
                         </div>
                     </div>
                     <div class="modal-footer">

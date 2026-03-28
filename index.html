@@ -164,31 +164,42 @@
 
             <main class="editor-area">
                 <div id="welcomeScreen" class="welcome-screen">
+                    <div class="welcome-bg-blob"></div>
                     <div class="welcome-content">
-                        <i class="fas fa-graduation-cap"></i>
-                        <h2>¡Bienvenido a Escriba!</h2>
-                        <p>Organizá tus apuntes por materia, como en una carpeta real.</p>
-                        <div class="welcome-stats">
-                            <div class="stat-item">
-                                <i class="fas fa-folder"></i>
-                                <span>Organizá por materias</span>
+                        <div class="welcome-hero">
+                            <div class="welcome-icon-wrapper">
+                                <i class="fas fa-graduation-cap"></i>
                             </div>
-                            <div class="stat-item">
-                                <i class="fas fa-search"></i>
-                                <span>Buscá rápidamente</span>
+                            <h1>¡Bienvenido a Escriba!</h1>
+                            <p>Tu carpeta digital diseñada para organizar tus estudios con simplicidad y potencia.</p>
+                        </div>
+
+                        <div class="welcome-grid">
+                            <div class="welcome-card">
+                                <div class="card-icon"><i class="fas fa-folder"></i></div>
+                                <h3>Organización Real</h3>
+                                <p>Estructurá tus apuntes por materias, tal como en una carpeta física.</p>
                             </div>
-                            <div class="stat-item">
-                                <i class="fab fa-github"></i>
-                                <span>Sincronizá con GitHub</span>
+                            <div class="welcome-card">
+                                <div class="card-icon"><i class="fas fa-bolt"></i></div>
+                                <h3>Búsqueda Veloz</h3>
+                                <p>Encontrá cualquier concepto o palabra clave en segundos.</p>
                             </div>
-                            <div class="stat-item">
-                                <i class="fas fa-cloud"></i>
-                                <span>Guardado automático</span>
+                            <div class="welcome-card">
+                                <div class="card-icon"><i class="fab fa-github"></i></div>
+                                <h3>Nube y Sync</h3>
+                                <p>Sincronizá con GitHub para tener tus apuntes seguros en todo lugar.</p>
+                            </div>
+                            <div class="welcome-card">
+                                <div class="card-icon"><i class="fas fa-magic"></i></div>
+                                <h3>Editor Inteligente</h3>
+                                <p>LaTeX, diagramas UML y guardado automático constante.</p>
                             </div>
                         </div>
-                        <div class="welcome-actions">
-                            <button class="btn btn-primary" id="welcomeNewSubject">
-                                <i class="fas fa-folder-plus"></i> Crear Primera Materia
+
+                        <div class="welcome-cta">
+                            <button class="btn btn-primary btn-lg" id="welcomeNewSubject">
+                                <i class="fas fa-plus"></i> Crear nueva materia
                             </button>
                         </div>
                     </div>

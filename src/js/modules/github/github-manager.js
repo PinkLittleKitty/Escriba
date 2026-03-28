@@ -119,7 +119,8 @@ export class GitHubManager {
         const files = [
             { path: 'data/subjects.json', key: 'subjects', default: [] },
             { path: 'data/events.json', key: 'events', default: [] },
-            { path: 'data/settings.json', key: 'settings', default: {} }
+            { path: 'data/settings.json', key: 'settings', default: {} },
+            { path: 'data/deleted-items.json', key: 'deletedItems', default: { notes: [], subjects: [] } }
         ];
 
         for (const file of files) {
@@ -137,19 +138,33 @@ export class GitHubManager {
     }
 
     mergeData(local, remote) {
+        const localDeleted = local.deletedItems || { notes: [], subjects: [] };
+        const remoteDeleted = remote.deletedItems || { notes: [], subjects: [] };
+
+        const mergedDeleted = {
+            notes: [...new Set([...localDeleted.notes, ...remoteDeleted.notes])],
+            subjects: [...new Set([...localDeleted.subjects, ...remoteDeleted.subjects])]
+        };
+
         const merged = {
-            subjects: [...remote.subjects],
+            subjects: [...remote.subjects].filter(s => !mergedDeleted.subjects.includes(s.id)),
             events: [...remote.events],
-            settings: { ...remote.settings, ...local.settings }
+            settings: { ...remote.settings, ...local.settings },
+            deletedItems: mergedDeleted
         };
 
         local.subjects.forEach(localSub => {
+            if (mergedDeleted.subjects.includes(localSub.id)) return;
+
             const idx = merged.subjects.findIndex(s => s.id === localSub.id);
             if (idx >= 0) {
                 const remoteSub = merged.subjects[idx];
 
-                const mergedNotes = [...remoteSub.notes];
+                const mergedNotes = [...remoteSub.notes].filter(n => !mergedDeleted.notes.includes(n.id));
+
                 localSub.notes.forEach(localNote => {
+                    if (mergedDeleted.notes.includes(localNote.id)) return;
+
                     const noteIdx = mergedNotes.findIndex(n => n.id === localNote.id);
                     if (noteIdx >= 0) {
                         const localUpdate = new Date(localNote.updatedAt || localNote.createdAt || 0);
@@ -211,7 +226,8 @@ export class GitHubManager {
         const files = [
             { path: 'data/subjects.json', content: JSON.stringify(data.subjects, null, 2) },
             { path: 'data/events.json', content: JSON.stringify(data.events, null, 2) },
-            { path: 'data/settings.json', content: JSON.stringify(data.settings, null, 2) }
+            { path: 'data/settings.json', content: JSON.stringify(data.settings, null, 2) },
+            { path: 'data/deleted-items.json', content: JSON.stringify(data.deletedItems, null, 2) }
         ];
 
         const noteIds = [];
@@ -241,6 +257,7 @@ export class GitHubManager {
                 const branch = 'main';
                 const headSha = await this.getBranchHead(branch);
                 const baseTreeSha = await this.getTreeSha(headSha);
+
                 const newTreeSha = await this.createTree(files, baseTreeSha);
                 const commitSha = await this.createCommit(`Sync data - ${new Date().toISOString()}`, newTreeSha, headSha);
                 await this.updateRef(branch, commitSha);

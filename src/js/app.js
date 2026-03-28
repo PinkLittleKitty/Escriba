@@ -4,7 +4,9 @@ import {
     loadAllData,
     saveSubjects,
     saveEvents,
-    saveSettings
+    saveSettings,
+    addDeletedItem,
+    loadDeletedItems
 } from './modules/storage.js';
 import {
     formatDate,
@@ -60,6 +62,7 @@ class EscribaApp {
         this.subjects = data.subjects;
         this.events = data.events;
         this.settings = data.settings || applySettings();
+        this.deletedItems = data.deletedItems || { notes: [], subjects: [] };
 
         this.currentNoteId = null;
         this.editingUMLContainer = null;
@@ -623,6 +626,9 @@ class EscribaApp {
             }
         });
 
+        addDeletedItem(this.currentNoteId, 'note');
+        this.deletedItems = loadDeletedItems();
+
         this.currentNoteId = null;
         saveSubjects(this.subjects);
         this.renderSubjects();
@@ -1172,7 +1178,8 @@ class EscribaApp {
                 const data = {
                     subjects: this.subjects,
                     events: this.events,
-                    settings: this.settings
+                    settings: this.settings,
+                    deletedItems: this.deletedItems
                 };
 
                 const merged = await this.github.sync(data);
@@ -1180,10 +1187,14 @@ class EscribaApp {
                     this.subjects = merged.subjects;
                     this.events = merged.events;
                     this.settings = merged.settings;
+                    this.deletedItems = merged.deletedItems || this.deletedItems;
 
                     saveSubjects(this.subjects);
                     saveEvents(this.events);
                     saveSettings(this.settings);
+                    
+                    const { saveDeletedItems } = await import('./modules/storage.js');
+                    saveDeletedItems(this.deletedItems);
 
                     if (!silent) {
                         window.location.reload();
@@ -2179,6 +2190,8 @@ class EscribaApp {
         }
 
         this.subjects.splice(index, 1);
+        addDeletedItem(subjectId, 'subject');
+        this.deletedItems = loadDeletedItems();
         saveSubjects(this.subjects);
         this.renderSubjects();
         showToast(`Materia "${subject.name}" eliminada`, 'success');

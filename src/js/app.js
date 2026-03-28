@@ -964,6 +964,55 @@ class EscribaApp {
         if (countWords) countWords.textContent = totalWords;
     }
 
+    deduplicateNotes() {
+        let removedCount = 0;
+        const seenIds = new Set();
+        const seenContent = new Set();
+
+        this.subjects.forEach(subject => {
+            const originalCount = subject.notes.length;
+            const uniqueNotes = [];
+
+            subject.notes.forEach(note => {
+                const contentSignature = `${subject.id}|${note.title.trim()}|${note.content.trim()}`;
+
+                if (seenIds.has(note.id)) {
+                    removedCount++;
+                    return;
+                }
+
+                if (seenContent.has(contentSignature)) {
+                    removedCount++;
+                    return;
+                }
+
+                seenIds.add(note.id);
+                seenContent.add(contentSignature);
+                uniqueNotes.push(note);
+            });
+
+            if (uniqueNotes.length !== originalCount) {
+                subject.notes = uniqueNotes;
+                subject.lastModified = new Date().toISOString();
+            }
+        });
+
+        if (removedCount > 0) {
+            saveSubjects(this.subjects);
+            this.renderSubjects();
+            this.updateSettingsStats();
+            showToast(`Se eliminaron ${removedCount} apuntes duplicados`, 'success');
+
+            if (this.currentNoteId && !seenIds.has(this.currentNoteId)) {
+                this.currentNoteId = null;
+                document.getElementById('noteEditor').style.display = 'none';
+                showWelcomeScreen(true);
+            }
+        } else {
+            showToast('No se encontraron apuntes duplicados', 'info');
+        }
+    }
+
     selectTheme(theme) {
         document.querySelectorAll('.theme-option').forEach(opt => {
             opt.classList.toggle('active', opt.dataset.theme === theme);
@@ -2843,54 +2892,6 @@ class EscribaGraph {
         requestAnimationFrame(() => this.animate());
     }
 
-    deduplicateNotes() {
-        let removedCount = 0;
-        const seenIds = new Set();
-        const seenContent = new Set();
-
-        this.subjects.forEach(subject => {
-            const originalCount = subject.notes.length;
-            const uniqueNotes = [];
-
-            subject.notes.forEach(note => {
-                const contentSignature = `${subject.id}|${note.title.trim()}|${note.content.trim()}`;
-
-                if (seenIds.has(note.id)) {
-                    removedCount++;
-                    return;
-                }
-
-                if (seenContent.has(contentSignature)) {
-                    removedCount++;
-                    return;
-                }
-
-                seenIds.add(note.id);
-                seenContent.add(contentSignature);
-                uniqueNotes.push(note);
-            });
-
-            if (uniqueNotes.length !== originalCount) {
-                subject.notes = uniqueNotes;
-                subject.lastModified = new Date().toISOString();
-            }
-        });
-
-        if (removedCount > 0) {
-            saveSubjects(this.subjects);
-            this.renderSubjects();
-            this.updateSettingsStats();
-            showToast(`Se eliminaron ${removedCount} apuntes duplicados`, 'success');
-
-            if (this.currentNoteId && !seenIds.has(this.currentNoteId)) {
-                this.currentNoteId = null;
-                document.getElementById('noteEditor').style.display = 'none';
-                showWelcomeScreen(true);
-            }
-        } else {
-            showToast('No se encontraron apuntes duplicados', 'info');
-        }
-    }
 }
 
 const app = new EscribaApp();

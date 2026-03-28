@@ -8,13 +8,50 @@ export class GitHubManager {
         this.lastSyncTime = localStorage.getItem('last_sync_time') || null;
         this.onStatusChange = options.onStatusChange || (() => { });
         this.showToast = options.showToast || (() => { });
+        this.baseUrl = 'https://api.github.com';
+    }
+
+    async fetchWithTimeout(url, options = {}, timeout = 15000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+
+        const headers = {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Escriba-App-Sync',
+            ...options.headers
+        };
+
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers,
+                signal: controller.signal
+            });
+
+            clearTimeout(id);
+
+            if (response.status === 401) {
+                this.logout();
+                throw new Error('Sesión de GitHub expirada (401).');
+            }
+
+            return response;
+        } catch (error) {
+            clearTimeout(id);
+            if (error.name === 'AbortError') {
+                throw new Error('La solicitud a GitHub tardó demasiado tiempo. Probá de nuevo.');
+            }
+            throw error;
+        }
     }
 
     async connectWithToken(token) {
-        if (!token || !token.startsWith('ghp_')) {
-            throw new Error('Token inválido. Debe comenzar con "ghp_"');
+        if (!token || (!token.startsWith('ghp_') && !token.startsWith('github_pat_'))) {
+            throw new Error('Token inválido. Debe comenzar con "ghp_" o "github_pat_"');
         }
 
+        const originalToken = this.accessToken;
         try {
             this.accessToken = token;
             const userInfo = await this.getUserInfo();
@@ -28,7 +65,8 @@ export class GitHubManager {
             this.onStatusChange('connected');
             return userInfo;
         } catch (error) {
-            this.logout();
+            this.accessToken = originalToken;
+            if (!this.accessToken) this.logout();
             throw error;
         }
     }
@@ -44,14 +82,8 @@ export class GitHubManager {
     }
 
     async getUserInfo() {
-        const response = await fetch('https://api.github.com/user', {
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-
-        if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/user`);
+        if (!response.ok) throw new Error(`Error en la API de GitHub: ${response.status}`);
         return await response.json();
     }
 
@@ -161,12 +193,7 @@ export class GitHubManager {
     }
 
     async getFile(path) {
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/contents/${path}`);
 
         if (response.status === 404) return null;
         if (!response.ok) throw new Error(`Error getting ${path}: ${response.status}`);
@@ -234,12 +261,7 @@ export class GitHubManager {
     }
 
     async ensureRepository() {
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}`, {
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}`);
 
         if (response.status === 404) {
             await this.createRepository();
@@ -248,12 +270,8 @@ export class GitHubManager {
     }
 
     async createRepository() {
-        const response = await fetch('https://api.github.com/user/repos', {
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/user/repos`, {
             method: 'POST',
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({
                 name: this.repoName,
                 private: true,
@@ -273,13 +291,8 @@ export class GitHubManager {
                 };
                 if (existing) body.sha = existing.sha;
 
-                const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/contents/${path}`, {
+                const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/contents/${path}`, {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${this.accessToken}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/vnd.github.v3+json'
-                    },
                     body: JSON.stringify(body)
                 });
 
@@ -306,24 +319,14 @@ export class GitHubManager {
     }
 
     async getBranchHead(branch) {
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/refs/heads/${branch}`, {
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/git/refs/heads/${branch}`);
         if (!response.ok) throw new Error(`Error al obtener head de la rama: ${response.status}`);
         const data = await response.json();
         return data.object.sha;
     }
 
     async getTreeSha(commitSha) {
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/commits/${commitSha}`, {
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/git/commits/${commitSha}`);
         if (!response.ok) throw new Error(`Error al obtener tree sha: ${response.status}`);
         const data = await response.json();
         return data.tree.sha;
@@ -337,13 +340,8 @@ export class GitHubManager {
             content: file.content
         }));
 
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/trees`, {
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/git/trees`, {
             method: 'POST',
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
-            },
             body: JSON.stringify({
                 base_tree: baseTreeSha,
                 tree: tree
@@ -359,13 +357,8 @@ export class GitHubManager {
     }
 
     async createCommit(message, treeSha, parentSha) {
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/commits`, {
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/git/commits`, {
             method: 'POST',
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
-            },
             body: JSON.stringify({
                 message: message,
                 tree: treeSha,
@@ -379,13 +372,8 @@ export class GitHubManager {
     }
 
     async updateRef(branch, commitSha) {
-        const response = await fetch(`https://api.github.com/repos/${this.username}/${this.repoName}/git/refs/heads/${branch}`, {
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/git/refs/heads/${branch}`, {
             method: 'PATCH',
-            headers: {
-                'Authorization': `token ${this.accessToken}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
-            },
             body: JSON.stringify({
                 sha: commitSha,
                 force: true
@@ -393,10 +381,7 @@ export class GitHubManager {
         });
 
         if (!response.ok) {
-            const err = await response.json();
-            if (response.status === 422) {
-                throw new Error(`Error al actualizar referencia (posiblemente conflicto de rama): ${err.message}`);
-            }
+            const err = await response.json().catch(() => ({ message: response.statusText }));
             throw new Error(`Error al actualizar referencia: ${response.status} - ${err.message}`);
         }
         return await response.json();

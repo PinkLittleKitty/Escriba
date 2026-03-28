@@ -25,7 +25,14 @@ export const showToast = (message, type = 'success') => {
 export const showModal = (modalId, onShow) => {
     const modal = document.getElementById(modalId);
     if (modal) {
+        if (modal.parentNode !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        modal.style.display = 'flex';
+        modal.style.zIndex = '99999';
         modal.classList.add('active');
+
         if (onShow) onShow(modal);
     }
 };
@@ -34,6 +41,13 @@ export const hideModal = (modalId, onHide) => {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('active');
+        setTimeout(() => {
+            if (!modal.classList.contains('active')) {
+                modal.style.display = 'none';
+                modal.style.zIndex = '';
+            }
+        }, 300);
+
         if (onHide) onHide(modal);
     }
 };

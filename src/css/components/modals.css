@@ -17,8 +17,15 @@
 }
 
 .modal.active {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 99999 !important;
+    display: flex !important;
+}
+
+#githubTokenModal.active {
+    display: flex !important;
+    z-index: 100000 !important;
 }
 
 .modal-content {

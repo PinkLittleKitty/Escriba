@@ -241,6 +241,11 @@ class EscribaApp {
             }
         });
 
+        const deduplicateBtn = document.getElementById('deduplicateNotesBtn');
+        if (deduplicateBtn) {
+            deduplicateBtn.addEventListener('click', () => this.deduplicateNotes());
+        }
+
         document.getElementById('noteContent').addEventListener('input', (e) => {
             if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n')) {
                 this.handleMarkdownAutoFormat(e);
@@ -334,26 +339,24 @@ class EscribaApp {
             btn.addEventListener('click', () => this.applyUMLTemplate(btn.dataset.type));
         });
 
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('#githubStatus, #settingsSyncButton, #syncButton');
+            if (target) {
+                console.log(`[NUCLEAR] Click detected on ${target.id}`);
+                this.handleGitHubAuth();
+            }
+
+            const pullTarget = e.target.closest('#pullButton');
+            if (pullTarget) this.handleForcePull();
+
+            const pushTarget = e.target.closest('#pushButton');
+            if (pushTarget) this.handleForcePush();
+
+            const disconnectTarget = e.target.closest('#disconnectGitHub, #disconnectButton');
+            if (disconnectTarget) this.disconnectGitHub();
+        });
+
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
-
-        const githubStatus = document.getElementById('githubStatus');
-        if (githubStatus) githubStatus.addEventListener('click', () => this.handleGitHubAuth());
-
-        const settingsSyncButton = document.getElementById('settingsSyncButton');
-        const syncButton = document.getElementById('syncButton');
-        if (settingsSyncButton) settingsSyncButton.addEventListener('click', () => this.handleGitHubAuth());
-        if (syncButton) syncButton.addEventListener('click', () => this.handleGitHubAuth());
-
-        const pullButton = document.getElementById('pullButton');
-        if (pullButton) pullButton.addEventListener('click', () => this.handleForcePull());
-
-        const pushButton = document.getElementById('pushButton');
-        if (pushButton) pushButton.addEventListener('click', () => this.handleForcePush());
-
-        const disconnectModal = document.getElementById('disconnectGitHub');
-        const disconnectDropdown = document.getElementById('disconnectButton');
-        if (disconnectModal) disconnectModal.addEventListener('click', () => this.disconnectGitHub());
-        if (disconnectDropdown) disconnectDropdown.addEventListener('click', () => this.disconnectGitHub());
 
         document.getElementById('cancelShare').addEventListener('click', () => hideModal('shareModal'));
         document.getElementById('copyUrlBtn').addEventListener('click', () => this.copyShareUrl());
@@ -1075,17 +1078,28 @@ class EscribaApp {
     }
 
     async handleGitHubAuth(silent = false) {
-        if (this.currentNoteId) {
-            await this.saveCurrentNote();
-        }
+        if (this._isAuthenticating) return;
+        this._isAuthenticating = true;
 
-        if (this.github.isAuthenticated) {
-            try {
+        const githubStatus = document.getElementById('githubStatus');
+        const originalContent = githubStatus ? githubStatus.innerHTML : '';
+
+        try {
+            if (!silent && githubStatus) {
+                githubStatus.innerHTML = '<i class="fas fa-sync fa-spin"></i> <span>Conectando...</span>';
+            }
+
+            if (this.github.isAuthenticated) {
+                if (this.currentNoteId) {
+                    await this.saveCurrentNote();
+                }
+
                 const data = {
                     subjects: this.subjects,
                     events: this.events,
                     settings: this.settings
                 };
+
                 const merged = await this.github.sync(data);
                 if (merged) {
                     this.subjects = merged.subjects;
@@ -1103,14 +1117,36 @@ class EscribaApp {
                         showToast('Sincronizado con GitHub', 'success');
                     }
                 }
-            } catch (error) {
-                if (!silent) showToast('Error en la sincronización', 'error');
-                console.error('GitHub Sync Error:', error);
+            } else {
+                const existingModal = document.querySelector('#githubTokenModal.active');
+                if (!existingModal) {
+                    const tokenInput = document.getElementById('githubTokenInput');
+                    if (tokenInput) tokenInput.value = '';
+                    showModal('githubTokenModal');
+                }
+
+                if (this.currentNoteId) {
+                    this.saveCurrentNote().catch(err => console.warn('Background save failed:', err));
+                }
             }
-        } else {
-            const tokenInput = document.getElementById('githubTokenInput');
-            if (tokenInput) tokenInput.value = '';
-            showModal('githubTokenModal');
+        } catch (error) {
+            console.error('GitHub Auth/Sync Error:', error);
+
+            const isAuthError = error.message.includes('401') ||
+                error.message.includes('expired') ||
+                error.message.includes('expirada');
+
+            if (isAuthError) {
+                showToast('Sesión de GitHub expirada. Por favor, volvé a conectar.', 'error');
+                this.github.logout();
+            } else if (!silent) {
+                showToast('Error de conexión: ' + (error.message || 'Error desconocido'), 'error');
+            }
+        } finally {
+            this._isAuthenticating = false;
+            if (!silent && githubStatus && !this.github.isAuthenticated) {
+                githubStatus.innerHTML = originalContent;
+            }
         }
     }
 
@@ -1924,6 +1960,7 @@ class EscribaApp {
     handleGitHubStatusChange(status, error) {
         const githubStatus = document.getElementById('githubStatus');
         const statusText = document.getElementById('githubStatusText');
+        const statusIcon = githubStatus?.querySelector('i');
         const syncButtons = document.getElementById('syncButtons');
         const dropdownDisconnect = document.getElementById('disconnectButton');
         const modalDisconnect = document.getElementById('disconnectGitHub');
@@ -1935,7 +1972,11 @@ class EscribaApp {
 
         githubStatus.classList.remove('connected', 'syncing', 'error', 'disconnected');
 
-        let iconHtml = '<i class="fab fa-github"></i> ';
+        if (statusIcon) {
+            statusIcon.className = 'fab fa-github';
+            if (status === 'syncing') statusIcon.className = 'fas fa-sync fa-spin';
+            else if (status === 'error') statusIcon.className = 'fas fa-exclamation-circle';
+        }
 
         switch (status) {
             case 'connected':
@@ -1952,7 +1993,6 @@ class EscribaApp {
             case 'syncing':
                 githubStatus.classList.add('syncing');
                 statusText.textContent = 'Sincronizando...';
-                iconHtml = '<i class="fas fa-sync fa-spin"></i> ';
                 if (syncButtons) syncButtons.style.display = 'flex';
                 if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
                 if (modalDisconnect) modalDisconnect.style.display = 'block';
@@ -1961,7 +2001,6 @@ class EscribaApp {
             case 'error':
                 githubStatus.classList.add('error');
                 statusText.textContent = 'Error';
-                iconHtml = '<i class="fas fa-exclamation-circle"></i> ';
                 if (syncButtons) syncButtons.style.display = 'flex';
                 if (dropdownDisconnect) dropdownDisconnect.style.display = 'flex';
                 if (modalDisconnect) modalDisconnect.style.display = 'block';
@@ -1979,8 +2018,6 @@ class EscribaApp {
                 if (settingsSyncButton) settingsSyncButton.style.display = 'flex';
                 break;
         }
-
-        githubStatus.innerHTML = iconHtml + `<span id="githubStatusText">${statusText.textContent}</span>`;
     }
 
     insertCodeBlock() {
@@ -2804,6 +2841,55 @@ class EscribaGraph {
         });
 
         requestAnimationFrame(() => this.animate());
+    }
+
+    deduplicateNotes() {
+        let removedCount = 0;
+        const seenIds = new Set();
+        const seenContent = new Set();
+
+        this.subjects.forEach(subject => {
+            const originalCount = subject.notes.length;
+            const uniqueNotes = [];
+
+            subject.notes.forEach(note => {
+                const contentSignature = `${subject.id}|${note.title.trim()}|${note.content.trim()}`;
+
+                if (seenIds.has(note.id)) {
+                    removedCount++;
+                    return;
+                }
+
+                if (seenContent.has(contentSignature)) {
+                    removedCount++;
+                    return;
+                }
+
+                seenIds.add(note.id);
+                seenContent.add(contentSignature);
+                uniqueNotes.push(note);
+            });
+
+            if (uniqueNotes.length !== originalCount) {
+                subject.notes = uniqueNotes;
+                subject.lastModified = new Date().toISOString();
+            }
+        });
+
+        if (removedCount > 0) {
+            saveSubjects(this.subjects);
+            this.renderSubjects();
+            this.updateSettingsStats();
+            showToast(`Se eliminaron ${removedCount} apuntes duplicados`, 'success');
+
+            if (this.currentNoteId && !seenIds.has(this.currentNoteId)) {
+                this.currentNoteId = null;
+                document.getElementById('noteEditor').style.display = 'none';
+                showWelcomeScreen(true);
+            }
+        } else {
+            showToast('No se encontraron apuntes duplicados', 'info');
+        }
     }
 }
 

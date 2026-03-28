@@ -547,3 +547,21 @@
     font-size: 0.8rem;
     color: var(--text-muted);
 }
+
+.debug-badge {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-left: 0.5rem;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+[data-theme="light"] .debug-badge {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.1);
+}

@@ -25,7 +25,7 @@ export const renderSubjects = (container, subjects, callbacks = {}) => {
         <div class="subject-folder ${subject.expanded ? 'expanded' : ''}" data-subject-id="${subject.id}">
             <div class="subject-header">
                 <div class="subject-info">
-                    <div class="subject-icon" style="background: ${subject.color}"></div>
+                    <div class="subject-icon" style="background: ${subject.color}" data-tooltip="${escapeHtml(subject.name)}"></div>
                     <div class="subject-details">
                         <span class="subject-name">${escapeHtml(subject.name)}</span>
                         ${subject.code ? `<span class="subject-code">${escapeHtml(subject.code)}</span>` : ''}
@@ -150,7 +150,7 @@ export const renderRecentNotes = (container, subjects, currentNoteId, callbacks 
         <div class="recent-notes-list">
             ${recentNotes.map(note => `
                 <div class="recent-note-item ${currentNoteId === note.id ? 'active' : ''}" data-note-id="${note.id}">
-                    <div class="note-color-dot" style="background: ${note.subjectColor}"></div>
+                    <div class="note-color-dot" style="background: ${note.subjectColor}" data-tooltip="${escapeHtml(note.subjectName)}"></div>
                     <div class="note-type-indicator">
                         ${note.mathMode ? '<i class="fas fa-square-root-alt"></i>' : ''}
                     </div>
@@ -207,7 +207,7 @@ export const renderFavoriteNotes = (container, subjects, currentNoteId, callback
         <div class="favorites-notes-list">
             ${favoriteNotes.map(note => `
                 <div class="favorite-note-item ${currentNoteId === note.id ? 'active' : ''}" data-note-id="${note.id}">
-                    <div class="note-color-dot" style="background: ${note.subjectColor}"></div>
+                    <div class="note-color-dot" style="background: ${note.subjectColor}" data-tooltip="${escapeHtml(note.subjectName)}"></div>
                     <div class="note-type-indicator">
                         ${note.mathMode ? '<i class="fas fa-square-root-alt"></i>' : ''}
                     </div>

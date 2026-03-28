@@ -13,14 +13,159 @@
     min-width: 60px;
 }
 
-.sidebar.compact .search-section,
+.sidebar.compact .search-section {
+    padding: 1rem 0.5rem;
+}
+
+.sidebar.compact .search-box-container {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.sidebar.compact .sidebar-header-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    align-items: center;
+}
+
+.sidebar.compact .search-box input,
+.sidebar.compact .sidebar-action-btn-label,
+.sidebar.compact .view-btn-label,
+.sidebar.compact .subject-details,
+.sidebar.compact .subject-count,
+.sidebar.compact .subject-actions,
+.sidebar.compact .notes-list,
+.sidebar.compact .semester-info {
+    display: none !important;
+}
+
+.sidebar.compact .search-box i {
+    position: static;
+    transform: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin: 0 auto;
+}
+
+.sidebar.compact .view-toggles {
+    flex-direction: column;
+    padding: 0.5rem 0;
+}
+
+.sidebar.compact .view-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    margin: 0 auto;
+}
+
+.sidebar.compact .view-btn.active {
+    justify-content: center;
+    padding: 0.4rem;
+}
+
 .sidebar.compact .subjects-container,
 .sidebar.compact .recent-container,
-.sidebar.compact .favorites-container,
-.sidebar.compact .calendar-container {
+.sidebar.compact .favorites-container {
+    padding: 1rem 0.5rem;
+    display: block !important;
+}
+
+.sidebar.compact .subject-folder {
+    margin-bottom: 0.75rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.sidebar.compact .subject-header {
+    justify-content: center;
+    padding: 0;
+}
+
+.sidebar.compact .subject-icon {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto;
+    border-radius: 8px;
+    flex-shrink: 0;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.2s ease;
+}
+
+.sidebar.compact .subject-icon:hover {
+    transform: scale(1.1);
+}
+
+.sidebar.compact .subject-folder {
+    margin-bottom: 0.75rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    pointer-events: auto;
+}
+
+.sidebar.compact .subject-header {
+    justify-content: center;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    pointer-events: auto;
+    min-height: 42px;
+}
+
+.sidebar.compact [data-tooltip] {
+    position: relative;
+}
+
+.sidebar.compact [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 15px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-10px);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
     opacity: 0;
     visibility: hidden;
-    pointer-events: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+.sidebar.compact [data-tooltip]::before {
+    content: '';
+    position: absolute;
+    left: calc(100% + 5px);
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: var(--border-color);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+}
+
+.sidebar.compact [data-tooltip]:hover::after,
+.sidebar.compact [data-tooltip]:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
 }
 
 .search-section {

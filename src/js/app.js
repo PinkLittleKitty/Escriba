@@ -564,6 +564,11 @@ class EscribaApp {
     }
 
     toggleSubject(id) {
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar && sidebar.classList.contains('compact')) {
+            this.toggleSidebar();
+        }
+
         const subject = this.subjects.find(s => s.id === id);
         if (subject) {
             subject.expanded = !subject.expanded;

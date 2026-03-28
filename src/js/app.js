@@ -433,14 +433,30 @@ class EscribaApp {
         const list = document.getElementById('subjectPickerList');
         if (!list) return;
 
-        list.innerHTML = this.subjects.map(s => `
-            <div class="subject-picker-item" data-subject-id="${s.id}">
-                <div class="subject-icon" style="background: ${s.color}"></div>
-                <span>${escapeHtml(s.name)}</span>
-            </div>
-        `).join('');
+        list.className = 'subject-picker-list';
+        list.innerHTML = this.subjects.map(s => {
+            const noteCount = s.notes ? s.notes.length : 0;
+            return `
+                <div class="subject-picker-card" data-subject-id="${s.id}" style="--subject-accent-color: ${s.color}">
+                    <div class="subject-card-header">
+                        <div class="subject-card-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="subject-card-count">
+                            ${noteCount} ${noteCount === 1 ? 'apunte' : 'apuntes'}
+                        </div>
+                    </div>
+                    <div class="subject-card-body">
+                        <div class="subject-card-name">${escapeHtml(s.name)}</div>
+                    </div>
+                    <div class="subject-card-hint">
+                        <i class="fas fa-plus-circle"></i> Nuevo apunte aquí
+                    </div>
+                </div>
+            `;
+        }).join('');
 
-        list.querySelectorAll('.subject-picker-item').forEach(item => {
+        list.querySelectorAll('.subject-picker-card').forEach(item => {
             item.addEventListener('click', () => {
                 this.addNoteToSubject(item.dataset.subjectId);
                 hideModal('subjectPickerModal');

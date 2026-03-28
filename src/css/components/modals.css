@@ -440,3 +440,103 @@
     text-align: center;
     line-height: 1.3;
 }
+.subject-picker-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem 0.5rem;
+}
+
+.subject-picker-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+    min-height: 140px;
+}
+
+.subject-picker-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--subject-accent-color);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+    background: var(--bg-hover);
+}
+
+.subject-picker-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--subject-accent-color);
+    opacity: 0.8;
+}
+
+.subject-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.subject-card-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--subject-accent-color);
+    color: white;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.subject-card-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.subject-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.subject-card-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.subject-card-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.subject-picker-card:hover .subject-card-hint {
+    opacity: 1;
+    color: var(--subject-accent-color);
+    transform: translateX(4px);
+}

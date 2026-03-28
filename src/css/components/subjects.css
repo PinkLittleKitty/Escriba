@@ -144,9 +144,11 @@
 }
 
 .btn-archive-subject:hover {
-    background: #8b5cf6;
+    background: var(--accent-blue);
     color: white;
-    border-color: #8b5cf6;
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(var(--accent-blue-rgb), 0.3);
 }
 
 .btn-delete-subject:hover {

@@ -108,13 +108,14 @@ class EscribaApp {
         document.body.classList.add('loading');
 
         window.addEventListener('click', (e) => {
-            if (!e.target.closest('.subject-options-wrapper')) {
+            if (e.target.closest && !e.target.closest('.subject-options-wrapper')) {
                 document.querySelectorAll('.subject-options-wrapper.active').forEach(w => w.classList.remove('active'));
                 document.querySelectorAll('.subject-folder.menu-active').forEach(f => f.classList.remove('menu-active'));
             }
         });
 
         this.bindEvents();
+        this.initMobileNav();
         applySettings();
         this.loadSidebarState();
         this.initMermaid();
@@ -152,6 +153,62 @@ class EscribaApp {
 
         if (this.isElectron()) {
             this.checkForUpdates();
+        }
+    }
+
+    isMobile() {
+        return window.innerWidth <= 768;
+    }
+
+    initMobileNav() {
+        const navBtns = document.querySelectorAll('.mobile-nav-btn');
+        const overlay = document.getElementById('mobileOverlay');
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.view;
+
+                if (view === 'notes') {
+                    this.toggleMobileSidebar(true);
+                    return;
+                }
+
+                if (view === 'settings') {
+                    this.updateSettingsStats();
+                    loadSettingsToModal(this.settings);
+                    showModal('settingsModal');
+                    this.toggleMobileSidebar(false);
+                    return;
+                }
+
+                this.switchMainView(view);
+                this.toggleMobileSidebar(false);
+            });
+        });
+
+        if (overlay) {
+            overlay.addEventListener('click', () => this.toggleMobileSidebar(false));
+        }
+
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleMobileSidebar(true);
+            });
+        }
+    }
+
+    toggleMobileSidebar(show) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+
+        if (show) {
+            sidebar.classList.add('mobile-active');
+            overlay.classList.add('active');
+        } else {
+            sidebar.classList.remove('mobile-active');
+            overlay.classList.remove('active');
         }
     }
 
@@ -247,16 +304,6 @@ class EscribaApp {
         document.getElementById('sidebarToggle').addEventListener('click', () => this.toggleSidebar());
         document.getElementById('logoHome').addEventListener('click', () => this.switchMainView('dashboard'));
 
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        if (mobileMenuToggle) {
-            mobileMenuToggle.addEventListener('click', () => this.toggleSidebar());
-        }
-
-        const mobileOverlay = document.getElementById('mobileOverlay');
-        if (mobileOverlay) {
-            mobileOverlay.addEventListener('click', () => this.toggleSidebar());
-        }
-
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const view = e.target.closest('.view-btn').dataset.view;
@@ -280,10 +327,8 @@ class EscribaApp {
         document.querySelectorAll('.settings-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetTab = btn.dataset.tab;
-
                 document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-
                 document.querySelectorAll('.settings-tab-panel').forEach(p => p.classList.remove('active'));
                 const panel = document.getElementById(targetTab);
                 if (panel) panel.classList.add('active');
@@ -330,11 +375,8 @@ class EscribaApp {
             }
         });
 
-
         const addScheduleBtn = document.getElementById('addScheduleBtn');
-        if (addScheduleBtn) {
-            addScheduleBtn.addEventListener('click', () => this.addScheduleRow());
-        }
+        if (addScheduleBtn) addScheduleBtn.addEventListener('click', () => this.addScheduleRow());
 
         const cancelSubjectBtn = document.getElementById('cancelSubject');
         if (cancelSubjectBtn) cancelSubjectBtn.addEventListener('click', () => hideModal('subjectModal'));
@@ -343,9 +385,7 @@ class EscribaApp {
         if (cancelSubjectPickerBtn) cancelSubjectPickerBtn.addEventListener('click', () => hideModal('subjectPickerModal'));
 
         document.getElementById('createSubject').addEventListener('click', () => this.createSubject());
-
         document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
-
 
         const autoSyncCheckbox = document.getElementById('autoSync');
         if (autoSyncCheckbox) {
@@ -356,16 +396,14 @@ class EscribaApp {
         }
 
         document.getElementById('clearAllData').addEventListener('click', () => {
-            if (confirm('¿Estás seguro de que querés borrar todos tus datos? Esta acción es irreversible.')) {
+            if (confirm('¿Estás seguro de que querés borrar todos tus datos?')) {
                 localStorage.clear();
                 window.location.reload();
             }
         });
 
         const deduplicateBtn = document.getElementById('deduplicateNotesBtn');
-        if (deduplicateBtn) {
-            deduplicateBtn.addEventListener('click', () => this.deduplicateNotes());
-        }
+        if (deduplicateBtn) deduplicateBtn.addEventListener('click', () => this.deduplicateNotes());
 
         document.getElementById('noteContent').addEventListener('input', (e) => {
             if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n')) {
@@ -395,20 +433,13 @@ class EscribaApp {
                     document.getElementById('umlCode').value = code || '';
                     this.editingUMLContainer = container;
                     showModal('umlModal');
-
                     const preview = document.getElementById('umlPreview');
                     if (preview && code) updateUMLPreview({ getValue: () => code }, preview);
                 }
             } else if (codeDeleteBtn) {
                 const container = codeDeleteBtn.closest('.code-block-container');
                 if (container && confirm('¿Eliminar este bloque de código?')) {
-                    const selection = window.getSelection();
-                    const range = document.createRange();
-                    range.selectNode(container);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-
-                    document.execCommand('delete', false, null);
+                    container.remove();
                     this.debouncedSave();
                 }
             }
@@ -417,8 +448,7 @@ class EscribaApp {
         document.getElementById('backlinksList').addEventListener('click', (e) => {
             const item = e.target.closest('.backlink-item');
             if (item) {
-                const noteId = item.dataset.noteId;
-                if (noteId) this.loadNote(noteId);
+                this.loadNote(item.dataset.noteId);
             }
         });
 
@@ -462,17 +492,11 @@ class EscribaApp {
 
         document.addEventListener('click', (e) => {
             const githubTarget = e.target.closest('#githubStatus, #settingsSyncButton, #syncButton');
-            if (githubTarget) {
-                console.log(`[AUTH] Click detected on ${githubTarget.id}`);
-                this.handleGitHubAuth();
-            }
-
+            if (githubTarget) this.handleGitHubAuth();
             const pullTarget = e.target.closest('#pullButton, #settingsPullBtn');
             if (pullTarget) this.handleForcePull();
-
             const pushTarget = e.target.closest('#pushButton, #settingsPushBtn');
             if (pushTarget) this.handleForcePush();
-
             const disconnectTarget = e.target.closest('#disconnectGitHub, #disconnectButton');
             if (disconnectTarget) this.disconnectGitHub();
         });
@@ -497,6 +521,7 @@ class EscribaApp {
         document.getElementById('saveEvent').addEventListener('click', () => this.saveEvent());
         document.getElementById('cancelEvent').addEventListener('click', () => hideModal('eventModal'));
         document.getElementById('deleteEvent').addEventListener('click', () => this.deleteEvent());
+
         document.getElementById('prevMonth').addEventListener('click', () => {
             this.currentDate.setMonth(this.currentDate.getMonth() - 1);
             this.renderCalendar();
@@ -520,14 +545,20 @@ class EscribaApp {
             option.addEventListener('click', (e) => this.selectColor(e.target.dataset.color));
         });
 
-        document.getElementById('fontSize').addEventListener('input', (e) => {
-            document.getElementById('fontSizeValue').textContent = e.target.value + 'px';
-            document.documentElement.style.setProperty('--font-size', e.target.value + 'px');
-        });
+        const fontSizeInput = document.getElementById('fontSize');
+        if (fontSizeInput) {
+            fontSizeInput.addEventListener('input', (e) => {
+                document.getElementById('fontSizeValue').textContent = e.target.value + 'px';
+                document.documentElement.style.setProperty('--font-size', e.target.value + 'px');
+            });
+        }
 
-        document.getElementById('fontFamily').addEventListener('change', (e) => {
-            document.documentElement.style.setProperty('--font-family', e.target.value);
-        });
+        const fontFamilyInput = document.getElementById('fontFamily');
+        if (fontFamilyInput) {
+            fontFamilyInput.addEventListener('change', (e) => {
+                document.documentElement.style.setProperty('--font-family', e.target.value);
+            });
+        }
 
         document.addEventListener('openSubjectModal', () => showModal('subjectModal'));
     }
@@ -543,12 +574,21 @@ class EscribaApp {
         if (editor) editor.style.display = view === 'editor' ? 'flex' : 'none';
         if (footer) footer.style.display = view === 'editor' ? 'flex' : 'none';
 
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.view === view);
+        });
+
         if (view === 'dashboard') {
             this.updateDashboard();
             this.currentNoteId = null;
             document.querySelectorAll('.note-item').forEach(item => item.classList.remove('active'));
         }
+
+        if (view === 'calendar') {
+            this.renderCalendar();
+        }
     }
+
 
     updateDashboard() {
         const container = document.getElementById('dashboardScreen');
@@ -692,10 +732,9 @@ class EscribaApp {
         document.getElementById('noteSubject').textContent = foundSubject.name;
         document.getElementById('noteDate').textContent = formatDate(foundNote.updatedAt);
 
-        document.getElementById('noteSubject').textContent = foundSubject.name;
-        document.getElementById('noteDate').textContent = formatDate(foundNote.updatedAt);
-
         this.switchMainView('editor');
+        this.toggleMobileSidebar(false);
+
 
         document.querySelectorAll('.note-item').forEach(item => {
             item.classList.toggle('active', item.dataset.noteId === noteId);
@@ -793,7 +832,9 @@ class EscribaApp {
             if (scheduleContainer) scheduleContainer.innerHTML = '';
             this.selectColor('#3b82f6');
             showModal('subjectModal');
+            this.toggleMobileSidebar(false);
         }
+
     }
 
     editSubject(id) {

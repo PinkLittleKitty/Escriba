@@ -1,0 +1,250 @@
+@media (max-width: 768px) {
+    :root {
+        --header-height: 60px;
+        --bottom-nav-height: 65px;
+    }
+
+    body {
+        overscroll-behavior-y: none;
+    }
+
+    .main-content {
+        height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+    }
+
+    header {
+        height: var(--header-height);
+        padding: 0 1rem !important;
+        background: var(--bg-secondary);
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    header h1 {
+        font-size: 1.25rem !important;
+    }
+
+    .header-controls {
+        gap: 0.5rem !important;
+    }
+
+    .github-status,
+    .semester-info {
+        display: none !important;
+    }
+
+    .mobile-bottom-nav {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--bottom-nav-height);
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 1001;
+        padding: 0 10px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .mobile-nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        gap: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        padding: 8px 0;
+    }
+
+    .mobile-nav-btn i {
+        font-size: 1.3rem;
+        transition: transform 0.2s ease;
+    }
+
+    .mobile-nav-btn.active {
+        color: var(--accent-blue);
+    }
+
+    .mobile-nav-btn.active i {
+        transform: translateY(-2px);
+    }
+
+    .sidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: 85% !important;
+        max-width: 320px !important;
+        z-index: 2000 !important;
+        background: var(--bg-secondary) !important;
+        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.3) !important;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        border-right: 1px solid var(--border-color) !important;
+        display: flex !important;
+        transform: translateX(-100%) !important;
+    }
+
+    .sidebar.compact {
+        width: 85% !important;
+    }
+
+    .sidebar.compact .search-box input,
+    .sidebar.compact .sidebar-action-btn-label,
+    .sidebar.compact .view-btn-label,
+    .sidebar.compact .subject-details,
+    .sidebar.compact .subject-count,
+    .sidebar.compact .subject-actions,
+    .sidebar.compact .notes-list,
+    .sidebar.compact .semester-info {
+        display: block !important;
+    }
+
+    .sidebar.compact .subject-icon {
+        margin: 0 !important;
+    }
+
+    .sidebar.compact .subject-header {
+        justify-content: space-between !important;
+        padding: 0.75rem 1rem !important;
+    }
+
+    .sidebar.compact .search-box i {
+        position: absolute !important;
+        left: 1rem !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        background: transparent !important;
+        border: none !important;
+        margin: 0 !important;
+    }
+
+    .sidebar.compact .view-toggles {
+        flex-direction: row !important;
+        padding: 0.5rem 1rem !important;
+    }
+
+    .sidebar.compact .view-btn {
+        width: auto !important;
+        height: 40px !important;
+        padding: 0 1rem !important;
+        justify-content: flex-start !important;
+    }
+
+    .sidebar.mobile-active {
+        transform: translateX(0) !important;
+    }
+
+    .search-section {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .subject-folder {
+        padding: 0 !important;
+    }
+
+    .subject-header {
+        padding: 0.75rem 1rem !important;
+    }
+
+    .mobile-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 1999;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .mobile-overlay.active {
+        display: block;
+        opacity: 1;
+    }
+
+    .dashboard-container {
+        padding: 1rem !important;
+        gap: 1.5rem !important;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .hero-section {
+        padding: 1.5rem !important;
+    }
+
+    .greeting-text {
+        font-size: 1.25rem !important;
+    }
+
+    .countdown-timer-main {
+        font-size: 2.5rem !important;
+    }
+
+    .editor-header {
+        padding: 0.75rem 1rem !important;
+    }
+
+    .editor-controls {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .note-content-container {
+        padding: 1rem !important;
+    }
+
+    .toast-container {
+        bottom: calc(var(--bottom-nav-height) + 1rem) !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 90% !important;
+    }
+
+    .modal-content {
+        width: 95% !important;
+        max-height: 90vh !important;
+        margin: 10px auto !important;
+    }
+
+    .modal-full .modal-content {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .sidebar-toggle,
+    .btn-toolbar-toggle {
+        display: none !important;
+    }
+}
+
+@media (min-width: 769px) {
+
+    .mobile-bottom-nav,
+    .mobile-overlay {
+        display: none !important;
+    }
+}

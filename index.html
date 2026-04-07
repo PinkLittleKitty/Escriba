@@ -80,10 +80,9 @@
             </div>
         </header>
 
-        <div id="mobileOverlay" class="mobile-overlay"></div>
-
         <div class="main-content">
-            <aside class="sidebar">
+            <div id="mobileOverlay" class="mobile-overlay"></div>
+            <aside id="sidebar" class="sidebar">
                 <div class="search-section">
                     <div class="search-box-container">
                         <div class="search-box">
@@ -1039,127 +1038,146 @@
                     </div>
                 </div>
 
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelShare">Cerrar</button>
-            </div>
-        </div>
-    </div>
+                <nav class="mobile-bottom-nav">
+                    <button class="mobile-nav-btn active" data-view="dashboard" id="mobileNavDashboard">
+                        <i class="fas fa-home"></i>
+                        <span>Inicio</span>
+                    </button>
+                    <button class="mobile-nav-btn" data-view="calendar" id="mobileNavCalendar">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Agenda</span>
+                    </button>
+                    <button class="mobile-nav-btn" data-view="notes" id="mobileNavNotes">
+                        <i class="fas fa-book"></i>
+                        <span>Apuntes</span>
+                    </button>
+                    <button class="mobile-nav-btn" data-view="settings" id="mobileNavSettings">
+                        <i class="fas fa-cog"></i>
+                        <span>Ajustes</span>
+                    </button>
+                </nav>
 
-    <div id="githubTokenModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fab fa-github"></i> Conectar con GitHub</h3>
-                <button class="modal-close" title="Cerrar">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="token-auth-steps">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <div class="step-content">
-                            <p>Generá un <strong>Personal Access Token (Classic)</strong> en tu cuenta de
-                                GitHub.
-                            </p>
-                            <a href="https://github.com/settings/tokens/new?scopes=gist,repo&description=Escriba%20App"
-                                target="_blank" class="help-link">
-                                <i class="fas fa-external-link-alt"></i> Crear token ahora
-                            </a>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <div class="step-content">
-                            <p>Asegurate de seleccionar los permisos <strong>'gist'</strong> y
-                                <strong>'repo'</strong>.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <div class="step-content">
-                            <p>Pegá el token generado a continuación:</p>
-                            <div class="token-input-group">
-                                <input type="password" id="githubTokenInput" class="token-input"
-                                    placeholder="ghp_xxxxxxxxxxxx" autocomplete="one-time-code" spellcheck="false">
-                            </div>
-                            <span class="help-text">Tu token se guarda de forma segura en este
-                                navegador.</span>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelShare">Cerrar</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelToken">Cancelar</button>
-                <button class="btn btn-primary" id="confirmToken">Conectar GitHub</button>
-            </div>
         </div>
-    </div>
 
-    <div id="graphModal" class="modal modal-full">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-network-wired"></i> Minimapa</h3>
-                <div class="header-actions" style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+        <div id="githubTokenModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fab fa-github"></i> Conectar con GitHub</h3>
                     <button class="modal-close" title="Cerrar">&times;</button>
                 </div>
-            </div>
-            <div class="modal-body graph-container" id="graphContainer">
-                <svg id="graphSvg" width="100%" height="100%">
-                    <g id="graphViewport">
-                        <g id="graphEdges"></g>
-                        <g id="graphNodes"></g>
-                    </g>
-                </svg>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="closeGraph">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="updateModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-rocket"></i> ¡Nueva Versión!</h3>
-                <button class="modal-close" onclick="hideModal('updateModal')" title="Cerrar">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="update-info">
-                    <p>Hay una nueva actualización disponible en el canal <strong>nightly</strong>.</p>
-                    <p id="updateDateInfo" class="update-date"
-                        style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;"></p>
-                    <div id="updateReleaseNotes" class="release-notes-container">
-                        <!-- Descripcíon de la versión -->
+                <div class="modal-body">
+                    <div class="token-auth-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <p>Generá un <strong>Personal Access Token (Classic)</strong> en tu cuenta de
+                                    GitHub.
+                                </p>
+                                <a href="https://github.com/settings/tokens/new?scopes=gist,repo&description=Escriba%20App"
+                                    target="_blank" class="help-link">
+                                    <i class="fas fa-external-link-alt"></i> Crear token ahora
+                                </a>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <p>Asegurate de seleccionar los permisos <strong>'gist'</strong> y
+                                    <strong>'repo'</strong>.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <p>Pegá el token generado a continuación:</p>
+                                <div class="token-input-group">
+                                    <input type="password" id="githubTokenInput" class="token-input"
+                                        placeholder="ghp_xxxxxxxxxxxx" autocomplete="one-time-code" spellcheck="false">
+                                </div>
+                                <span class="help-text">Tu token se guarda de forma segura en este
+                                    navegador.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="hideModal('updateModal')">Recordar después</button>
-                <a id="updateDownloadLink" href="https://github.com/PinkLittleKitty/Escriba/releases/tag/nightly"
-                    target="_blank" class="btn btn-primary">
-                    <i class="fas fa-download"></i> Descargar v. Nightly
-                </a>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelToken">Cancelar</button>
+                    <button class="btn btn-primary" id="confirmToken">Conectar GitHub</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="toast" class="toast">
-        <div class="toast-content">
-            <i class="toast-icon"></i>
-            <span class="toast-message"></span>
+        <div id="graphModal" class="modal modal-full">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-network-wired"></i> Minimapa</h3>
+                    <div class="header-actions"
+                        style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+                        <button class="modal-close" title="Cerrar">&times;</button>
+                    </div>
+                </div>
+                <div class="modal-body graph-container" id="graphContainer">
+                    <svg id="graphSvg" width="100%" height="100%">
+                        <g id="graphViewport">
+                            <g id="graphEdges"></g>
+                            <g id="graphNodes"></g>
+                        </g>
+                    </svg>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="closeGraph">Cerrar</button>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div id="floatingToolbar" class="floating-toolbar" style="display: none;">
-        <button class="floating-btn" data-command="bold" title="Negrita"><i class="fas fa-bold"></i></button>
-        <button class="floating-btn" data-command="italic" title="Cursiva"><i class="fas fa-italic"></i></button>
-        <button class="floating-btn" data-command="underline" title="Subrayado"><i
-                class="fas fa-underline"></i></button>
-        <div class="floating-separator"></div>
-        <button class="floating-btn" id="floatingHighlightBtn" title="Resaltar"><i
-                class="fas fa-highlighter"></i></button>
-        <button class="floating-btn" id="floatingCodeBtn" title="Código"><i class="fas fa-code"></i></button>
-    </div>
+        <div id="updateModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-rocket"></i> ¡Nueva Versión!</h3>
+                    <button class="modal-close" onclick="hideModal('updateModal')" title="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="update-info">
+                        <p>Hay una nueva actualización disponible en el canal <strong>nightly</strong>.</p>
+                        <p id="updateDateInfo" class="update-date"
+                            style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;"></p>
+                        <div id="updateReleaseNotes" class="release-notes-container">
+                            <!-- Descripcíon de la versión -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="hideModal('updateModal')">Recordar después</button>
+                    <a id="updateDownloadLink" href="https://github.com/PinkLittleKitty/Escriba/releases/tag/nightly"
+                        target="_blank" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Descargar v. Nightly
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast" class="toast">
+            <div class="toast-content">
+                <i class="toast-icon"></i>
+                <span class="toast-message"></span>
+            </div>
+        </div>
+
+        <div id="floatingToolbar" class="floating-toolbar" style="display: none;">
+            <button class="floating-btn" data-command="bold" title="Negrita"><i class="fas fa-bold"></i></button>
+            <button class="floating-btn" data-command="italic" title="Cursiva"><i class="fas fa-italic"></i></button>
+            <button class="floating-btn" data-command="underline" title="Subrayado"><i
+                    class="fas fa-underline"></i></button>
+            <div class="floating-separator"></div>
+            <button class="floating-btn" id="floatingHighlightBtn" title="Resaltar"><i
+                    class="fas fa-highlighter"></i></button>
+            <button class="floating-btn" id="floatingCodeBtn" title="Código"><i class="fas fa-code"></i></button>
+        </div>
 </body>
 
 </html>

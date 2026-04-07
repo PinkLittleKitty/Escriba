@@ -760,3 +760,103 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
+@media (max-width: 768px) {
+    .modal-content-large {
+        width: 95% !important;
+        height: 90vh !important;
+        max-height: 90vh !important;
+        margin: 5vh auto !important;
+    }
+
+    .settings-layout {
+        flex-direction: column;
+    }
+
+    .settings-sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0.5rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        gap: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex-shrink: 0;
+    }
+
+    .settings-sidebar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .settings-tab-btn {
+        width: auto !important;
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+        flex: 0 0 auto;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 8px;
+        min-width: max-content;
+    }
+
+    .settings-tab-btn i {
+        font-size: 1rem;
+    }
+
+    .settings-main {
+        padding: 1.5rem 1rem;
+        border-left: none;
+        margin-left: 0;
+    }
+
+    .settings-section h4 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .utility-actions-group,
+    .settings-actions-group,
+    .sync-actions-group,
+    .cloud-actions-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .about-logo i {
+        font-size: 3rem;
+    }
+
+    .about-logo h2 {
+        font-size: 1.75rem;
+    }
+
+    .settings-select {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    .checkmark {
+        width: 40px !important;
+        height: 22px !important;
+    }
+
+    .checkmark::after {
+        width: 16px;
+        height: 16px;
+    }
+
+    .form-group .checkbox-label {
+        padding: 0.5rem 0 !important;
+    }
+
+    .form-group .checkbox-label input:checked+.checkmark::after {
+        left: 18px;
+    }
+}

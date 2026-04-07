@@ -949,8 +949,10 @@ class EscribaApp {
             if (match) {
                 e.preventDefault();
 
-                const newText = text.substring(offset);
-                node.textContent = newText;
+                const deleteRange = document.createRange();
+                deleteRange.setStart(node, 0);
+                deleteRange.setEnd(node, offset);
+                deleteRange.deleteContents();
 
                 document.execCommand(rule.command, false, rule.value);
                 break;

@@ -112,6 +112,12 @@ class EscribaApp {
                 document.querySelectorAll('.subject-options-wrapper.active').forEach(w => w.classList.remove('active'));
                 document.querySelectorAll('.subject-folder.menu-active').forEach(f => f.classList.remove('menu-active'));
             }
+
+            const flyout = document.querySelector('.subject-notes-flyout');
+            if (flyout && !e.target.closest('.subject-notes-flyout') && !e.target.closest('.subject-icon')) {
+                flyout.classList.remove('active');
+                setTimeout(() => flyout.remove(), 200);
+            }
         });
 
         this.bindEvents();
@@ -768,20 +774,85 @@ class EscribaApp {
         this.updateSettingsStats();
     }
 
-    toggleSubject(id) {
+    toggleSubject(id, forceOpen = false) {
         const sidebar = document.querySelector('.sidebar');
-        if (sidebar && sidebar.classList.contains('compact')) {
-            this.toggleSidebar();
+        if (sidebar && sidebar.classList.contains('compact') && !forceOpen) {
+            this.showSubjectNotesFlyout(id);
+            return;
         }
 
-        const subject = this.subjects.find(s => s.id === id);
+        const subject = this.subjects.find(s => String(s.id) === String(id));
         if (subject) {
             subject.expanded = !subject.expanded;
             subject.lastModified = new Date().toISOString();
             saveSubjects(this.subjects);
-            this.renderSubjects();
+            renderSubjects(document.getElementById('subjectsList'), this.subjects, {
+                onSubjectClick: (id) => this.toggleSubject(id),
+                onAddNote: (id) => this.addNote(id),
+                onArchiveSubject: (id) => this.toggleArchiveSubject(id),
+                onEditSubject: (id) => this.editSubject(id),
+                onDeleteSubject: (id) => this.deleteSubject(id),
+                onNoteClick: (id) => this.loadNote(id),
+            }, this.showArchived);
         }
     }
+
+    showSubjectNotesFlyout(subjectId) {
+        const oldFlyout = document.querySelector('.subject-notes-flyout');
+        if (oldFlyout) oldFlyout.remove();
+
+        const subject = this.subjects.find(s => String(s.id) === String(subjectId));
+        const iconElement = document.querySelector(`.subject-folder[data-subject-id="${subjectId}"] .subject-icon`);
+
+        if (!subject || !iconElement) return;
+
+        const rect = iconElement.getBoundingClientRect();
+
+        const flyout = document.createElement('div');
+        flyout.className = 'subject-notes-flyout';
+
+        const topPos = Math.min(rect.top, window.innerHeight - 450);
+        flyout.style.left = `${rect.right + 12}px`;
+        flyout.style.top = `${Math.max(10, topPos)}px`;
+
+        const notesHtml = subject.notes && subject.notes.length > 0
+            ? subject.notes.map(note => `
+                <div class="flyout-note-item" data-note-id="${note.id}">
+                    <i class="far fa-file-alt"></i>
+                    <div class="flyout-note-content">
+                        <span class="flyout-note-title">${escapeHtml(note.title || 'Sin título')}</span>
+                        <span class="flyout-note-meta">${formatDate(note.updatedAt)}</span>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="flyout-empty"><i class="fas fa-ghost"></i> No hay apuntes todavía</div>';
+
+        flyout.innerHTML = `
+            <div class="flyout-header">
+                <div class="flyout-subject-icon" style="background: ${subject.color}">
+                    ${subject.code ? escapeHtml(subject.code.slice(0, 3)) : escapeHtml(subject.name.charAt(0).toUpperCase())}
+                </div>
+                <h3>${escapeHtml(subject.name)}</h3>
+            </div>
+            <div class="flyout-notes-list">
+                ${notesHtml}
+            </div>
+        `;
+
+        document.body.appendChild(flyout);
+
+        requestAnimationFrame(() => flyout.classList.add('active'));
+
+        flyout.querySelectorAll('.flyout-note-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const noteId = item.dataset.noteId;
+                this.loadNote(noteId);
+                flyout.classList.remove('active');
+                setTimeout(() => flyout.remove(), 200);
+            });
+        });
+    }
+
 
     toggleArchiveSubject(id) {
         const subject = this.subjects.find(s => s.id === id);
@@ -2764,6 +2835,7 @@ class EscribaApp {
             sidebarToggle.classList.add('compact');
             if (icon) icon.className = 'fas fa-angles-right';
             sidebarToggle.title = 'Expandir sidebar (Ctrl+\\)';
+            this.switchView('subjects');
             localStorage.setItem('sidebarCompact', 'true');
         }
     }
@@ -2926,7 +2998,6 @@ class EscribaApp {
         }
         if (!this.floatingToolbar) return;
 
-        // Button clicks
         this.floatingToolbar.querySelectorAll('.floating-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -2946,7 +3017,6 @@ class EscribaApp {
                 updateToolbarStates();
                 this.debouncedSave();
 
-                // Keep selection and toolbar visible
                 setTimeout(() => this.updateFloatingToolbar(), 10);
             });
         });
@@ -2973,7 +3043,6 @@ class EscribaApp {
             return;
         }
 
-        // Only show if there is non-whitespace text selected
         if (selection.toString().trim().length === 0) {
             this.floatingToolbar.style.display = 'none';
             return;
@@ -2981,7 +3050,6 @@ class EscribaApp {
 
         const rect = range.getBoundingClientRect();
 
-        // Show temporarily to get dimensions
         this.floatingToolbar.style.display = 'flex';
         this.floatingToolbar.style.visibility = 'hidden';
 
@@ -2990,7 +3058,6 @@ class EscribaApp {
         let top = rect.top - toolbarRect.height - 10;
         let left = rect.left + (rect.width / 2) - (toolbarRect.width / 2);
 
-        // Keep within viewport
         if (top < 10) top = rect.bottom + 10;
         if (left < 10) left = 10;
         if (left + toolbarRect.width > window.innerWidth - 10) {

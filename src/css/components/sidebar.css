@@ -37,7 +37,12 @@
 .sidebar.compact .subject-count,
 .sidebar.compact .subject-actions,
 .sidebar.compact .notes-list,
-.sidebar.compact .semester-info {
+.sidebar.compact .semester-info,
+.sidebar.compact .note-item-body,
+.sidebar.compact .note-item-meta,
+.sidebar.compact .empty-state p,
+.sidebar.compact .empty-state button,
+.sidebar.compact .empty-subject {
     display: none !important;
 }
 
@@ -75,6 +80,21 @@
 .sidebar.compact .view-btn.active {
     background: var(--accent-blue);
     color: var(--text-on-accent);
+    padding: 0 !important;
+    justify-content: center !important;
+    flex: none !important;
+    width: 44px !important;
+    height: 44px !important;
+}
+
+.sidebar.compact .view-btn:not([data-view="subjects"]) {
+    display: none !important;
+}
+
+.sidebar.compact .recent-container,
+.sidebar.compact .favorites-container,
+.sidebar.compact .calendar-container {
+    display: none !important;
 }
 
 .sidebar.compact .subjects-container,
@@ -82,6 +102,21 @@
 .sidebar.compact .favorites-container {
     padding: 1rem 0.5rem;
     display: block !important;
+}
+
+.sidebar.compact .recent-note-item,
+.sidebar.compact .favorite-note-item {
+    justify-content: center;
+    padding: 0.5rem 0;
+    margin: 0;
+}
+
+.sidebar.compact .note-color-dot {
+    margin: 0 !important;
+}
+
+.sidebar.compact .empty-state {
+    padding: 1rem 0;
 }
 
 .sidebar.compact .subject-folder {

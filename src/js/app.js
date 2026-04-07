@@ -133,6 +133,25 @@ class EscribaApp {
         if (hasGitHubToken) {
             this.handleGitHubAuth(true);
         }
+
+        this.initDesktopBanner();
+    }
+
+    initDesktopBanner() {
+        const banner = document.getElementById('desktopBanner');
+        const closeBtn = document.getElementById('closeBanner');
+        const isDismissed = localStorage.getItem('desktopBannerDismissed') === 'true';
+
+        if (!this.isElectron() && !isDismissed && banner) {
+            banner.style.display = 'flex';
+        }
+
+        if (closeBtn && banner) {
+            closeBtn.addEventListener('click', () => {
+                banner.style.display = 'none';
+                localStorage.setItem('desktopBannerDismissed', 'true');
+            });
+        }
     }
 
     initMermaid() {

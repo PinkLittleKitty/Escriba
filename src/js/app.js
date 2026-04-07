@@ -156,7 +156,7 @@ class EscribaApp {
     }
 
     async checkForUpdates() {
-        const CURRENT_BUILD_TIME = new Date('2026-03-27T00:00:00Z');
+        const CURRENT_BUILD_TIME = new Date('2026-04-07T01:00:30-03:00');
 
         try {
             const response = await fetch('https://api.github.com/repos/PinkLittleKitty/Escriba/releases/tags/nightly');
@@ -165,7 +165,9 @@ class EscribaApp {
             const release = await response.json();
             const publishedAt = new Date(release.published_at);
 
-            if (publishedAt > CURRENT_BUILD_TIME) {
+            const threshold = 5 * 60 * 1000;
+            if (publishedAt.getTime() > CURRENT_BUILD_TIME.getTime() + threshold) {
+
                 const updateModal = document.getElementById('updateModal');
                 const updateDateInfo = document.getElementById('updateDateInfo');
                 const updateReleaseNotes = document.getElementById('updateReleaseNotes');

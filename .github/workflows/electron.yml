@@ -1,4 +1,4 @@
-name: Build Offline Escriba
+name: Build Desktop Escriba
 
 on:
   push:

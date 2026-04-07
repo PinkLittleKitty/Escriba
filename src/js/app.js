@@ -3016,67 +3016,94 @@ class EscribaApp {
         const svg = document.getElementById('graphSvg');
         if (!svg) return;
 
-        const width = svg.clientWidth || 800;
-        const height = svg.clientHeight || 600;
+        requestAnimationFrame(() => {
+            const width = svg.clientWidth || 800;
+            const height = svg.clientHeight || 600;
 
-        const nodes = [];
-        const links = [];
-        const noteToNode = new Map();
+            const nodes = [];
+            const links = [];
+            const noteToNode = new Map();
+            const subjectToNode = new Map();
 
-        const activeSubjects = this.subjects.filter(s => !s.archived);
-        activeSubjects.forEach((s, sIdx) => {
-            const subjectAngle = (sIdx / activeSubjects.length) * Math.PI * 2;
-            const subjectRadius = Math.min(width, height) * 0.35;
+            const activeSubjects = this.subjects.filter(s => !s.archived);
 
-            s.notes.forEach((n, nIdx) => {
-                const noteAngle = (nIdx / s.notes.length) * Math.PI * 2;
-                const noteRadius = 40;
+            activeSubjects.forEach((s, sIdx) => {
+                const angle = (sIdx / activeSubjects.length) * Math.PI * 2;
+                const radius = Math.min(width, height) * 0.3;
 
-                const baseX = width / 2 + Math.cos(subjectAngle) * subjectRadius;
-                const baseY = height / 2 + Math.sin(subjectAngle) * subjectRadius;
-
-                const node = {
-                    id: n.id,
-                    title: n.title,
+                const subjectNode = {
+                    id: `subject-${s.id}`,
+                    title: s.name,
                     color: s.color,
-                    x: baseX + Math.cos(noteAngle) * noteRadius + (Math.random() - 0.5) * 20,
-                    y: baseY + Math.sin(noteAngle) * noteRadius + (Math.random() - 0.5) * 20,
+                    isHub: true,
+                    x: width / 2 + Math.cos(angle) * radius,
+                    y: height / 2 + Math.sin(angle) * radius,
                     vx: 0,
                     vy: 0
                 };
-                nodes.push(node);
-                noteToNode.set(n.id, node);
+                nodes.push(subjectNode);
+                subjectToNode.set(s.id, subjectNode);
+
+                s.notes.forEach((n, nIdx) => {
+                    const noteAngle = angle + (Math.random() - 0.5) * 0.5;
+                    const noteRadius = radius + 60 + Math.random() * 40;
+
+                    const noteNode = {
+                        id: n.id,
+                        title: n.title,
+                        color: s.color,
+                        isHub: false,
+                        x: width / 2 + Math.cos(noteAngle) * noteRadius,
+                        y: height / 2 + Math.sin(noteAngle) * noteRadius,
+                        vx: 0,
+                        vy: 0
+                    };
+                    nodes.push(noteNode);
+                    noteToNode.set(n.id, noteNode);
+
+                    links.push({
+                        source: subjectNode,
+                        target: noteNode,
+                        type: 'parent'
+                    });
+                });
             });
-        });
 
-        this.subjects.forEach(s => {
-            s.notes.forEach(n => {
-                const sourceNode = noteToNode.get(n.id);
-                if (!sourceNode || !n.content) return;
+            this.subjects.forEach(s => {
+                s.notes.forEach(n => {
+                    const sourceNode = noteToNode.get(n.id);
+                    if (!sourceNode || !n.content) return;
 
-                const regex = /data-note-id="([^"]+)"/g;
-                let match;
-                while ((match = regex.exec(n.content)) !== null) {
-                    const targetNoteId = match[1];
-                    const targetNode = noteToNode.get(targetNoteId);
-                    if (targetNode && targetNode.id !== sourceNode.id) {
-                        links.push({ source: sourceNode, target: targetNode });
+                    const regex = /data-note-id="([^"]+)"/g;
+                    let match;
+                    while ((match = regex.exec(n.content)) !== null) {
+                        const targetNoteId = match[1];
+                        const targetNode = noteToNode.get(targetNoteId);
+                        if (targetNode && targetNode.id !== sourceNode.id) {
+                            links.push({
+                                source: sourceNode,
+                                target: targetNode,
+                                type: 'mention'
+                            });
+                        }
                     }
-                }
+                });
             });
-        });
 
-        if (!this.graphEngine) {
-            this.graphEngine = new EscribaGraph(
-                svg,
-                (noteId) => {
-                    hideModal('graphModal');
-                    this.loadNote(noteId);
-                }
-            );
-        }
-        this.graphEngine.setData(nodes, links);
+            if (!this.graphEngine) {
+                this.graphEngine = new EscribaGraph(
+                    svg,
+                    (id) => {
+                        if (id.startsWith('subject-')) return;
+                        hideModal('graphModal');
+                        this.loadNote(id);
+                    }
+                );
+            }
+            this.graphEngine.setData(nodes, links);
+        });
     }
+
 }
 
 class EscribaGraph {
@@ -3175,6 +3202,61 @@ class EscribaGraph {
                 this.onNodeClick(id);
             }
         });
+
+        this.svg.addEventListener('mouseover', (e) => {
+            const nodeEl = e.target.closest('.graph-node');
+            if (nodeEl) {
+                const id = nodeEl.dataset.id;
+                this.setFocus(id);
+            }
+        });
+
+        this.svg.addEventListener('mouseout', (e) => {
+            const nodeEl = e.target.closest('.graph-node');
+            if (nodeEl) {
+                this.clearFocus();
+            }
+        });
+    }
+
+    setFocus(nodeId) {
+        const connectedNodeIds = new Set([nodeId]);
+        this.links.forEach(l => {
+            if (l.source.id === nodeId) connectedNodeIds.add(l.target.id);
+            if (l.target.id === nodeId) connectedNodeIds.add(l.source.id);
+        });
+
+        this.nodes.forEach(n => {
+            if (n.id === nodeId) {
+                n.el.classList.add('hovered');
+                n.el.classList.remove('dimmed');
+            } else if (connectedNodeIds.has(n.id)) {
+                n.el.classList.add('connected');
+                n.el.classList.remove('dimmed');
+            } else {
+                n.el.classList.add('dimmed');
+                n.el.classList.remove('connected', 'hovered');
+            }
+        });
+
+        this.links.forEach(l => {
+            if (l.source.id === nodeId || l.target.id === nodeId) {
+                l.el.classList.add('connected');
+                l.el.classList.remove('dimmed');
+            } else {
+                l.el.classList.add('dimmed');
+                l.el.classList.remove('connected');
+            }
+        });
+    }
+
+    clearFocus() {
+        this.nodes.forEach(n => {
+            n.el.classList.remove('dimmed', 'connected', 'hovered');
+        });
+        this.links.forEach(l => {
+            l.el.classList.remove('dimmed', 'connected');
+        });
     }
 
     updateViewportTransform() {
@@ -3188,42 +3270,48 @@ class EscribaGraph {
         this.edgesGroup.innerHTML = '';
         this.updateViewportTransform();
 
+        this.links.forEach(l => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('class', `graph-edge edge-type-${l.type}`);
+            line.setAttribute('stroke', l.type === 'parent' ? 'var(--text-muted)' : 'var(--accent-blue)');
+            line.setAttribute('stroke-opacity', l.type === 'parent' ? '0.3' : '0.2');
+            line.setAttribute('stroke-width', l.type === 'parent' ? '2' : '1.5');
+            if (l.type === 'mention') {
+                line.setAttribute('stroke-dasharray', '4 4');
+            }
+            this.edgesGroup.appendChild(line);
+            l.el = line;
+        });
+
         this.nodes.forEach(n => {
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            g.setAttribute('class', 'graph-node');
+            g.setAttribute('class', `graph-node ${n.isHub ? 'node-hub' : 'node-leaf'}`);
             g.setAttribute('data-id', n.id);
 
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('r', '6');
+            circle.setAttribute('r', n.isHub ? '12' : '7');
             circle.setAttribute('fill', n.color);
-            circle.setAttribute('stroke', 'rgba(255,255,255,0.2)');
-            circle.setAttribute('stroke-width', '1');
+            circle.setAttribute('stroke', '#fff');
+            circle.setAttribute('stroke-width', n.isHub ? '3' : '1.5');
+            circle.setAttribute('stroke-opacity', '0.8');
 
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('dy', '18');
-            text.style.fontSize = '10px';
-            text.style.fontWeight = '500';
+            text.setAttribute('dy', n.isHub ? '28' : '20');
+            text.style.fontSize = n.isHub ? '12px' : '10px';
+            text.style.fontWeight = n.isHub ? '700' : '500';
             text.style.pointerEvents = 'none';
             text.style.userSelect = 'none';
             text.style.fill = 'var(--text-primary)';
             text.style.textAnchor = 'middle';
-            text.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)';
-            text.textContent = n.title.length > 20 ? n.title.substring(0, 17) + '...' : n.title;
+            text.style.textShadow = '0 1px 3px rgba(0,0,0,0.9)';
+
+            const title = n.title;
+            text.textContent = title.length > 25 ? title.substring(0, 22) + '...' : title;
 
             g.appendChild(circle);
             g.appendChild(text);
             this.nodesGroup.appendChild(g);
             n.el = g;
-        });
-
-        this.links.forEach(l => {
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('class', 'graph-edge');
-            line.setAttribute('stroke', 'var(--border-color)');
-            line.setAttribute('stroke-opacity', '0.4');
-            line.setAttribute('stroke-width', '1.5');
-            this.edgesGroup.appendChild(line);
-            l.el = line;
         });
     }
 
@@ -3233,10 +3321,16 @@ class EscribaGraph {
         const width = this.svg.clientWidth || 800;
         const height = this.svg.clientHeight || 600;
 
-        const repulsion = 4000;
-        const attraction = 0.05;
-        const damping = 0.9;
-        const restDistance = 140;
+        const repulsion = 5000;
+        const attraction = 0.08;
+        const damping = 0.85;
+        const parentRestDist = 100;
+        const mentionRestDist = 180;
+
+        this.nodes.forEach(n => {
+            n.vx = n.vx || 0;
+            n.vy = n.vy || 0;
+        });
 
         for (let i = 0; i < this.nodes.length; i++) {
             const n1 = this.nodes[i];
@@ -3247,8 +3341,8 @@ class EscribaGraph {
                 const distSq = dx * dx + dy * dy + 0.1;
                 const dist = Math.sqrt(distSq);
 
-                if (dist < 500) {
-                    const force = repulsion / distSq;
+                if (dist < 400) {
+                    const force = (n1.isHub || n2.isHub ? repulsion * 2 : repulsion) / distSq;
                     const fx = (dx / dist) * force;
                     const fy = (dy / dist) * force;
                     n1.vx += fx;
@@ -3263,9 +3357,11 @@ class EscribaGraph {
             const dx = l.source.x - l.target.x;
             const dy = l.source.y - l.target.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-            const force = (dist - restDistance) * attraction;
+            const restDist = l.type === 'parent' ? parentRestDist : mentionRestDist;
+            const force = (dist - restDist) * (l.type === 'parent' ? attraction : attraction * 0.5);
             const fx = (dx / dist) * force;
             const fy = (dy / dist) * force;
+
             l.source.vx -= fx;
             l.source.vy -= fy;
             l.target.vx += fx;
@@ -3273,8 +3369,9 @@ class EscribaGraph {
         });
 
         this.nodes.forEach(n => {
-            n.vx += (width / 2 - n.x) * 0.005;
-            n.vy += (height / 2 - n.y) * 0.005;
+            const centerAttraction = n.isHub ? 0.008 : 0.003;
+            n.vx += (width / 2 - n.x) * centerAttraction;
+            n.vy += (height / 2 - n.y) * centerAttraction;
         });
 
         this.nodes.forEach(n => {
@@ -3304,7 +3401,6 @@ class EscribaGraph {
 
         requestAnimationFrame(() => this.animate());
     }
-
 }
 
 const app = new EscribaApp();

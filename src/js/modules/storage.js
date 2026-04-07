@@ -57,7 +57,8 @@ export const validateAndCleanSubjects = (subjects) => {
             ...note,
             title: sanitizeText(note.title || 'Apunte sin título'),
             content: cleanNoteContent(note.content || '')
-        })) : []
+        })) : [],
+        schedule: Array.isArray(subject.schedule) ? subject.schedule : []
     }));
 };
 

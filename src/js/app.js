@@ -39,6 +39,9 @@ import {
     updateCalendarHeader
 } from './ui/calendar-ui.js';
 import {
+    renderDashboard
+} from './ui/dashboard-ui.js';
+import {
     showToast,
     showModal,
     hideModal,
@@ -78,6 +81,7 @@ class EscribaApp {
         this.deletedItems = data.deletedItems || { notes: [], subjects: [] };
 
         this.currentNoteId = null;
+        this.currentSubjectId = null;
         this.editingUMLContainer = null;
         this.currentView = 'subjects';
         this.selectedColor = '#3b82f6';
@@ -103,6 +107,13 @@ class EscribaApp {
     async init() {
         document.body.classList.add('loading');
 
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.subject-options-wrapper')) {
+                document.querySelectorAll('.subject-options-wrapper.active').forEach(w => w.classList.remove('active'));
+                document.querySelectorAll('.subject-folder.menu-active').forEach(f => f.classList.remove('menu-active'));
+            }
+        });
+
         this.bindEvents();
         applySettings();
         this.loadSidebarState();
@@ -116,7 +127,10 @@ class EscribaApp {
         saveSubjects(this.subjects);
 
         if (this.subjects.length === 0 && !this.isViewingSharedNote) {
-            showWelcomeScreen(true);
+            this.switchMainView('welcome');
+        } else if (!this.isViewingSharedNote) {
+            this.updateDashboard();
+            this.switchMainView('dashboard');
         }
 
         this.switchView('subjects');
@@ -220,15 +234,16 @@ class EscribaApp {
 
     bindEvents() {
         const welcomeBtn = document.getElementById('welcomeNewSubject') || document.getElementById('welcomeNewSubjectBtn');
-        if (welcomeBtn) welcomeBtn.addEventListener('click', () => showModal('subjectModal'));
+        if (welcomeBtn) welcomeBtn.addEventListener('click', () => this.openSubjectModal());
 
         const sidebarNewSubjectBtn = document.getElementById('sidebarNewSubjectBtn');
-        if (sidebarNewSubjectBtn) sidebarNewSubjectBtn.addEventListener('click', () => showModal('subjectModal'));
+        if (sidebarNewSubjectBtn) sidebarNewSubjectBtn.addEventListener('click', () => this.openSubjectModal());
 
         const sidebarNewNoteBtn = document.getElementById('sidebarNewNoteBtn');
         if (sidebarNewNoteBtn) sidebarNewNoteBtn.addEventListener('click', () => this.createNewNote());
 
         document.getElementById('sidebarToggle').addEventListener('click', () => this.toggleSidebar());
+        document.getElementById('logoHome').addEventListener('click', () => this.switchMainView('dashboard'));
 
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
         if (mobileMenuToggle) {
@@ -241,7 +256,10 @@ class EscribaApp {
         }
 
         document.querySelectorAll('.view-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.switchView(e.target.closest('.view-btn').dataset.view));
+            btn.addEventListener('click', (e) => {
+                const view = e.target.closest('.view-btn').dataset.view;
+                this.switchView(view);
+            });
         });
 
         document.getElementById('searchInput').addEventListener('input', (e) => this.searchContent(e.target.value));
@@ -300,13 +318,21 @@ class EscribaApp {
             if (modalId === 'umlModal') {
                 this.editingUMLContainer = null;
             } else if (modalId === 'subjectModal') {
+                this.currentSubjectId = null;
+                document.getElementById('subjectModalTitle').textContent = 'Crear Nueva Materia';
                 document.getElementById('subjectName').value = '';
                 document.getElementById('subjectCode').value = '';
                 document.getElementById('subjectProfessor').value = '';
+                const scheduleContainer = document.getElementById('scheduleContainer');
+                if (scheduleContainer) scheduleContainer.innerHTML = '';
             }
         });
 
-        document.getElementById('createSubject').addEventListener('click', () => this.createSubject());
+
+        const addScheduleBtn = document.getElementById('addScheduleBtn');
+        if (addScheduleBtn) {
+            addScheduleBtn.addEventListener('click', () => this.addScheduleRow());
+        }
 
         const cancelSubjectBtn = document.getElementById('cancelSubject');
         if (cancelSubjectBtn) cancelSubjectBtn.addEventListener('click', () => hideModal('subjectModal'));
@@ -314,7 +340,10 @@ class EscribaApp {
         const cancelSubjectPickerBtn = document.getElementById('cancelSubjectPicker');
         if (cancelSubjectPickerBtn) cancelSubjectPickerBtn.addEventListener('click', () => hideModal('subjectPickerModal'));
 
+        document.getElementById('createSubject').addEventListener('click', () => this.createSubject());
+
         document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
+
 
         const autoSyncCheckbox = document.getElementById('autoSync');
         if (autoSyncCheckbox) {
@@ -497,21 +526,62 @@ class EscribaApp {
         document.getElementById('fontFamily').addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--font-family', e.target.value);
         });
+
+        document.addEventListener('openSubjectModal', () => showModal('subjectModal'));
     }
+
+    switchMainView(view) {
+        const welcome = document.getElementById('welcomeScreen');
+        const dashboard = document.getElementById('dashboardScreen');
+        const editor = document.getElementById('noteEditor');
+        const footer = document.getElementById('editorFooter');
+
+        if (welcome) welcome.style.display = view === 'welcome' ? 'flex' : 'none';
+        if (dashboard) dashboard.style.display = view === 'dashboard' ? 'flex' : 'none';
+        if (editor) editor.style.display = view === 'editor' ? 'flex' : 'none';
+        if (footer) footer.style.display = view === 'editor' ? 'flex' : 'none';
+
+        if (view === 'dashboard') {
+            this.updateDashboard();
+            this.currentNoteId = null;
+            document.querySelectorAll('.note-item').forEach(item => item.classList.remove('active'));
+        }
+    }
+
+    updateDashboard() {
+        const container = document.getElementById('dashboardScreen');
+        if (!container) return;
+
+        renderDashboard(container, {
+            subjects: this.subjects,
+            events: this.events
+        }, {
+            onNoteClick: (id) => this.loadNote(id),
+            onNewSubject: () => this.openSubjectModal(),
+            onNewNote: () => this.createNewNote(),
+            onOpenGraph: () => {
+                showModal('graphModal');
+                this.renderKnowledgeGraph();
+            },
+            onAddEvent: () => {
+                this.showEventModal();
+            },
+            onEventClick: (id) => {
+                this.showEventModal(null, id);
+            }
+        });
+    }
+
 
     createNewNote() {
         if (this.subjects.length === 0) {
             showToast('Primero debés crear una materia', 'info');
-            showModal('subjectModal');
+            this.openSubjectModal();
             return;
         }
 
-        if (this.subjects.length === 1) {
-            this.addNoteToSubject(this.subjects[0].id);
-        } else {
-            this.renderSubjectPicker();
-            showModal('subjectPickerModal');
-        }
+        this.renderSubjectPicker();
+        showModal('subjectPickerModal');
     }
 
     renderSubjectPicker() {
@@ -563,9 +633,10 @@ class EscribaApp {
             onSubjectClick: (id) => this.toggleSubject(id),
             onNoteClick: (id) => this.loadNote(id),
             onAddNote: (id) => this.addNoteToSubject(id),
+            onEditSubject: (id) => this.editSubject(id),
             onArchiveSubject: (id) => this.toggleArchiveSubject(id),
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
-            onAddSubject: () => showModal('subjectModal')
+            onAddSubject: () => this.openSubjectModal()
         }, this.showArchived);
 
         if (this.currentView === 'recent') this.renderRecentView();
@@ -619,9 +690,10 @@ class EscribaApp {
         document.getElementById('noteSubject').textContent = foundSubject.name;
         document.getElementById('noteDate').textContent = formatDate(foundNote.updatedAt);
 
-        document.getElementById('welcomeScreen').style.display = 'none';
-        document.getElementById('noteEditor').style.display = 'flex';
-        document.getElementById('editorFooter').style.display = 'flex';
+        document.getElementById('noteSubject').textContent = foundSubject.name;
+        document.getElementById('noteDate').textContent = formatDate(foundNote.updatedAt);
+
+        this.switchMainView('editor');
 
         document.querySelectorAll('.note-item').forEach(item => {
             item.classList.toggle('active', item.dataset.noteId === noteId);
@@ -681,6 +753,77 @@ class EscribaApp {
         }
     }
 
+    addScheduleRow(day = 1, time = '08:00') {
+        const container = document.getElementById('scheduleContainer');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'schedule-row';
+        row.innerHTML = `
+            <select class="schedule-day">
+                <option value="1" ${day == 1 ? 'selected' : ''}>Lunes</option>
+                <option value="2" ${day == 2 ? 'selected' : ''}>Martes</option>
+                <option value="3" ${day == 3 ? 'selected' : ''}>Miércoles</option>
+                <option value="4" ${day == 4 ? 'selected' : ''}>Jueves</option>
+                <option value="5" ${day == 5 ? 'selected' : ''}>Viernes</option>
+                <option value="6" ${day == 6 ? 'selected' : ''}>Sábado</option>
+                <option value="0" ${day == 0 ? 'selected' : ''}>Domingo</option>
+            </select>
+            <input type="time" class="schedule-time" value="${time}">
+            <button type="button" class="btn-remove-schedule" title="Eliminar"><i class="fas fa-times"></i></button>
+        `;
+
+        row.querySelector('.btn-remove-schedule').addEventListener('click', () => row.remove());
+        container.appendChild(row);
+    }
+
+    openSubjectModal(id = null) {
+        if (id) {
+            this.editSubject(id);
+        } else {
+            this.currentSubjectId = null;
+            document.getElementById('subjectModalTitle').innerHTML = '<i class="fas fa-folder-plus"></i> Crear Nueva Materia';
+            document.getElementById('createSubject').textContent = 'Crear Materia';
+            document.getElementById('subjectName').value = '';
+            document.getElementById('subjectCode').value = '';
+            document.getElementById('subjectProfessor').value = '';
+            const scheduleContainer = document.getElementById('scheduleContainer');
+            if (scheduleContainer) scheduleContainer.innerHTML = '';
+            this.selectColor('#3b82f6');
+            showModal('subjectModal');
+        }
+    }
+
+    editSubject(id) {
+        const subject = this.subjects.find(s => String(s.id) === String(id));
+        if (!subject) {
+            showToast('No se encontró la materia', 'error');
+            return;
+        }
+
+        this.currentSubjectId = id;
+        document.getElementById('subjectModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Materia';
+        document.getElementById('createSubject').textContent = 'Guardar Cambios';
+        document.getElementById('subjectName').value = subject.name || '';
+        document.getElementById('subjectCode').value = subject.code || '';
+        document.getElementById('subjectProfessor').value = subject.professor || '';
+
+        const scheduleContainer = document.getElementById('scheduleContainer');
+        if (scheduleContainer) {
+            scheduleContainer.innerHTML = '';
+            if (subject.schedule && Array.isArray(subject.schedule)) {
+                subject.schedule.forEach(s => this.addScheduleRow(s.day, s.time));
+            }
+        }
+
+        this.selectColor(subject.color || '#3b82f6');
+
+        document.querySelectorAll('.subject-options-wrapper.active').forEach(w => w.classList.remove('active'));
+        document.querySelectorAll('.subject-folder.menu-active').forEach(f => f.classList.remove('menu-active'));
+
+        showModal('subjectModal');
+    }
+
     createSubject() {
         const name = document.getElementById('subjectName').value.trim();
         const code = document.getElementById('subjectCode').value.trim();
@@ -691,27 +834,52 @@ class EscribaApp {
             return;
         }
 
-        const newSubject = {
-            id: generateId(),
-            name,
-            code,
-            professor,
-            color: this.selectedColor || '#3b82f6',
-            notes: [],
-            archived: false,
-            expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
-            createdAt: new Date().toISOString(),
-            lastModified: new Date().toISOString()
-        };
+        const schedule = [];
+        document.querySelectorAll('.schedule-row').forEach(row => {
+            const day = parseInt(row.querySelector('.schedule-day').value);
+            const time = row.querySelector('.schedule-time').value;
+            if (time) schedule.push({ day, time });
+        });
 
-        this.subjects.push(newSubject);
+        if (this.currentSubjectId) {
+            const subject = this.subjects.find(s => String(s.id) === String(this.currentSubjectId));
+            if (subject) {
+                subject.name = name;
+                subject.code = code;
+                subject.professor = professor;
+                subject.color = this.selectedColor || '#3b82f6';
+                subject.schedule = schedule;
+                subject.lastModified = new Date().toISOString();
+                showToast('Materia actualizada', 'success');
+            }
+        } else {
+            const newSubject = {
+                id: generateId(),
+                name,
+                code,
+                professor,
+                color: this.selectedColor || '#3b82f6',
+                notes: [],
+                schedule,
+                archived: false,
+                expanded: this.settings && typeof this.settings.expandSubjects !== 'undefined' ? this.settings.expandSubjects : true,
+                createdAt: new Date().toISOString(),
+                lastModified: new Date().toISOString()
+            };
+            this.subjects.push(newSubject);
+            showToast('Materia creada', 'success');
+        }
+
         saveSubjects(this.subjects);
         this.renderSubjects();
-        hideModal('subjectModal');
-        showToast('Materia creada', 'success');
+        this.updateDashboard();
 
-        if (this.subjects.length === 1) {
-            showWelcomeScreen(false);
+        const scheduleContainer = document.getElementById('scheduleContainer');
+        if (scheduleContainer) scheduleContainer.innerHTML = '';
+        hideModal('subjectModal');
+
+        if (this.subjects.length === 1 && !this.currentSubjectId) {
+            this.switchMainView('dashboard');
         }
     }
 
@@ -734,8 +902,7 @@ class EscribaApp {
         saveSubjects(this.subjects);
         this.renderSubjects();
 
-        document.getElementById('noteEditor').style.display = 'none';
-        showWelcomeScreen(true);
+        this.switchMainView(this.subjects.length === 0 ? 'welcome' : 'dashboard');
         showToast('Apunte eliminado', 'success');
     }
 
@@ -1473,7 +1640,15 @@ class EscribaApp {
                 </div>
             `;
         }).join('');
+
+        eventsList.querySelectorAll('.event-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const eventId = item.dataset.eventId;
+                if (eventId) this.showEventModal(null, eventId);
+            });
+        });
     }
+
 
     getUpcomingEvents() {
         const today = new Date();
@@ -1896,32 +2071,86 @@ class EscribaApp {
         }
     }
 
+    showEventModal(date = null, eventId = null) {
+        this.populateEventSubjectDropdown();
+        this.currentEventId = eventId;
+
+        const titleEl = document.getElementById('eventModalTitle');
+        const saveBtn = document.getElementById('saveEvent');
+        const deleteBtn = document.getElementById('deleteEvent');
+
+        if (eventId) {
+            const event = this.events.find(e => e.id === eventId);
+            if (!event) return;
+
+            titleEl.textContent = 'Editar Examen';
+            document.getElementById('eventTitle').value = event.title;
+            document.getElementById('eventSubject').value = event.subjectId || '';
+            document.getElementById('eventDate').value = event.date;
+            document.getElementById('eventTime').value = event.time || '';
+            document.getElementById('eventType').value = event.type;
+            document.getElementById('eventNotes').value = event.description || '';
+            if (deleteBtn) deleteBtn.style.display = 'block';
+        } else {
+            titleEl.textContent = 'Agregar Examen';
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventSubject').value = '';
+            document.getElementById('eventDate').value = date ? date.toISOString().split('T')[0] : '';
+            document.getElementById('eventTime').value = '';
+            document.getElementById('eventType').value = 'parcial';
+            document.getElementById('eventNotes').value = '';
+            if (deleteBtn) deleteBtn.style.display = 'none';
+        }
+
+        showModal('eventModal');
+    }
+
     saveEvent() {
         const title = document.getElementById('eventTitle').value.trim();
+        const subjectId = document.getElementById('eventSubject').value;
         const date = document.getElementById('eventDate').value;
+        const time = document.getElementById('eventTime').value;
         const type = document.getElementById('eventType').value;
-        const desc = document.getElementById('eventDesc').value;
+        const description = document.getElementById('eventNotes').value;
 
         if (!title || !date) {
             showToast('Título y fecha son obligatorios', 'error');
             return;
         }
 
-        const newEvent = {
-            id: generateId(),
-            title,
-            date,
-            type,
-            description: desc,
-            createdAt: new Date().toISOString()
-        };
+        if (this.currentEventId) {
+            const event = this.events.find(e => e.id === this.currentEventId);
+            if (event) {
+                event.title = title;
+                event.subjectId = subjectId;
+                event.date = date;
+                event.time = time;
+                event.type = type;
+                event.description = description;
+                event.updatedAt = new Date().toISOString();
+                showToast('Evento actualizado', 'success');
+            }
+        } else {
+            const newEvent = {
+                id: generateId(),
+                title,
+                subjectId,
+                date,
+                time,
+                type,
+                description,
+                createdAt: new Date().toISOString()
+            };
+            this.events.push(newEvent);
+            showToast('Evento guardado', 'success');
+        }
 
-        this.events.push(newEvent);
         saveEvents(this.events);
         this.renderCalendar();
+        this.updateDashboard();
         hideModal('eventModal');
-        showToast('Evento guardado', 'success');
     }
+
 
     deleteEvent() {
         if (!this.currentEventId) return;

@@ -11,9 +11,13 @@
     background: var(--bg-card);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.03);
-    overflow: hidden;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.subject-folder.menu-active {
+    z-index: 50;
 }
 
 .subject-folder:hover {
@@ -31,7 +35,6 @@
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
     min-height: 52px;
 }
 
@@ -116,15 +119,15 @@
     z-index: 5;
 }
 
-.subject-folder:hover .subject-actions {
+.subject-folder:hover .subject-actions,
+.subject-folder.menu-active .subject-actions {
     opacity: 1;
     visibility: visible;
     transform: translateY(-50%) translateX(0);
 }
 
 .btn-add-note,
-.btn-archive-subject,
-.btn-delete-subject {
+.btn-subject-options {
     width: 28px;
     height: 28px;
     border-radius: 8px;
@@ -132,6 +135,9 @@
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.75rem;
 }
 
@@ -143,18 +149,89 @@
     box-shadow: 0 4px 10px rgba(var(--accent-blue-rgb), 0.3);
 }
 
-.btn-archive-subject:hover {
-    background: var(--accent-blue);
-    color: white;
-    border-color: var(--accent-blue);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(var(--accent-blue-rgb), 0.3);
+.btn-subject-options:hover,
+.subject-options-wrapper.active .btn-subject-options {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-light);
+    transform: none;
+    box-shadow: none;
 }
 
-.btn-delete-subject:hover {
-    background: var(--accent-red);
-    color: white;
-    border-color: var(--accent-red);
+.subject-options-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.subject-options-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    width: 130px;
+    background-color: #242424;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 0.35rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px) scale(0.98);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.subject-options-wrapper.active .subject-options-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.menu-item:hover {
+    background: var(--bg-hover);
+    transform: translateX(4px);
+}
+
+.menu-item i {
+    width: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.menu-item.btn-delete-subject {
+    color: var(--accent-red);
+}
+
+.menu-item.btn-delete-subject i {
+    color: var(--accent-red);
+}
+
+.menu-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 0.25rem 0.5rem;
+    opacity: 0.5;
 }
 
 .subject-toggle {

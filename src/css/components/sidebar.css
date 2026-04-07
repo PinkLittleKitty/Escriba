@@ -56,20 +56,25 @@
 }
 
 .sidebar.compact .view-toggles {
+    display: flex;
     flex-direction: column;
     padding: 0.5rem 0;
+    gap: 0.75rem;
+    align-items: center;
 }
 
 .sidebar.compact .view-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
     margin: 0 auto;
+    padding: 0;
+    justify-content: center;
 }
 
 .sidebar.compact .view-btn.active {
-    justify-content: center;
-    padding: 0.4rem;
+    background: var(--accent-blue);
+    color: var(--text-on-accent);
 }
 
 .sidebar.compact .subjects-container,
@@ -267,24 +272,26 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    margin-bottom: 0.5rem;
 }
 
 .view-btn {
     flex: 0 0 auto;
-    width: 34px;
-    padding: 0.4rem;
+    width: 40px;
+    height: 40px;
+    padding: 0;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, width 0.2s ease;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
     overflow: hidden;
     white-space: nowrap;
 }
@@ -292,6 +299,7 @@
 .view-btn:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
+    transform: translateY(-1px);
 }
 
 .view-btn.active {
@@ -300,16 +308,19 @@
     color: var(--text-on-accent);
     border-color: var(--accent-blue);
     justify-content: flex-start;
-    padding: 0.4rem 0.75rem;
+    padding: 0 1rem;
+    box-shadow: 0 4px 12px rgba(var(--accent-blue-rgb), 0.2);
 }
 
 .view-btn i {
-    font-size: 0.9rem;
+    font-size: 1rem;
     flex-shrink: 0;
 }
 
 .view-btn-label {
     display: none;
+    font-size: 0.85rem;
+    letter-spacing: -0.01em;
 }
 
 .view-btn.active .view-btn-label {
@@ -342,7 +353,6 @@
     }
 }
 
-/* Archived Subjects Styles */
 .subject-folder.archived {
     opacity: 0.65;
     filter: grayscale(0.6);

@@ -42,12 +42,23 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
                     <button class="btn-add-note" data-subject-id="${subject.id}" title="Crear apunte">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <button class="btn-archive-subject" data-subject-id="${subject.id}" title="${subject.archived ? 'Desarchivar' : 'Archivar'} materia">
-                        <i class="fas ${subject.archived ? 'fa-box-open' : 'fa-box-archive'}"></i>
-                    </button>
-                    <button class="btn-delete-subject" data-subject-id="${subject.id}" title="Eliminar materia">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="subject-options-wrapper" data-subject-id="${subject.id}">
+                        <button class="btn-subject-options" title="Más opciones">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="subject-options-menu">
+                            <button class="menu-item btn-edit-subject" data-subject-id="${subject.id}">
+                                <i class="fas fa-pencil"></i> <span>Editar</span>
+                            </button>
+                            <button class="menu-item btn-archive-subject" data-subject-id="${subject.id}">
+                                <i class="fas ${subject.archived ? 'fa-box-open' : 'fa-box-archive'}"></i> <span>${subject.archived ? 'Desarchivar' : 'Archivar'}</span>
+                            </button>
+                            <div class="menu-divider"></div>
+                            <button class="menu-item btn-delete-subject" data-subject-id="${subject.id}">
+                                <i class="fas fa-trash"></i> <span>Eliminar</span>
+                            </button>
+                        </div>
+                    </div>
                     <i class="fas fa-chevron-right subject-toggle"></i>
                 </div>
             </div>
@@ -75,7 +86,37 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
 
     container.querySelectorAll('.subject-header').forEach(header => {
         header.addEventListener('click', (e) => {
-            if (e.target.closest('.subject-actions button')) return;
+            const optionsBtn = e.target.closest('.btn-subject-options');
+            if (optionsBtn) {
+                e.stopPropagation();
+                const wrapper = optionsBtn.closest('.subject-options-wrapper');
+                const folder = optionsBtn.closest('.subject-folder');
+                const isOpened = wrapper.classList.contains('active');
+
+                document.querySelectorAll('.subject-options-wrapper.active').forEach(w => w.classList.remove('active'));
+                document.querySelectorAll('.subject-folder.menu-active').forEach(f => f.classList.remove('menu-active'));
+
+                if (!isOpened) {
+                    wrapper.classList.add('active');
+                    if (folder) folder.classList.add('menu-active');
+                }
+                return;
+            }
+
+            const menu = e.target.closest('.subject-options-menu');
+            if (menu) {
+                e.stopPropagation();
+                setTimeout(() => {
+                    menu.closest('.subject-options-wrapper').classList.remove('active');
+                }, 100);
+            }
+
+            const editBtn = e.target.closest('.btn-edit-subject');
+            const archiveBtn = e.target.closest('.btn-archive-subject');
+            const deleteBtn = e.target.closest('.btn-delete-subject');
+
+            if (editBtn || archiveBtn || deleteBtn) return;
+
             const subjectId = header.closest('.subject-folder').dataset.subjectId;
             if (callbacks.onSubjectClick) callbacks.onSubjectClick(subjectId);
         });
@@ -94,6 +135,14 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
             e.stopPropagation();
             const subjectId = btn.dataset.subjectId;
             if (callbacks.onArchiveSubject) callbacks.onArchiveSubject(subjectId);
+        });
+    });
+
+    container.querySelectorAll('.btn-edit-subject').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const subjectId = btn.dataset.subjectId;
+            if (callbacks.onEditSubject) callbacks.onEditSubject(subjectId);
         });
     });
 

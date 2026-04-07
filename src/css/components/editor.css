@@ -10,7 +10,7 @@
 
 .welcome-screen {
     flex: 1;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     background: var(--bg-primary);
@@ -170,7 +170,7 @@
 
 .note-editor {
     flex: 1;
-    display: flex;
+    display: none;
     flex-direction: column;
     background: var(--bg-primary);
     min-height: 0;

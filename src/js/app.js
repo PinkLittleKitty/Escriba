@@ -57,6 +57,19 @@ import {
 import { MathManager } from './modules/editor/math-manager.js';
 
 class EscribaApp {
+    static APP_WEB_URL = 'https://www.justneki.com/Escriba/';
+
+    isElectron() {
+        return navigator.userAgent.toLowerCase().includes(' electron/');
+    }
+
+    getShareBaseUrl() {
+        if (this.isElectron() || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return EscribaApp.APP_WEB_URL;
+        }
+        return `${window.location.origin}${window.location.pathname}`;
+    }
+
     constructor() {
         const data = loadAllData();
         this.subjects = data.subjects;
@@ -1946,14 +1959,14 @@ class EscribaApp {
         try {
             if (this.github && this.github.isAuthenticated) {
                 const relativePath = `data/notes/${note.id}.json`;
-                const repoUrl = `${window.location.origin}${window.location.pathname}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
+                const repoUrl = `${this.getShareBaseUrl()}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
                 if (repoUrl.length < 2000) return repoUrl;
             }
 
             const gistUrl = await this.createGist(shareData);
             if (gistUrl) return gistUrl;
 
-            return `${window.location.origin}${window.location.pathname}?share=${this.utf8ToBase64(JSON.stringify(shareData))}`;
+            return `${this.getShareBaseUrl()}?share=${this.utf8ToBase64(JSON.stringify(shareData))}`;
         } catch (error) {
             console.error('Share URL generation failed:', error);
             return '';
@@ -1980,7 +1993,7 @@ class EscribaApp {
 
             if (response.ok) {
                 const gist = await response.json();
-                return `${window.location.origin}${window.location.pathname}?gist=${gist.id}`;
+                return `${this.getShareBaseUrl()}?gist=${gist.id}`;
             }
         } catch (error) {
             console.error('Gist creation failed:', error);

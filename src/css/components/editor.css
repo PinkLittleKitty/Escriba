@@ -606,20 +606,21 @@
     }
 }
 
-.search-highlight {
-    background-color: rgba(255, 235, 59, 0.4);
-    border-bottom: 2px solid #fbc02d;
-    color: inherit;
+mark.search-highlight {
+    background-color: var(--highlight-bg, rgba(255, 235, 59, 0.3)) !important;
+    color: var(--highlight-text, #000000) !important;
+    border-bottom: 2px solid var(--highlight-border, #fbc02d) !important;
     border-radius: 2px;
     padding: 0 1px;
     transition: background-color 0.2s ease;
 }
 
-[data-theme="dark"] .search-highlight,
-[data-theme="cyberpunk"] .search-highlight,
-[data-theme="matrix"] .search-highlight {
-    background-color: rgba(255, 235, 59, 0.2);
-    border-bottom-color: #fbc02d;
+.note-content [style*="background-color: rgb(255, 241, 118)"],
+.note-content [style*="background-color: #fff176"],
+.note-content [style*="background-color: #FFF176"] {
+    background-color: var(--highlight-bg, rgba(255, 235, 59, 0.3)) !important;
+    color: var(--highlight-text, #000000) !important;
+    border-radius: 2px;
 }
 
 .editor-footer {

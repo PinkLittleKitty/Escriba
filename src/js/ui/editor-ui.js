@@ -19,8 +19,9 @@ export const updateToolbarStates = () => {
     if (selection.rangeCount > 0) {
         let element = selection.getRangeAt(0).commonAncestorContainer;
         if (element.nodeType === Node.TEXT_NODE) element = element.parentElement;
-        isHighlighted = element.style.backgroundColor === 'rgb(255, 241, 118)' ||
+        isHighlighted = element.style.backgroundColor.includes('255, 241, 118') ||
             element.closest('[style*="background-color: rgb(255, 241, 118)"]') ||
+            element.closest('[style*="background-color: #fff176"]') ||
             element.closest('mark');
     }
 

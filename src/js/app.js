@@ -2379,8 +2379,9 @@ class EscribaApp {
         let container = selection.getRangeAt(0).commonAncestorContainer;
         if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
 
-        const isHighlighted = container.style.backgroundColor === 'rgb(255, 241, 118)' ||
+        const isHighlighted = container.style.backgroundColor.includes('255, 241, 118') ||
             container.closest('[style*="background-color: rgb(255, 241, 118)"]') ||
+            container.closest('[style*="background-color: #fff176"]') ||
             container.closest('mark');
 
         if (isHighlighted) {

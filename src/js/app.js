@@ -135,6 +135,44 @@ class EscribaApp {
         }
 
         this.initDesktopBanner();
+
+        if (this.isElectron()) {
+            this.checkForUpdates();
+        }
+    }
+
+    async checkForUpdates() {
+        const CURRENT_BUILD_TIME = new Date('2026-03-27T00:00:00Z');
+
+        try {
+            const response = await fetch('https://api.github.com/repos/PinkLittleKitty/Escriba/releases/tags/nightly');
+            if (!response.ok) return;
+
+            const release = await response.json();
+            const publishedAt = new Date(release.published_at);
+
+            if (publishedAt > CURRENT_BUILD_TIME) {
+                const updateModal = document.getElementById('updateModal');
+                const updateDateInfo = document.getElementById('updateDateInfo');
+                const updateReleaseNotes = document.getElementById('updateReleaseNotes');
+
+                if (updateModal && updateDateInfo && updateReleaseNotes) {
+                    updateDateInfo.textContent = `Publicada el ${new Date(release.published_at).toLocaleString('es-AR')}`;
+
+                    const notes = release.body || 'No hay notas de versión disponibles.';
+                    updateReleaseNotes.innerHTML = notes
+                        .replace(/[<>]/g, '')
+                        .replace(/\n/g, '<br>')
+                        .replace(/### (.*)/g, '<h3>$1</h3>')
+                        .replace(/## (.*)/g, '<h2>$1</h2>')
+                        .replace(/\* (.*)/g, '• $1');
+
+                    showModal('updateModal');
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for updates:', error);
+        }
     }
 
     initDesktopBanner() {

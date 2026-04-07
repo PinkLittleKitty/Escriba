@@ -540,3 +540,34 @@
     color: var(--subject-accent-color);
     transform: translateX(4px);
 }
+
+.release-notes-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    max-height: 250px;
+    overflow-y: auto;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.release-notes-container h1, 
+.release-notes-container h2, 
+.release-notes-container h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.release-notes-container ul {
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.release-notes-container li {
+    margin-bottom: 0.25rem;
+}
+

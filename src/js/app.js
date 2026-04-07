@@ -786,14 +786,7 @@ class EscribaApp {
             subject.expanded = !subject.expanded;
             subject.lastModified = new Date().toISOString();
             saveSubjects(this.subjects);
-            renderSubjects(document.getElementById('subjectsList'), this.subjects, {
-                onSubjectClick: (id) => this.toggleSubject(id),
-                onAddNote: (id) => this.addNote(id),
-                onArchiveSubject: (id) => this.toggleArchiveSubject(id),
-                onEditSubject: (id) => this.editSubject(id),
-                onDeleteSubject: (id) => this.deleteSubject(id),
-                onNoteClick: (id) => this.loadNote(id),
-            }, this.showArchived);
+            this.renderSubjects();
         }
     }
 
@@ -1057,6 +1050,8 @@ class EscribaApp {
             onSubjectClick: (id) => this.toggleSubject(id),
             onNoteClick: (id) => this.loadNote(id),
             onAddNote: (id) => this.addNoteToSubject(id),
+            onEditSubject: (id) => this.editSubject(id),
+            onArchiveSubject: (id) => this.toggleArchiveSubject(id),
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
             onAddSubject: () => showModal('subjectModal')
         });

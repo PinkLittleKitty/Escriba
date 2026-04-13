@@ -637,3 +637,56 @@
 .release-notes-container li {
     margin-bottom: 0.25rem;
 }
+
+.link-notes-list {
+    margin-top: 0.5rem;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+}
+
+.link-note-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.link-note-item:last-child {
+    border-bottom: none;
+}
+
+.link-note-item:hover {
+    background: var(--bg-hover);
+}
+
+.link-note-item.selected {
+    background: var(--accent-focus);
+    border-left: 4px solid var(--accent-blue);
+    padding-left: calc(1rem - 4px);
+}
+
+.link-note-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.link-note-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.link-note-subject {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}

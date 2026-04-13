@@ -43,8 +43,9 @@ export const initializeAceEditor = (editorContainer, initialCode = '', options =
             ...options.aceOptions
         });
 
-        if (initialCode) {
-            editor.setValue(initialCode, -1);
+        const code = initialCode || editorContainer.getAttribute('data-code') || '';
+        if (code) {
+            editor.setValue(code, -1);
         }
 
         editorContainer.aceEditor = editor;
@@ -81,6 +82,9 @@ const setupEditorEvents = (editor, editorContainer, options) => {
 
     let changeTimeout;
     editor.session.on('change', () => {
+        const currentCode = editor.getValue();
+        editorContainer.setAttribute('data-code', currentCode);
+
         if (options.onChange) {
             clearTimeout(changeTimeout);
             changeTimeout = setTimeout(() => options.onChange(editor), 300);

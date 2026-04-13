@@ -477,9 +477,16 @@ class EscribaApp {
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertLinkBtn').addEventListener('click', () => showModal('linkModal'));
-        document.getElementById('mathModeBtn').addEventListener('click', () => this.toggleMathMode());
         document.getElementById('insertUMLBtn').addEventListener('click', () => showModal('umlModal'));
         document.getElementById('insertUMLDiagram').addEventListener('click', () => this.handleInsertUML());
+
+        const noteLanguageSelect = document.getElementById('noteLanguageSelect');
+        if (noteLanguageSelect) {
+            noteLanguageSelect.addEventListener('change', () => {
+                this.reRenderAllCodeBlocks();
+                this.debouncedSave();
+            });
+        }
 
         const cancelUMLBtn = document.getElementById('cancelUML');
         if (cancelUMLBtn) cancelUMLBtn.addEventListener('click', () => hideModal('umlModal'));
@@ -747,18 +754,41 @@ class EscribaApp {
         });
 
         this.reRenderAllDiagrams();
+        this.reRenderAllCodeBlocks();
         this.mathManager.sync(foundNote);
         this.updateNoteStats();
         this.updateBacklinks(noteId);
         clearHighlights(document.getElementById('noteContent'));
         updateToolbarStates();
+        updateLanguageSelectVisibility(document.getElementById('noteContent'), document.getElementById('noteLanguageSelect'));
     }
 
     async saveCurrentNote() {
         if (!this.currentNoteId) return;
 
         const title = document.getElementById('noteTitle').value.trim() || 'Apunte sin título';
-        const content = document.getElementById('noteContent').innerHTML;
+
+        const noteContent = document.getElementById('noteContent');
+        if (!noteContent) return;
+
+        const contentClone = noteContent.cloneNode(true);
+
+        const activeEditors = noteContent.querySelectorAll('.inline-ace-editor');
+        const cloneEditors = contentClone.querySelectorAll('.inline-ace-editor');
+
+        activeEditors.forEach((editorContainer, index) => {
+            if (editorContainer.aceEditor) {
+                const code = editorContainer.aceEditor.getValue();
+                editorContainer.setAttribute('data-code', code);
+                if (cloneEditors[index]) {
+                    cloneEditors[index].setAttribute('data-code', code);
+                    cloneEditors[index].innerHTML = ''; // Keep saved HTML clean
+                    cloneEditors[index].removeAttribute('data-initialized');
+                }
+            }
+        });
+
+        const content = contentClone.innerHTML;
 
         this.subjects.forEach(s => {
             const note = s.notes.find(n => n.id === this.currentNoteId);
@@ -772,6 +802,14 @@ class EscribaApp {
 
         saveSubjects(this.subjects);
         this.updateSettingsStats();
+
+        this.renderSubjects();
+        if (document.getElementById('recentContainer').style.display !== 'none') {
+            this.renderRecentNotes();
+        }
+        if (document.getElementById('favoritesContainer').style.display !== 'none') {
+            this.renderFavoriteNotes();
+        }
     }
 
     toggleSubject(id, forceOpen = false) {
@@ -1447,6 +1485,23 @@ class EscribaApp {
                 }
                 renderUMLDiagram(content.id, code);
             }
+        });
+    }
+
+    reRenderAllCodeBlocks() {
+        const editors = document.querySelectorAll('.inline-ace-editor');
+        const language = document.getElementById('noteLanguageSelect')?.value || 'javascript';
+
+        editors.forEach(container => {
+            if (!container.id) {
+                container.id = `ace-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            }
+
+            const code = container.getAttribute('data-code') || '';
+            initializeAceEditor(container, code, {
+                mode: `ace/mode/${language}`,
+                onChange: () => this.debouncedSave()
+            });
         });
     }
 
@@ -2577,6 +2632,7 @@ class EscribaApp {
         const selectedText = selection.toString().trim();
         const initialCode = selectedText || '// Escribí tu código acá';
         const aceId = `ace-${Date.now()}`;
+        const language = document.getElementById('noteLanguageSelect')?.value || 'javascript';
 
         const html = `
             <div class="code-block-container" contenteditable="false">
@@ -2586,7 +2642,7 @@ class EscribaApp {
                         <button class="code-block-delete-btn" title="Eliminar bloque"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
-                <div id="${aceId}" class="inline-ace-editor"></div>
+                <div id="${aceId}" class="inline-ace-editor" data-code="${escapeHtml(initialCode)}"></div>
             </div>
             <p><br></p>
         `;
@@ -2595,7 +2651,11 @@ class EscribaApp {
 
         const editorElement = document.getElementById(aceId);
         if (editorElement) {
-            initializeAceEditor(editorElement, initialCode);
+            initializeAceEditor(editorElement, initialCode, {
+                mode: `ace/mode/${language}`,
+                onChange: () => this.debouncedSave()
+            });
+            updateLanguageSelectVisibility(document.getElementById('noteContent'), document.getElementById('noteLanguageSelect'));
         }
 
         this.debouncedSave();

@@ -201,6 +201,13 @@ export class GitHubManager {
             const idx = merged.events.findIndex(e => e.id === localEvent.id);
             if (idx === -1) {
                 merged.events.push(localEvent);
+            } else {
+                const remoteEvent = merged.events[idx];
+                const localUpdate = new Date(localEvent.updatedAt || localEvent.createdAt || 0);
+                const remoteUpdate = new Date(remoteEvent.updatedAt || remoteEvent.createdAt || 0);
+                if (localUpdate > remoteUpdate) {
+                    merged.events[idx] = localEvent;
+                }
             }
         });
 

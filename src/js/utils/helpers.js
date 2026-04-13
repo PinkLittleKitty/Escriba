@@ -43,6 +43,13 @@ export const generateId = (prefix = 'id') => {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+export const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (!y || !m || !d) return new Date(dateStr);
+    return new Date(y, m - 1, d);
+};
+
 export const debounce = (func, wait) => {
     let timeout;
     return function executedFunction(...args) {

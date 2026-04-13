@@ -15,7 +15,8 @@ import {
     escapeHtml,
     sanitizeText,
     highlightElement,
-    clearHighlights
+    clearHighlights,
+    parseLocalDate
 } from './utils/helpers.js';
 import {
     initializeAceEditor,
@@ -1760,7 +1761,10 @@ class EscribaApp {
             const dayElement = document.createElement('div');
             dayElement.className = `calendar-day${isDiffMonth ? ' other-month' : ''}${isToday ? ' today' : ''}`;
 
-            const hasEvents = this.events.some(e => new Date(e.date).toDateString() === date.toDateString());
+            const hasEvents = this.events.some(e => {
+                const eventDate = parseLocalDate(e.date);
+                return eventDate && eventDate.toDateString() === date.toDateString();
+            });
             if (hasEvents) dayElement.classList.add('has-events');
 
             dayElement.innerHTML = `<span class="day-number">${day}</span>`;
@@ -1822,14 +1826,27 @@ class EscribaApp {
                 const subject = this.subjects.find(s => s.id === e.subjectId);
                 return !subject || !subject.archived;
             })
-            .filter(e => new Date(e.date) >= today)
-            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .filter(e => {
+                const eventDate = parseLocalDate(e.date);
+                return eventDate && eventDate >= today;
+            })
+            .sort((a, b) => {
+                const dateA = parseLocalDate(a.date);
+                const dateB = parseLocalDate(b.date);
+                return (dateA || 0) - (dateB || 0);
+            })
             .slice(0, 10);
     }
 
-    getTimeLeft(eventDate) {
-        const diff = new Date(eventDate) - new Date();
-        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    getTimeLeft(eventDateStr) {
+        const eventDate = parseLocalDate(eventDateStr);
+        if (!eventDate) return { text: 'N/A', class: 'normal' };
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const diff = eventDate - today;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         if (days <= 0) return { text: 'Hoy', class: 'urgent' };
         if (days === 1) return { text: 'Mañana', class: 'urgent' };
         return { text: `${days} días`, class: days <= 7 ? 'soon' : 'normal' };
@@ -1841,7 +1858,9 @@ class EscribaApp {
     }
 
     formatEventDate(dateStr) {
-        return new Date(dateStr).toLocaleDateString('es-AR', {
+        const date = parseLocalDate(dateStr);
+        if (!date) return 'Sin fecha';
+        return date.toLocaleDateString('es-AR', {
             weekday: 'short', day: 'numeric', month: 'short'
         });
     }
@@ -2313,6 +2332,10 @@ class EscribaApp {
         this.renderCalendar();
         this.updateDashboard();
         hideModal('eventModal');
+
+        if (this.github.isAuthenticated && this.settings.autoSync) {
+            this.handleGitHubAuth(true);
+        }
     }
 
 
@@ -2324,6 +2347,10 @@ class EscribaApp {
             this.renderCalendar();
             hideModal('eventModal');
             showToast('Evento eliminado', 'info');
+
+            if (this.github.isAuthenticated && this.settings.autoSync) {
+                this.handleGitHubAuth(true);
+            }
         }
     }
     async showShareModal() {

@@ -99,8 +99,7 @@ class EscribaApp {
         });
 
         this.mathManager = new MathManager(this);
-
-        this.floatingToolbar = document.getElementById('floatingToolbar');
+        this.floatingToolbar = null;
 
         this.debouncedSave = debounce(() => this.saveCurrentNote(), 500);
     }
@@ -477,7 +476,13 @@ class EscribaApp {
         document.getElementById('highlightBtn').addEventListener('click', () => this.toggleHighlight());
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
-        document.getElementById('insertLinkBtn').addEventListener('click', () => showModal('linkModal'));
+        document.getElementById('insertLinkBtn').addEventListener('click', () => {
+            document.getElementById('linkSearchInput').value = '';
+            document.getElementById('linkText').value = '';
+            document.getElementById('createLink').disabled = true;
+            this.searchNotesForLink('');
+            showModal('linkModal');
+        });
         document.getElementById('insertUMLBtn').addEventListener('click', () => showModal('umlModal'));
         document.getElementById('insertUMLDiagram').addEventListener('click', () => this.handleInsertUML());
 
@@ -550,6 +555,11 @@ class EscribaApp {
 
         const cancelLink = document.getElementById('cancelLink');
         if (cancelLink) cancelLink.addEventListener('click', () => hideModal('linkModal'));
+
+        const linkSearchInput = document.getElementById('linkSearchInput');
+        if (linkSearchInput) {
+            linkSearchInput.addEventListener('input', (e) => this.searchNotesForLink(e.target.value));
+        }
 
         document.querySelectorAll('.theme-option').forEach(option => {
             option.addEventListener('click', (e) => this.selectTheme(e.target.closest('.theme-option').dataset.theme));
@@ -2322,7 +2332,8 @@ class EscribaApp {
                 time,
                 type,
                 description,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
             this.events.push(newEvent);
             showToast('Evento guardado', 'success');
@@ -3109,6 +3120,9 @@ class EscribaApp {
     }
 
     updateFloatingToolbar() {
+        if (!this.floatingToolbar) {
+            this.floatingToolbar = document.getElementById('floatingToolbar');
+        }
         if (!this.floatingToolbar) return;
 
         const selection = window.getSelection();
@@ -3134,13 +3148,14 @@ class EscribaApp {
 
         this.floatingToolbar.style.display = 'flex';
         this.floatingToolbar.style.visibility = 'hidden';
+        this.floatingToolbar.style.opacity = '0';
 
         const toolbarRect = this.floatingToolbar.getBoundingClientRect();
 
-        let top = rect.top - toolbarRect.height - 10;
+        let top = rect.top - toolbarRect.height - 12;
         let left = rect.left + (rect.width / 2) - (toolbarRect.width / 2);
 
-        if (top < 10) top = rect.bottom + 10;
+        if (top < 10) top = rect.bottom + 12;
         if (left < 10) left = 10;
         if (left + toolbarRect.width > window.innerWidth - 10) {
             left = window.innerWidth - toolbarRect.width - 10;
@@ -3150,8 +3165,11 @@ class EscribaApp {
         this.floatingToolbar.style.left = `${left}px`;
         this.floatingToolbar.style.visibility = 'visible';
         this.floatingToolbar.style.opacity = '1';
+        this.floatingToolbar.style.transform = 'translateY(0)';
 
-        updateToolbarStates();
+        if (typeof updateToolbarStates === 'function') {
+            updateToolbarStates();
+        }
     }
 
     updateNoteStats() {

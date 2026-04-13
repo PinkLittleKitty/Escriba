@@ -91,21 +91,25 @@ export const renderDashboard = (container, data, handlers) => {
                         <button class="btn-icon-sm" id="dashAddEvent" title="Agregar Examen"><i class="fas fa-plus"></i></button>
                     </div>
                     <div class="dashboard-list">
-                        ${upcomingExams.length > 0 ? upcomingExams.map(exam => `
+                        ${upcomingExams.length > 0 ? upcomingExams.map(exam => {
+        const examDate = parseLocalDate(exam.date);
+        if (!examDate) return '';
+        return `
                                 <div class="list-item" data-event-id="${exam.id}">
                                     <div class="item-date-mini">
-                                        <span class="item-day">${parseLocalDate(exam.date).getDate()}</span>
-                                        <span class="item-month">${parseLocalDate(exam.date).toLocaleDateString('es-AR', { month: 'short' }).replace('.', '')}</span>
+                                        <span class="item-day">${examDate.getDate()}</span>
+                                        <span class="item-month">${examDate.toLocaleDateString('es-AR', { month: 'short' }).replace('.', '')}</span>
                                     </div>
                                     <div class="item-info">
                                         <div class="item-title-row">
                                             <span class="item-title">${escapeHtml(exam.title)}</span>
                                             <span class="type-tag tag-${exam.type}">${exam.type}</span>
                                         </div>
-                                        <span class="item-subtitle">${escapeHtml(exam.notes || 'Sin notas adicionales')}</span>
+                                        <span class="item-subtitle">${escapeHtml(exam.description || 'Sin notas adicionales')}</span>
                                     </div>
                                 </div>
-                            `).join('') : '<p class="empty-state">No hay exámenes próximos.</p>'}
+                            `;
+    }).join('') : '<p class="empty-state">No hay exámenes próximos.</p>'}
                     </div>
                 </div>
 

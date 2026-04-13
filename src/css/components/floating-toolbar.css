@@ -1,6 +1,6 @@
 .floating-toolbar {
     position: fixed;
-    z-index: 1000;
+    z-index: 10000;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 8px;

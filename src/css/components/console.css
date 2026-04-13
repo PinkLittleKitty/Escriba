@@ -1,0 +1,193 @@
+.dev-console {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 300px;
+    background: var(--bg-secondary, #1a1a1a);
+    border-top: 1px solid var(--border-color, #333);
+    z-index: 10001;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dev-console.active {
+    transform: translateY(0);
+}
+
+.console-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--bg-tertiary, #222);
+    border-bottom: 1px solid var(--border-color, #333);
+    user-select: none;
+}
+
+.console-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #aaa);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.console-title i {
+    color: var(--accent-color, #3b82f6);
+}
+
+.console-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.console-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #aaa);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.console-btn:hover {
+    background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+    color: var(--text-primary, #fff);
+}
+
+.console-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.console-filter {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-primary, #111);
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, #333);
+}
+
+.filter-chip {
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-muted, #777);
+    border: none;
+    background: none;
+}
+
+.filter-chip.active {
+    background: var(--accent-color, #3b82f6);
+    color: white;
+}
+
+.console-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 12px;
+    background: var(--bg-primary, #0d0d0d);
+}
+
+.log-entry {
+    display: flex;
+    padding: 2px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.log-entry:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.log-time {
+    color: var(--text-muted, #555);
+    min-width: 85px;
+    user-select: none;
+}
+
+.log-level {
+    min-width: 60px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 10px;
+    margin-right: 8px;
+}
+
+.log-info .log-level {
+    color: #3b82f6;
+}
+
+.log-warn .log-level {
+    color: #f59e0b;
+}
+
+.log-error .log-level {
+    color: #ef4444;
+}
+
+.log-debug .log-level {
+    color: #8b5cf6;
+}
+
+.log-msg {
+    color: var(--text-primary, #e0e0e0);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.log-error {
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.log-warn {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scrollbar for console */
+.console-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.console-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.console-body::-webkit-scrollbar-thumb {
+    background: var(--border-color, #333);
+    border-radius: 4px;
+}
+
+.console-body::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}

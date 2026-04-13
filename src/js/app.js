@@ -59,6 +59,9 @@ import {
     getCurrentSettings
 } from './modules/settings.js';
 import { MathManager } from './modules/editor/math-manager.js';
+import { logger } from './utils/logger.js';
+import { ConsoleUI } from './ui/console-ui.js';
+
 
 class EscribaApp {
     static APP_WEB_URL = 'https://www.justneki.com/Escriba/';
@@ -102,7 +105,11 @@ class EscribaApp {
         this.floatingToolbar = null;
 
         this.debouncedSave = debounce(() => this.saveCurrentNote(), 500);
+
+        this.consoleUI = new ConsoleUI();
+        logger.init();
     }
+
 
     async init() {
         document.body.classList.add('loading');
@@ -160,7 +167,10 @@ class EscribaApp {
         if (this.isElectron()) {
             this.checkForUpdates();
         }
+
+        this.consoleUI.init(logger);
     }
+
 
     isMobile() {
         return window.innerWidth <= 768;
@@ -345,6 +355,11 @@ class EscribaApp {
         document.querySelectorAll('#importBtn').forEach(btn => btn.addEventListener('click', () => document.getElementById('importFile').click()));
         document.querySelectorAll('#importJsonBtn').forEach(btn => btn.addEventListener('click', () => document.getElementById('importJsonFile').click()));
         document.querySelectorAll('#printBtn').forEach(btn => btn.addEventListener('click', () => window.print()));
+        document.querySelectorAll('#openConsoleBtn').forEach(btn => btn.addEventListener('click', () => {
+            this.consoleUI.toggle(true);
+            hideModal('settingsModal');
+        }));
+
 
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImport(e));
         document.getElementById('importJsonFile').addEventListener('change', (e) => this.handleJsonImport(e));
@@ -1172,7 +1187,14 @@ class EscribaApp {
                     e.preventDefault();
                     this.toggleSidebar();
                     break;
+                case 'd':
+                    if (e.altKey) {
+                        e.preventDefault();
+                        this.consoleUI.toggle();
+                    }
+                    break;
             }
+
             return;
         }
 

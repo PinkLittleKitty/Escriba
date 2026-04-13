@@ -79,29 +79,38 @@ export const loadAllData = () => {
         const rawSettings = localStorage.getItem(SETTINGS_KEY);
         const rawDeletedItems = localStorage.getItem(DELETED_ITEMS_KEY);
 
-        return {
+        console.log('Cargando todos los datos desde localStorage...');
+
+        const data = {
             subjects: rawSubjects ? validateAndCleanSubjects(JSON.parse(rawSubjects)) : [],
             events: rawEvents ? validateAndCleanEvents(JSON.parse(rawEvents)) : [],
             settings: rawSettings ? JSON.parse(rawSettings) : null,
             deletedItems: rawDeletedItems ? JSON.parse(rawDeletedItems) : { notes: [], subjects: [] }
         };
+
+        console.log(`Carga completada: ${data.subjects.length} materias, ${data.events.length} eventos.`);
+        return data;
     } catch (e) {
-        console.error('Error loading data from localStorage:', e);
+        console.error('Error fatal al cargar datos de localStorage:', e);
         return { subjects: [], events: [], settings: null };
     }
 };
 
 export const saveSubjects = (subjects) => {
+    console.debug(`Guardando materias (${subjects.length})...`);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
 };
 
 export const saveEvents = (events) => {
+    console.debug(`Guardando eventos (${events.length})...`);
     localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
 };
 
 export const saveSettings = (settings) => {
+    console.debug('Guardando nueva configuración.');
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 };
+
 
 export const loadDeletedItems = () => {
     const raw = localStorage.getItem(DELETED_ITEMS_KEY);

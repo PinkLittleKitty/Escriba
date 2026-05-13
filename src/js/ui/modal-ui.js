@@ -1,9 +1,14 @@
-export const showToast = (message, type = 'success') => {
+let toastTimeoutId = null;
+
+export const showToast = (message, type = 'success', options = {}) => {
     const toast = document.getElementById('toast');
     if (!toast) return;
 
     const icon = toast.querySelector('.toast-icon');
     const messageEl = toast.querySelector('.toast-message');
+    const subtextEl = toast.querySelector('.toast-subtext');
+    const progressContainer = toast.querySelector('.toast-progress-container');
+    const progressBar = toast.querySelector('.toast-progress-bar');
 
     if (messageEl) messageEl.textContent = message;
     toast.className = `toast ${type}`;
@@ -15,11 +20,57 @@ export const showToast = (message, type = 'success') => {
             icon.className = 'toast-icon fas fa-exclamation-circle';
         } else if (type === 'info') {
             icon.className = 'toast-icon fas fa-info-circle';
+        } else if (type === 'syncing') {
+            icon.className = 'toast-icon fas fa-sync fa-spin';
+            toast.className = 'toast info';
         }
     }
 
+    if (options.subtext) {
+        subtextEl.textContent = options.subtext;
+        subtextEl.style.display = 'block';
+    } else if (subtextEl) {
+        subtextEl.style.display = 'none';
+    }
+
+    if (options.progress !== undefined) {
+        progressContainer.style.display = 'block';
+        progressBar.style.width = `${Math.min(100, Math.max(0, options.progress))}%`;
+    } else if (progressContainer) {
+        progressContainer.style.display = 'none';
+    }
+
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+
+    if (toastTimeoutId) {
+        clearTimeout(toastTimeoutId);
+        toastTimeoutId = null;
+    }
+
+    const duration = options.duration !== undefined ? options.duration : 3000;
+    if (duration > 0) {
+        toastTimeoutId = setTimeout(() => toast.classList.remove('show'), duration);
+    }
+};
+
+export const updateToastProgress = (progress, subtext = null) => {
+    const toast = document.getElementById('toast');
+    if (!toast || !toast.classList.contains('show')) return;
+
+    const progressBar = toast.querySelector('.toast-progress-bar');
+    const subtextEl = toast.querySelector('.toast-subtext');
+
+    if (progressBar) progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+
+    if (subtext !== null && subtextEl) {
+        subtextEl.textContent = subtext;
+        subtextEl.style.display = 'block';
+    }
+};
+
+export const hideToast = () => {
+    const toast = document.getElementById('toast');
+    if (toast) toast.classList.remove('show');
 };
 
 export const showModal = (modalId, onShow) => {

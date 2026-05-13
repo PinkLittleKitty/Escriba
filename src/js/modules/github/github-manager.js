@@ -8,6 +8,8 @@ export class GitHubManager {
         this.lastSyncTime = localStorage.getItem('last_sync_time') || null;
         this.onStatusChange = options.onStatusChange || (() => { });
         this.showToast = options.showToast || (() => { });
+        this.updateToastProgress = options.updateToastProgress || (() => { });
+        this.hideToast = options.hideToast || (() => { });
         this.baseUrl = 'https://api.github.com';
     }
 
@@ -261,23 +263,38 @@ export class GitHubManager {
         for (let batchAttempt = 1; batchAttempt <= maxBatchRetries; batchAttempt++) {
             try {
                 console.log(`Iniciando sincronización por lotes de ${files.length} archivos (Intento ${batchAttempt}/${maxBatchRetries})...`);
+                this.showToast('Verificando repositorio...', 'syncing', { duration: 0, progress: 10, subtext: 'Preparando datos' });
+
                 const branch = 'main';
                 const headSha = await this.getBranchHead(branch);
                 const baseTreeSha = await this.getTreeSha(headSha);
 
+                this.updateToastProgress(20, 'Generando árbol de archivos');
                 const newTreeSha = await this.createTree(files, baseTreeSha);
+
+                this.updateToastProgress(85, 'Creando commit');
                 const commitSha = await this.createCommit(`Sync data - ${new Date().toISOString()}`, newTreeSha, headSha);
+
+                this.updateToastProgress(95, 'Actualizando rama');
                 await this.updateRef(branch, commitSha);
+
+                this.updateToastProgress(100, 'Completado');
                 console.log('Sincronización por lotes completada con éxito.');
                 return;
             } catch (error) {
                 console.warn(`Intento ${batchAttempt} de sincronización por lotes falló:`, error.message);
                 if (batchAttempt === maxBatchRetries) {
                     console.error('Sincronización por lotes falló definitivamente, intentando fallback secuencial (lento)...');
-                    for (const file of files) {
+
+                    this.showToast('Sincronización lenta', 'syncing', { duration: 0, progress: 0, subtext: 'Subiendo archivo por archivo' });
+
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        this.updateToastProgress(Math.floor((i / files.length) * 100), `Subiendo ${file.path}`);
                         await this.updateFile(file.path, file.content);
                     }
                 } else {
+                    this.updateToastProgress(0, `Reintentando (${batchAttempt}/${maxBatchRetries})...`);
                     await new Promise(resolve => setTimeout(resolve, 1000 * batchAttempt));
                 }
             }
@@ -364,20 +381,64 @@ export class GitHubManager {
             content: file.content
         }));
 
-        const response = await this.fetchWithTimeout(`${this.baseUrl}/repos/${this.username}/${this.repoName}/git/trees`, {
-            method: 'POST',
-            body: JSON.stringify({
-                base_tree: baseTreeSha,
-                tree: tree
-            })
+        const bodyString = JSON.stringify({
+            base_tree: baseTreeSha,
+            tree: tree
         });
 
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(`Error al crear árbol: ${response.status} - ${err.message}`);
-        }
-        const data = await response.json();
-        return data.sha;
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${this.baseUrl}/repos/${this.username}/${this.repoName}/git/trees`, true);
+            xhr.setRequestHeader('Authorization', `Bearer ${this.accessToken}`);
+            xhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
+            xhr.setRequestHeader('User-Agent', 'Escriba-App-Sync');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.timeout = 30000; // 30 seconds
+
+            const startTime = Date.now();
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const speedBps = elapsed > 0 ? event.loaded / elapsed : 0;
+
+                    let speedStr = '';
+                    if (speedBps > 1024 * 1024) {
+                        speedStr = (speedBps / (1024 * 1024)).toFixed(1) + ' MB/s';
+                    } else if (speedBps > 1024) {
+                        speedStr = (speedBps / 1024).toFixed(1) + ' KB/s';
+                    } else {
+                        speedStr = Math.floor(speedBps) + ' B/s';
+                    }
+
+                    const percent = 20 + Math.floor((event.loaded / event.total) * 60);
+                    this.updateToastProgress(percent, `Subiendo apuntes (${speedStr})`);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        resolve(data.sha);
+                    } catch (e) {
+                        reject(new Error('Respuesta inválida de GitHub'));
+                    }
+                } else {
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        reject(new Error(`Error al crear árbol: ${xhr.status} - ${err.message}`));
+                    } catch (e) {
+                        reject(new Error(`Error al crear árbol: ${xhr.status}`));
+                    }
+                }
+            };
+
+            xhr.onerror = () => reject(new Error('Error de red al crear árbol'));
+            xhr.ontimeout = () => reject(new Error('Tiempo de espera agotado al subir el árbol de archivos'));
+
+            xhr.send(bodyString);
+        });
     }
 
     async createCommit(message, treeSha, parentSha) {

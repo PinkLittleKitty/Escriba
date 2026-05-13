@@ -44,6 +44,8 @@ import {
 } from './ui/dashboard-ui.js';
 import {
     showToast,
+    updateToastProgress,
+    hideToast,
     showModal,
     hideModal,
     initModalEvents
@@ -98,7 +100,13 @@ class EscribaApp {
 
         this.github = new GitHubManager({
             onStatusChange: (status, error) => this.handleGitHubStatusChange(status, error),
-            showToast: (msg, type) => showToast(msg, type)
+            showToast: (msg, type, options) => showToast(msg, type, options),
+            updateToastProgress: (progress, subtext) => {
+                if (typeof updateToastProgress === 'function') updateToastProgress(progress, subtext);
+            },
+            hideToast: () => {
+                if (typeof hideToast === 'function') hideToast();
+            }
         });
 
         this.mathManager = new MathManager(this);

@@ -1368,7 +1368,7 @@ class EscribaApp {
                     saveEvents(this.events);
                     saveSettings(this.settings);
 
-                    window.location.reload();
+                    this.softReload();
                 }
             } catch (err) {
                 showToast('Error al importar archivo', 'error');
@@ -1677,7 +1677,7 @@ class EscribaApp {
                     saveDeletedItems(this.deletedItems);
 
                     if (!silent) {
-                        window.location.reload();
+                        this.softReload();
                     } else {
                         this.renderSubjects();
                         showToast('Sincronizado con GitHub', 'success');
@@ -2176,7 +2176,7 @@ class EscribaApp {
             saveSubjects(this.subjects);
             saveEvents(this.events);
             saveSettings(this.settings);
-            window.location.reload();
+            this.softReload();
         } catch (error) {
             showToast('Error al descargar datos', 'error');
         }

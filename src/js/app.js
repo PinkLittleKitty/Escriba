@@ -2196,7 +2196,8 @@ class EscribaApp {
             const data = {
                 subjects: this.subjects,
                 events: this.events,
-                settings: this.settings
+                settings: this.settings,
+                deletedItems: loadDeletedItems()
             };
             await this.github.uploadData(data);
             showToast('Datos subidos a GitHub', 'success');

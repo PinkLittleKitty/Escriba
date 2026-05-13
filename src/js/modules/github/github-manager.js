@@ -233,10 +233,10 @@ export class GitHubManager {
         await this.ensureRepository();
 
         const files = [
-            { path: 'data/subjects.json', content: JSON.stringify(data.subjects, null, 2) },
-            { path: 'data/events.json', content: JSON.stringify(data.events, null, 2) },
-            { path: 'data/settings.json', content: JSON.stringify(data.settings, null, 2) },
-            { path: 'data/deleted-items.json', content: JSON.stringify(data.deletedItems, null, 2) }
+            { path: 'data/subjects.json', content: JSON.stringify(data.subjects || [], null, 2) },
+            { path: 'data/events.json', content: JSON.stringify(data.events || [], null, 2) },
+            { path: 'data/settings.json', content: JSON.stringify(data.settings || {}, null, 2) },
+            { path: 'data/deleted-items.json', content: JSON.stringify(data.deletedItems || { notes: [], subjects: [] }, null, 2) }
         ];
 
         const noteIds = [];

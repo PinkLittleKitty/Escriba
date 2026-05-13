@@ -1524,6 +1524,7 @@ class EscribaApp {
     reRenderAllCodeBlocks() {
         const editors = document.querySelectorAll('.inline-ace-editor');
         const language = document.getElementById('noteLanguageSelect')?.value || 'javascript';
+        const isReadOnly = document.getElementById('noteContent')?.contentEditable === 'false';
 
         editors.forEach(container => {
             if (!container.id) {
@@ -1533,7 +1534,12 @@ class EscribaApp {
             const code = container.getAttribute('data-code') || '';
             initializeAceEditor(container, code, {
                 mode: `ace/mode/${language}`,
-                onChange: () => this.debouncedSave()
+                onChange: () => this.debouncedSave(),
+                aceOptions: {
+                    readOnly: isReadOnly,
+                    highlightActiveLine: !isReadOnly,
+                    highlightGutterLine: !isReadOnly
+                }
             });
         });
     }
@@ -2057,6 +2063,7 @@ class EscribaApp {
                     if (code) renderUMLDiagram(container.id, code);
                 });
             }
+            this.reRenderAllCodeBlocks();
         }, 100);
     }
 

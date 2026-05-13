@@ -142,6 +142,10 @@
     transition: all 0.2s ease;
 }
 
+.form-group .search-box input {
+    padding-left: 2.25rem;
+}
+
 .form-group input:focus {
     outline: none;
     border-color: var(--accent-blue);

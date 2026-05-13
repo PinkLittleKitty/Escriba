@@ -440,6 +440,16 @@ class EscribaApp {
             const deleteBtn = e.target.closest('.uml-delete-btn');
             const editBtn = e.target.closest('.uml-edit-btn');
             const codeDeleteBtn = e.target.closest('.code-block-delete-btn');
+            const internalLink = e.target.closest('.internal-link');
+
+            if (internalLink) {
+                e.preventDefault();
+                const noteId = internalLink.dataset.noteId;
+                if (noteId) {
+                    this.loadNote(noteId);
+                }
+                return;
+            }
 
             if (deleteBtn) {
                 const container = deleteBtn.closest('.uml-diagram-container');
@@ -492,13 +502,28 @@ class EscribaApp {
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
         document.getElementById('insertLinkBtn').addEventListener('click', () => {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && document.getElementById('noteContent').contains(sel.anchorNode)) {
+                this.savedSelectionRange = sel.getRangeAt(0);
+                document.getElementById('linkText').value = sel.toString().trim();
+            } else {
+                this.savedSelectionRange = null;
+                document.getElementById('linkText').value = '';
+            }
             document.getElementById('linkSearchInput').value = '';
-            document.getElementById('linkText').value = '';
             document.getElementById('createLink').disabled = true;
             this.searchNotesForLink('');
             showModal('linkModal');
         });
-        document.getElementById('insertUMLBtn').addEventListener('click', () => showModal('umlModal'));
+        document.getElementById('insertUMLBtn').addEventListener('click', () => {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && document.getElementById('noteContent').contains(sel.anchorNode)) {
+                this.savedSelectionRange = sel.getRangeAt(0);
+            } else {
+                this.savedSelectionRange = null;
+            }
+            showModal('umlModal');
+        });
         document.getElementById('insertUMLDiagram').addEventListener('click', () => this.handleInsertUML());
 
         const noteLanguageSelect = document.getElementById('noteLanguageSelect');
@@ -767,7 +792,6 @@ class EscribaApp {
 
         document.getElementById('noteTitle').value = foundNote.title;
         document.getElementById('noteContent').innerHTML = foundNote.content;
-        this.bindInternalLinkListeners();
         document.getElementById('noteSubject').textContent = foundSubject.name;
         document.getElementById('noteDate').textContent = formatDate(foundNote.updatedAt);
 
@@ -1255,20 +1279,7 @@ class EscribaApp {
         }
     }
 
-    bindInternalLinkListeners() {
-        const noteContent = document.getElementById('noteContent');
-        if (!noteContent) return;
 
-        noteContent.querySelectorAll('.internal-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const noteId = link.dataset.noteId;
-                if (noteId) {
-                    this.loadNote(noteId);
-                }
-            });
-        });
-    }
 
     handleMarkdownAutoFormat(e) {
         const selection = window.getSelection();
@@ -1574,26 +1585,22 @@ class EscribaApp {
 
         const diagramId = 'uml-' + Date.now();
         const container = document.createElement('div');
-        container.className = 'uml-diagram-container';
-        container.setAttribute('data-uml-code', umlCode);
-        container.setAttribute('data-diagram-type', diagramType);
-        container.contentEditable = false;
-
-        container.innerHTML = `
-            <div class="uml-diagram-header">
-                <span class="uml-diagram-type"><i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}</span>
-                <div class="uml-diagram-actions">
-                    <button class="uml-edit-btn" title="Editar diagrama"><i class="fas fa-edit"></i></button>
-                    <button class="uml-delete-btn" title="Eliminar diagrama"><i class="fas fa-trash"></i></button>
+        const html = `
+            <div class="uml-diagram-container" contenteditable="false" data-uml-code="${escapeHtml(umlCode)}">
+                <div class="uml-diagram-header">
+                    <span class="uml-diagram-title"><i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}</span>
+                    <div class="uml-diagram-actions">
+                        <button class="uml-edit-btn" title="Editar diagrama"><i class="fas fa-edit"></i></button>
+                        <button class="uml-delete-btn" title="Eliminar diagrama"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div id="${diagramId}" class="uml-diagram-content">
+                    <div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Generando...</div>
                 </div>
             </div>
-            <div id="${diagramId}" class="uml-diagram-content">
-                <div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Generando diagrama...</div>
-            </div>
+            <p><br></p>
         `;
 
-        const noteContent = document.getElementById('noteContent');
-        const selection = window.getSelection();
         let inserted = false;
 
         if (selection.rangeCount > 0) {
@@ -2562,7 +2569,18 @@ class EscribaApp {
         }
 
         const linkHtml = `<a href="#" class="internal-link" data-note-id="${selectedNoteId}">${escapeHtml(linkText)}</a>`;
+
+        document.getElementById('noteContent').focus();
+        if (this.savedSelectionRange) {
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(this.savedSelectionRange);
+        }
+
         document.execCommand('insertHTML', false, linkHtml);
+        this.savedSelectionRange = null;
+        this.debouncedSave();
+
         hideModal('linkModal');
         showToast('Enlace creado', 'success');
     }

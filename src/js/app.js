@@ -110,7 +110,6 @@ class EscribaApp {
         });
 
         this.mathManager = new MathManager(this);
-        this.floatingToolbar = null;
 
         this.debouncedSave = debounce(() => this.saveCurrentNote(), 500);
 
@@ -140,7 +139,6 @@ class EscribaApp {
         applySettings();
         this.loadSidebarState();
         this.initMermaid();
-        this.initFloatingToolbar();
 
         await this.checkForSharedNote();
 
@@ -3141,92 +3139,6 @@ class EscribaApp {
         return md.replace(/\n{3,}/g, '\n\n').trim();
     }
 
-    initFloatingToolbar() {
-        if (!this.floatingToolbar) {
-            this.floatingToolbar = document.getElementById('floatingToolbar');
-        }
-        if (!this.floatingToolbar) return;
-
-        this.floatingToolbar.querySelectorAll('.floating-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const command = e.currentTarget.dataset.command;
-                const id = e.currentTarget.id;
-
-                if (command) {
-                    document.execCommand(command, false, null);
-                } else if (id === 'floatingHighlightBtn') {
-                    this.toggleHighlight();
-                } else if (id === 'floatingCodeBtn') {
-                    this.toggleInlineCode();
-                }
-
-                updateToolbarStates();
-                this.debouncedSave();
-
-                setTimeout(() => this.updateFloatingToolbar(), 10);
-            });
-        });
-
-        document.addEventListener('selectionchange', () => {
-            this.updateFloatingToolbar();
-        });
-    }
-
-    updateFloatingToolbar() {
-        if (!this.floatingToolbar) {
-            this.floatingToolbar = document.getElementById('floatingToolbar');
-        }
-        if (!this.floatingToolbar) return;
-
-        const selection = window.getSelection();
-        const noteContent = document.getElementById('noteContent');
-
-        if (!selection.rangeCount || selection.isCollapsed) {
-            this.floatingToolbar.style.display = 'none';
-            return;
-        }
-
-        const range = selection.getRangeAt(0);
-        if (!noteContent || !noteContent.contains(range.commonAncestorContainer)) {
-            this.floatingToolbar.style.display = 'none';
-            return;
-        }
-
-        if (selection.toString().trim().length === 0) {
-            this.floatingToolbar.style.display = 'none';
-            return;
-        }
-
-        const rect = range.getBoundingClientRect();
-
-        this.floatingToolbar.style.display = 'flex';
-        this.floatingToolbar.style.visibility = 'hidden';
-        this.floatingToolbar.style.opacity = '0';
-
-        const toolbarRect = this.floatingToolbar.getBoundingClientRect();
-
-        let top = rect.top - toolbarRect.height - 12;
-        let left = rect.left + (rect.width / 2) - (toolbarRect.width / 2);
-
-        if (top < 10) top = rect.bottom + 12;
-        if (left < 10) left = 10;
-        if (left + toolbarRect.width > window.innerWidth - 10) {
-            left = window.innerWidth - toolbarRect.width - 10;
-        }
-
-        this.floatingToolbar.style.top = `${top}px`;
-        this.floatingToolbar.style.left = `${left}px`;
-        this.floatingToolbar.style.visibility = 'visible';
-        this.floatingToolbar.style.opacity = '1';
-        this.floatingToolbar.style.transform = 'translateY(0)';
-
-        if (typeof updateToolbarStates === 'function') {
-            updateToolbarStates();
-        }
-    }
 
     updateNoteStats() {
         const content = document.getElementById('noteContent');

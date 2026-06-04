@@ -2217,7 +2217,7 @@ class EscribaApp {
                 const eventDate = parseLocalDate(e.date);
                 return eventDate && eventDate.toDateString() === date.toDateString();
             });
-            if (hasEvents) dayElement.classList.add('has-events');
+            if (hasEvents) dayElement.classList.add('has-event', 'has-events');
 
             dayElement.innerHTML = `<span class="day-number">${day}</span>`;
             dayElement.addEventListener('click', () => this.showEventModal(date));
@@ -2248,7 +2248,7 @@ class EscribaApp {
             const timeLeft = this.getTimeLeft(event.date);
             const subject = this.subjects.find(s => s.id === event.subjectId);
             return `
-                <div class="event-item" data-event-id="${event.id}">
+                <div class="event-item ${event.type || 'parcial'}" data-event-id="${event.id}">
                     <div class="event-icon">${this.getEventTypeIcon(event.type)}</div>
                     <div class="event-details">
                         <div class="event-title">${escapeHtml(event.title)}</div>
@@ -2305,8 +2305,13 @@ class EscribaApp {
     }
 
     getEventTypeIcon(type) {
-        const icons = { parcial: '📊', final: '🎯', tp: '📋', quiz: '❓' };
-        return icons[type] || '📅';
+        const icons = {
+            parcial: '<i class="fas fa-file-signature"></i>',
+            final: '<i class="fas fa-graduation-cap"></i>',
+            tp: '<i class="fas fa-clipboard-list"></i>',
+            quiz: '<i class="fas fa-question-circle"></i>'
+        };
+        return icons[type] || '<i class="fas fa-calendar-day"></i>';
     }
 
     formatEventDate(dateStr) {

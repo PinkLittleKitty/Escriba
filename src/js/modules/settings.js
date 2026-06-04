@@ -42,10 +42,3 @@ export const loadSettingsToModal = (settings) => {
     if (showWelcomeEl) showWelcomeEl.checked = settings.showWelcome !== false;
 };
 
-export const getCurrentSettings = () => {
-    return {
-        theme: document.documentElement.getAttribute('data-theme') || 'dark',
-        fontFamily: getComputedStyle(document.documentElement).getPropertyValue('--font-family').trim().replace(/['"]/g, '') || 'Inter',
-        fontSize: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--font-size')) || 16
-    };
-};

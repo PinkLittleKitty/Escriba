@@ -1,6 +1,4 @@
 import {
-    validateAndCleanSubjects,
-    validateAndCleanEvents,
     loadAllData,
     saveSubjects,
     saveEvents,
@@ -13,14 +11,12 @@ import {
     generateId,
     debounce,
     escapeHtml,
-    sanitizeText,
     highlightElement,
     clearHighlights,
     parseLocalDate
 } from './utils/helpers.js';
 import {
-    initializeAceEditor,
-    updateEditorHeight
+    initializeAceEditor
 } from './modules/editor/editor-manager.js';
 import {
     renderUMLDiagram,
@@ -57,8 +53,7 @@ import {
 } from './ui/editor-ui.js';
 import {
     applySettings,
-    loadSettingsToModal,
-    getCurrentSettings
+    loadSettingsToModal
 } from './modules/settings.js';
 import { MathManager } from './modules/editor/math-manager.js';
 import { logger } from './utils/logger.js';
@@ -507,6 +502,10 @@ class EscribaApp {
         document.getElementById('highlightBtn').addEventListener('click', () => this.toggleHighlight());
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());
+        const mathModeBtn = document.getElementById('mathModeBtn');
+        if (mathModeBtn) {
+            mathModeBtn.addEventListener('click', () => this.toggleMathMode());
+        }
         document.getElementById('insertLinkBtn').addEventListener('click', () => {
             const sel = window.getSelection();
             if (sel.rangeCount > 0 && document.getElementById('noteContent').contains(sel.anchorNode)) {

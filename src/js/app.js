@@ -644,10 +644,7 @@ class EscribaApp {
         document.getElementById('cancelToken').addEventListener('click', () => hideModal('githubTokenModal'));
 
         document.getElementById('addEventBtn').addEventListener('click', () => {
-            this.currentEventId = null;
-            document.getElementById('eventTitle').value = '';
-            document.getElementById('eventDesc').value = '';
-            showModal('eventModal');
+            this.showEventModal();
         });
         document.getElementById('saveEvent').addEventListener('click', () => this.saveEvent());
         document.getElementById('cancelEvent').addEventListener('click', () => hideModal('eventModal'));

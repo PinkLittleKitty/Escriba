@@ -14,6 +14,13 @@
     overflow: hidden;
 }
 
+.btn-sm {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    gap: 0.25rem;
+}
+
 .btn-primary {
     background: var(--accent-blue);
     color: var(--text-on-accent);

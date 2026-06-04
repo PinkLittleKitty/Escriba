@@ -118,6 +118,7 @@ export const loadDeletedItems = () => {
 };
 
 export const saveDeletedItems = (deletedItems) => {
+    console.debug('Guardando elementos eliminados.');
     localStorage.setItem(DELETED_ITEMS_KEY, JSON.stringify(deletedItems));
 };
 

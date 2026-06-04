@@ -42,6 +42,28 @@ export const showToast = (message, type = 'success', options = {}) => {
 
     toast.classList.add('show');
 
+    if (toast._clickListener) {
+        toast.removeEventListener('click', toast._clickListener);
+        toast._clickListener = null;
+    }
+
+    if (type === 'error' || options.onClick) {
+        toast.style.cursor = 'pointer';
+        toast._clickListener = (e) => {
+            if (options.onClick) {
+                options.onClick(e);
+            } else if (type === 'error') {
+                if (window.cuaderno && window.cuaderno.consoleUI) {
+                    window.cuaderno.consoleUI.toggle(true);
+                }
+                toast.classList.remove('show');
+            }
+        };
+        toast.addEventListener('click', toast._clickListener);
+    } else {
+        toast.style.cursor = '';
+    }
+
     if (toastTimeoutId) {
         clearTimeout(toastTimeoutId);
         toastTimeoutId = null;

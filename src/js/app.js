@@ -4,7 +4,8 @@ import {
     saveEvents,
     saveSettings,
     addDeletedItem,
-    loadDeletedItems
+    loadDeletedItems,
+    saveDeletedItems
 } from './modules/storage.js';
 import {
     formatDate,
@@ -114,6 +115,18 @@ class EscribaApp {
 
 
     async init() {
+        window.addEventListener('error', (e) => {
+            console.error('Unhandled Error:', e.error || e.message);
+        });
+
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('Unhandled Rejection:', e.reason);
+        });
+
+        window.addEventListener('escriba-error-toast', (e) => {
+            showToast(e.detail.message, 'error');
+        });
+
         document.body.classList.add('loading');
 
         window.addEventListener('click', (e) => {
@@ -1397,6 +1410,44 @@ class EscribaApp {
         }
     }
 
+    softReload() {
+        console.log('Iniciando soft-reload...');
+        applySettings();
+        this.renderSubjects();
+        this.updateDashboard();
+
+        if (this.currentNoteId) {
+            const note = this.getNoteById(this.currentNoteId);
+            if (note) {
+                console.log(`Recargando apunte actual: ${note.title}`);
+                this.loadNote(this.currentNoteId);
+            } else {
+                console.log('El apunte actual ya no existe. Volviendo a inicio.');
+                this.currentNoteId = null;
+                if (this.subjects.length === 0) {
+                    this.switchMainView('welcome');
+                } else {
+                    this.switchMainView('dashboard');
+                }
+            }
+        } else {
+            if (this.subjects.length === 0) {
+                this.switchMainView('welcome');
+            } else {
+                const welcomeScreen = document.getElementById('welcomeScreen');
+                if (welcomeScreen && welcomeScreen.style.display !== 'none') {
+                    this.switchMainView('dashboard');
+                }
+            }
+        }
+
+        const calendarContainer = document.getElementById('calendarContainer');
+        if (calendarContainer && calendarContainer.style.display !== 'none') {
+            this.renderCalendar();
+        }
+        console.log('Soft-reload completado.');
+    }
+
     saveSettings() {
         const theme = document.querySelector('.theme-option.active')?.dataset.theme || 'dark';
         const fontFamily = document.getElementById('fontFamily').value;
@@ -1686,14 +1737,15 @@ class EscribaApp {
                     saveEvents(this.events);
                     saveSettings(this.settings);
 
-                    const { saveDeletedItems } = await import('./modules/storage.js');
                     saveDeletedItems(this.deletedItems);
+
+                    console.log('Sincronización con GitHub completada con éxito.');
 
                     if (!silent) {
                         this.softReload();
+                        showToast('Sincronizado con GitHub', 'success');
                     } else {
                         this.renderSubjects();
-                        showToast('Sincronizado con GitHub', 'success');
                     }
                 }
             } else {
@@ -1709,17 +1761,18 @@ class EscribaApp {
                 }
             }
         } catch (error) {
-            console.error('GitHub Auth/Sync Error:', error);
-
-            const isAuthError = error.message.includes('401') ||
+            const isAuthError = error.message && (
+                error.message.includes('401') ||
                 error.message.includes('expired') ||
-                error.message.includes('expirada');
+                error.message.includes('expirada')
+            );
 
             if (isAuthError) {
+                console.warn('GitHub session expired:', error);
                 showToast('Sesión de GitHub expirada. Por favor, volvé a conectar.', 'error');
                 this.github.logout();
-            } else if (!silent) {
-                showToast('Error de conexión: ' + (error.message || 'Error desconocido'), 'error');
+            } else {
+                console.error('Error de conexión con GitHub:', error);
             }
         } finally {
             this._isAuthenticating = false;
@@ -2233,7 +2286,7 @@ class EscribaApp {
     }
 
     startAutoSync() {
-        this.stopAutoSync();
+        if (this.autoSyncInterval) return;
         if (!this.github.isAuthenticated) return;
 
         console.log('Starting auto-sync interval (5 minutes)');
@@ -2704,6 +2757,7 @@ class EscribaApp {
                 if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
                 if (settingsSyncButton) settingsSyncButton.style.display = 'flex';
                 if (cloudActions) cloudActions.style.display = 'none';
+                this.stopAutoSync();
                 break;
         }
     }

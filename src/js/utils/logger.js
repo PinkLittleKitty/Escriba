@@ -32,7 +32,10 @@ class Logger {
             timestamp: new Date().toISOString(),
             level,
             message: args.map(arg => {
-                if (typeof arg === 'object') {
+                if (arg instanceof Error) {
+                    return arg.stack || `${arg.name}: ${arg.message}`;
+                }
+                if (typeof arg === 'object' && arg !== null) {
                     try {
                         return JSON.stringify(arg, null, 2);
                     } catch (e) {
@@ -50,6 +53,20 @@ class Logger {
         }
 
         window.dispatchEvent(new CustomEvent('escriba-log', { detail: entry }));
+
+        if (level === 'error') {
+            const shortMessage = args.map(arg => {
+                if (arg instanceof Error) return arg.message;
+                return String(arg);
+            }).join(' ');
+
+            const skipToast = shortMessage.toLowerCase().includes('preview') || 
+                              shortMessage.toLowerCase().includes('temporary');
+
+            if (!skipToast) {
+                window.dispatchEvent(new CustomEvent('escriba-error-toast', { detail: { message: shortMessage } }));
+            }
+        }
     }
 
     getLogs() {

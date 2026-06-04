@@ -1,5 +1,23 @@
 apply plugin: 'com.android.application'
 
+def getPackageVersion = { ->
+    try {
+        def packageJsonFile = file('../../package.json')
+        def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
+        return packageJson.version
+    } catch (Exception e) {
+        return "1.0.0"
+    }
+}
+
+def getUniqueVersionCode = { ->
+    try {
+        return (int) (System.currentTimeMillis() / 10000)
+    } catch (Exception e) {
+        return 1
+    }
+}
+
 android {
     namespace "com.santiago.escriba"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +25,8 @@ android {
         applicationId "com.santiago.escriba"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode getUniqueVersionCode()
+        versionName getPackageVersion()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

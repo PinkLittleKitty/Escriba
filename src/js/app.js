@@ -3074,11 +3074,11 @@ class EscribaApp {
         let methodInfo = '';
 
         if (url.includes('gist=')) {
-            methodInfo = '<i class="fab fa-github"></i> <strong>GitHub Gist</strong> - Enlace público optimizado';
+            methodInfo = '<i class="fab fa-github"></i> <strong>GitHub Gist</strong>';
         } else if (url.includes('github=')) {
-            methodInfo = '<i class="fab fa-github"></i> <strong>Repositorio GitHub</strong> - Enlace directo a tu repositorio';
+            methodInfo = '<i class="fab fa-github"></i> <strong>Repositorio GitHub</strong>';
         } else {
-            methodInfo = '<i class="fas fa-link"></i> <strong>Enlace Directo</strong> - Para apuntes cortos';
+            methodInfo = '<i class="fas fa-link"></i> <strong>Enlace Directo</strong>';
         }
 
         return { url, methodInfo };

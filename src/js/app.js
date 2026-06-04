@@ -59,6 +59,7 @@ import {
 import { MathManager } from './modules/editor/math-manager.js';
 import { logger } from './utils/logger.js';
 import { ConsoleUI } from './ui/console-ui.js';
+import { createTableHTML } from './utils/table.js';
 
 
 class EscribaApp {
@@ -542,6 +543,24 @@ class EscribaApp {
             }
             showModal('umlModal');
         });
+
+        document.getElementById('insertTableBtn').addEventListener('click', () => {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && document.getElementById('noteContent').contains(sel.anchorNode)) {
+                this.savedSelectionRange = sel.getRangeAt(0);
+            } else {
+                this.savedSelectionRange = null;
+            }
+            document.getElementById('tableRows').value = 3;
+            document.getElementById('tableCols').value = 3;
+            showModal('tableModal');
+        });
+
+        document.getElementById('insertTableSubmit').addEventListener('click', () => this.handleInsertTable());
+
+        const cancelTableBtn = document.getElementById('cancelTable');
+        if (cancelTableBtn) cancelTableBtn.addEventListener('click', () => hideModal('tableModal'));
+
         document.getElementById('insertUMLDiagram').addEventListener('click', () => this.handleInsertUML());
 
         const noteLanguageSelect = document.getElementById('noteLanguageSelect');
@@ -1617,6 +1636,33 @@ class EscribaApp {
                 }
             });
         });
+    }
+
+    handleInsertTable() {
+        const rowsInput = document.getElementById('tableRows');
+        const colsInput = document.getElementById('tableCols');
+        const rows = parseInt(rowsInput.value, 10);
+        const cols = parseInt(colsInput.value, 10);
+        if (isNaN(rows) || isNaN(cols) || rows < 1 || cols < 1) {
+            showToast('Ingresá dimensiones de filas/columnas válidas', 'error');
+            return;
+        }
+
+        const tableHTML = createTableHTML(rows, cols);
+
+        document.getElementById('noteContent').focus();
+        if (this.savedSelectionRange) {
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(this.savedSelectionRange);
+        }
+
+        document.execCommand('insertHTML', false, tableHTML);
+        this.savedSelectionRange = null;
+        this.debouncedSave();
+
+        hideModal('tableModal');
+        showToast('Tabla insertada', 'success');
     }
 
     async handleInsertUML() {

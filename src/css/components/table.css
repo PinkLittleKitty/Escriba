@@ -1,0 +1,23 @@
+.editable-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: var(--secondary-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.editable-table th,
+.editable-table td {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+  min-width: 4rem;
+  text-align: left;
+  outline: none;
+}
+
+.editable-table td:focus {
+  background: var(--primary-color);
+  color: var(--primary-text-color);
+}

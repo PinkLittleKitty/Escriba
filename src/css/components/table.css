@@ -11,13 +11,104 @@
 .editable-table th,
 .editable-table td {
   border: 1px solid var(--border-color);
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.8rem;
   min-width: 4rem;
+  height: 2.2rem;
   text-align: left;
   outline: none;
+  box-sizing: border-box;
 }
 
 .editable-table td:focus {
-  background: var(--primary-color);
-  color: var(--primary-text-color);
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+}
+
+.table-context-menu {
+  position: absolute;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  min-width: 240px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(12px);
+}
+
+.table-context-menu .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.table-context-menu .menu-item i {
+  font-size: 0.9rem;
+  width: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.table-context-menu .menu-item:hover {
+  background: var(--bg-hover);
+}
+
+.table-context-menu .menu-item.data-destructive:hover {
+  background: var(--accent-red-bg);
+  color: var(--accent-red);
+}
+
+.table-context-menu .menu-item.data-destructive:hover i {
+  color: var(--accent-red);
+}
+
+.table-context-menu .menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 6px 0;
+}
+
+.table-context-menu .menu-color-picker {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.table-context-menu .menu-color-picker .color-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-context-menu .color-options-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.table-context-menu .color-picker-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.table-context-menu .color-picker-dot:hover {
+  transform: scale(1.15);
+  border-color: var(--text-secondary);
 }

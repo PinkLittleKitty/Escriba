@@ -491,6 +491,25 @@ class EscribaApp {
             }
         });
 
+        document.getElementById('noteContent').addEventListener('contextmenu', (e) => {
+            const isReadOnly = document.getElementById('noteContent')?.contentEditable === 'false';
+            if (isReadOnly) return;
+
+            const tableCell = e.target.closest('td, th');
+            if (tableCell) {
+                e.preventDefault();
+                this.showTableContextMenu(e, tableCell);
+            } else {
+                this.hideTableContextMenu();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.table-context-menu')) {
+                this.hideTableContextMenu();
+            }
+        });
+
         document.getElementById('backlinksList').addEventListener('click', (e) => {
             const item = e.target.closest('.backlink-item');
             if (item) {
@@ -1663,6 +1682,191 @@ class EscribaApp {
 
         hideModal('tableModal');
         showToast('Tabla insertada', 'success');
+    }
+
+    showTableContextMenu(e, cell) {
+        this.activeTableCell = cell;
+
+        let menu = document.getElementById('tableContextMenu');
+        if (!menu) {
+            menu = this.createTableContextMenuDOM();
+        }
+
+        menu.style.display = 'block';
+        menu.style.left = `${e.pageX}px`;
+        menu.style.top = `${e.pageY}px`;
+
+        const rect = menu.getBoundingClientRect();
+        if (e.clientX + rect.width > window.innerWidth) {
+            menu.style.left = `${e.pageX - rect.width}px`;
+        }
+        if (e.clientY + rect.height > window.innerHeight) {
+            menu.style.top = `${e.pageY - rect.height}px`;
+        }
+    }
+
+    hideTableContextMenu() {
+        const menu = document.getElementById('tableContextMenu');
+        if (menu) {
+            menu.style.display = 'none';
+        }
+    }
+
+    createTableContextMenuDOM() {
+        const menu = document.createElement('div');
+        menu.id = 'tableContextMenu';
+        menu.className = 'table-context-menu';
+        menu.innerHTML = `
+            <div class="menu-item" data-action="insert-row-above">
+                <i class="fas fa-arrow-up"></i> Insertar fila arriba
+            </div>
+            <div class="menu-item" data-action="insert-row-below">
+                <i class="fas fa-arrow-down"></i> Insertar fila abajo
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-action="insert-col-left">
+                <i class="fas fa-arrow-left"></i> Insertar columna a la izquierda
+            </div>
+            <div class="menu-item" data-action="insert-col-right">
+                <i class="fas fa-arrow-right"></i> Insertar columna a la derecha
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item data-destructive" data-action="delete-row">
+                <i class="fas fa-minus-square"></i> Eliminar fila
+            </div>
+            <div class="menu-item data-destructive" data-action="delete-col">
+                <i class="fas fa-minus-square fa-rotate-90"></i> Eliminar columna
+            </div>
+            <div class="menu-item data-destructive" data-action="delete-table">
+                <i class="fas fa-trash"></i> Eliminar tabla
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-color-picker">
+                <span class="color-label"><i class="fas fa-paint-brush"></i> Fondo de celda</span>
+                <div class="color-options-grid">
+                    <button class="color-picker-dot" style="background-color: transparent;" title="Sin color" data-color="transparent"></button>
+                    <button class="color-picker-dot" style="background-color: #fee2e2;" title="Rojo claro" data-color="#fee2e2" data-text-color="#991b1b"></button>
+                    <button class="color-picker-dot" style="background-color: #fef3c7;" title="Amarillo claro" data-color="#fef3c7" data-text-color="#92400e"></button>
+                    <button class="color-picker-dot" style="background-color: #dcfce7;" title="Verde claro" data-color="#dcfce7" data-text-color="#166534"></button>
+                    <button class="color-picker-dot" style="background-color: #dbeafe;" title="Azul claro" data-color="#dbeafe" data-text-color="#1e40af"></button>
+                    <button class="color-picker-dot" style="background-color: #f3e8ff;" title="Morado claro" data-color="#f3e8ff" data-text-color="#6b21a8"></button>
+                    <button class="color-picker-dot" style="background-color: #e2e8f0;" title="Gris claro" data-color="#e2e8f0" data-text-color="#334155"></button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(menu);
+
+        menu.addEventListener('click', (e) => {
+            const item = e.target.closest('.menu-item');
+            if (item) {
+                const action = item.dataset.action;
+                this.executeTableAction(action);
+                this.hideTableContextMenu();
+            }
+
+            const colorDot = e.target.closest('.color-picker-dot');
+            if (colorDot) {
+                const color = colorDot.dataset.color;
+                const textColor = colorDot.dataset.textColor || '';
+                this.executeTableColor(color, textColor);
+                this.hideTableContextMenu();
+            }
+        });
+
+        return menu;
+    }
+
+    executeTableAction(action) {
+        if (!this.activeTableCell) return;
+        const cell = this.activeTableCell;
+        const row = cell.parentElement;
+        const table = row.closest('table');
+        if (!table) return;
+
+        const rowIndex = row.rowIndex;
+        const cellIndex = cell.cellIndex;
+
+        switch (action) {
+            case 'insert-row-above': {
+                const newRow = table.insertRow(rowIndex);
+                const colCount = row.cells.length;
+                for (let i = 0; i < colCount; i++) {
+                    const newCell = newRow.insertCell();
+                    newCell.contentEditable = "true";
+                    newCell.innerHTML = "<br>";
+                }
+                break;
+            }
+            case 'insert-row-below': {
+                const newRow = table.insertRow(rowIndex + 1);
+                const colCount = row.cells.length;
+                for (let i = 0; i < colCount; i++) {
+                    const newCell = newRow.insertCell();
+                    newCell.contentEditable = "true";
+                    newCell.innerHTML = "<br>";
+                }
+                break;
+            }
+            case 'insert-col-left': {
+                const rowCount = table.rows.length;
+                for (let i = 0; i < rowCount; i++) {
+                    const r = table.rows[i];
+                    const newCell = r.insertCell(cellIndex);
+                    newCell.contentEditable = "true";
+                    newCell.innerHTML = "<br>";
+                }
+                break;
+            }
+            case 'insert-col-right': {
+                const rowCount = table.rows.length;
+                for (let i = 0; i < rowCount; i++) {
+                    const r = table.rows[i];
+                    const newCell = r.insertCell(cellIndex + 1);
+                    newCell.contentEditable = "true";
+                    newCell.innerHTML = "<br>";
+                }
+                break;
+            }
+            case 'delete-row': {
+                table.deleteRow(rowIndex);
+                if (table.rows.length === 0) {
+                    table.remove();
+                }
+                break;
+            }
+            case 'delete-col': {
+                const rowCount = table.rows.length;
+                for (let i = 0; i < rowCount; i++) {
+                    table.rows[i].deleteCell(cellIndex);
+                }
+                if (table.rows.length > 0 && table.rows[0].cells.length === 0) {
+                    table.remove();
+                }
+                break;
+            }
+            case 'delete-table': {
+                table.remove();
+                break;
+            }
+        }
+
+        this.debouncedSave();
+    }
+
+    executeTableColor(color, textColor) {
+        if (!this.activeTableCell) return;
+        const cell = this.activeTableCell;
+
+        if (color === 'transparent') {
+            cell.style.backgroundColor = '';
+            cell.style.color = '';
+        } else {
+            cell.style.backgroundColor = color;
+            cell.style.color = textColor;
+        }
+
+        this.debouncedSave();
     }
 
     async handleInsertUML() {

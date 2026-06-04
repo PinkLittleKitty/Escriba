@@ -5,7 +5,7 @@ export function createTableHTML(rows, cols) {
   for (let i = 0; i < r; i++) {
     html += '<tr>';
     for (let j = 0; j < c; j++) {
-      html += '<td contenteditable="true"></td>';
+      html += '<td contenteditable="true"><br></td>';
     }
     html += '</tr>';
   }

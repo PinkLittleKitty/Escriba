@@ -2458,6 +2458,41 @@ class EscribaApp {
         }
     }
 
+    displaySharedSubject(subjectData) {
+        this.isViewingSharedSubject = true;
+        this.isViewingSharedNote = true;
+        this.originalSubjects = [...this.subjects];
+
+        const sharedSubject = {
+            id: 'shared-temp-subject-id',
+            name: subjectData.name,
+            code: subjectData.code || '',
+            professor: subjectData.professor || '',
+            color: subjectData.color || '#3b82f6',
+            schedule: subjectData.schedule || [],
+            notes: (subjectData.notes || []).map((n, index) => ({
+                id: `shared-temp-note-${index}`,
+                title: n.title,
+                content: n.content,
+                type: n.type || 'lecture',
+                language: n.language || 'javascript',
+                createdAt: n.createdAt || new Date().toISOString(),
+                updatedAt: n.updatedAt || new Date().toISOString(),
+                favorite: n.favorite || false
+            }))
+        };
+
+        this.subjects = [sharedSubject];
+        document.body.classList.add('shared-view-mode');
+        this.renderSubjects();
+
+        if (sharedSubject.notes && sharedSubject.notes.length > 0) {
+            this.loadNote(sharedSubject.notes[0].id);
+        } else {
+            this.switchMainView('welcome');
+        }
+    }
+
     displaySharedNote(noteData) {
         const title = noteData.title || noteData.t || 'Apunte Compartido';
         const content = noteData.content || noteData.c || '';

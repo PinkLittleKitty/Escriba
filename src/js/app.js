@@ -766,7 +766,8 @@ class EscribaApp {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             favorite: false,
-            type: 'lecture'
+            type: 'lecture',
+            language: 'javascript'
         };
 
         subject.notes.unshift(newNote);
@@ -809,6 +810,11 @@ class EscribaApp {
             item.classList.toggle('active', item.dataset.noteId === noteId);
         });
 
+        const noteLanguageSelect = document.getElementById('noteLanguageSelect');
+        if (noteLanguageSelect) {
+            noteLanguageSelect.value = foundNote.language || 'javascript';
+        }
+
         this.reRenderAllDiagrams();
         this.reRenderAllCodeBlocks();
         this.mathManager.sync(foundNote);
@@ -845,12 +851,14 @@ class EscribaApp {
         });
 
         const content = contentClone.innerHTML;
+        const language = document.getElementById('noteLanguageSelect')?.value || 'javascript';
 
         this.subjects.forEach(s => {
             const note = s.notes.find(n => n.id === this.currentNoteId);
             if (note) {
                 note.title = title;
                 note.content = content;
+                note.language = language;
                 note.updatedAt = new Date().toISOString();
                 s.lastModified = new Date().toISOString();
             }
@@ -2046,12 +2054,18 @@ class EscribaApp {
         const content = noteData.content || noteData.c || '';
         const type = noteData.type || noteData.ty || 'lecture';
         const subject = noteData.subject || noteData.s || 'Materia';
+        const language = noteData.language || noteData.l || 'javascript';
 
         document.getElementById('noteTitle').value = title;
         document.getElementById('noteTitle').disabled = true;
         document.getElementById('noteContent').innerHTML = content;
         document.getElementById('noteContent').contentEditable = false;
         document.getElementById('noteSubject').textContent = subject;
+
+        const noteLanguageSelect = document.getElementById('noteLanguageSelect');
+        if (noteLanguageSelect) {
+            noteLanguageSelect.value = language;
+        }
 
         const welcomeScreen = document.getElementById('welcomeScreen');
         const noteEditor = document.getElementById('noteEditor');
@@ -2130,6 +2144,7 @@ class EscribaApp {
             title: (noteData.title || noteData.t) + ' (Importado)',
             content: noteData.content || noteData.c,
             type: noteData.type || noteData.ty || 'lecture',
+            language: noteData.language || noteData.l || 'javascript',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             favorite: false
@@ -2485,6 +2500,7 @@ class EscribaApp {
             s: subject.name,
             sc: subject.color,
             d: note.updatedAt,
+            l: note.language || 'javascript',
             app: 'escriba',
             version: '1.0'
         };
@@ -2845,7 +2861,8 @@ class EscribaApp {
             updatedAt: new Date().toISOString(),
             favorite: false,
             type: noteData.ty || 'lecture',
-            mathMode: noteData.m || false
+            mathMode: noteData.m || false,
+            language: noteData.l || 'javascript'
         };
 
         subject.notes.unshift(newNote);

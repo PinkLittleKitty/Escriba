@@ -1,12 +1,20 @@
 import {
     loadAllData,
-    saveSubjects,
+    saveSubjects as originalSaveSubjects,
     saveEvents,
     saveSettings,
     addDeletedItem,
     loadDeletedItems,
     saveDeletedItems
 } from './modules/storage.js';
+
+const saveSubjects = (subjects) => {
+    if (window.cuaderno && (window.cuaderno.isViewingSharedNote || window.cuaderno.isViewingSharedSubject)) {
+        console.log('Skipping saveSubjects in shared note/subject view');
+        return;
+    }
+    originalSaveSubjects(subjects);
+};
 import {
     formatDate,
     generateId,
@@ -93,6 +101,9 @@ class EscribaApp {
         this.currentDate = new Date();
         this.currentEventId = null;
         this.isViewingSharedNote = false;
+        this.isViewingSharedSubject = false;
+        this.sharingType = 'note';
+        this.sharingSubjectId = null;
         this.showArchived = false;
 
         this.github = new GitHubManager({
@@ -520,7 +531,10 @@ class EscribaApp {
         document.getElementById('deleteNoteBtn').addEventListener('click', () => this.deleteCurrentNote());
         document.getElementById('favoriteBtn').addEventListener('click', () => this.toggleFavorite());
         document.getElementById('exportMarkdownBtn').addEventListener('click', () => this.exportNoteToMarkdown());
-        document.getElementById('shareNoteBtn').addEventListener('click', () => this.showShareModal());
+        document.getElementById('shareNoteBtn').addEventListener('click', () => {
+            this.sharingType = 'note';
+            this.showShareModal();
+        });
 
         document.querySelectorAll('.toolbar-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -624,7 +638,7 @@ class EscribaApp {
         document.getElementById('copyUrlBtn').addEventListener('click', () => this.copyShareUrl());
         document.getElementById('shareWhatsApp').addEventListener('click', () => this.shareToWhatsApp());
         document.getElementById('shareEmail').addEventListener('click', () => this.shareToEmail());
-        document.getElementById('exportJsonBtn').addEventListener('click', () => this.exportCurrentNoteAsJson());
+        document.getElementById('exportJsonBtn').addEventListener('click', () => this.exportCurrentNoteOrSubjectAsJson());
 
         document.getElementById('confirmToken').addEventListener('click', () => this.handleConfirmToken());
         document.getElementById('cancelToken').addEventListener('click', () => hideModal('githubTokenModal'));
@@ -800,7 +814,8 @@ class EscribaApp {
             onEditSubject: (id) => this.editSubject(id),
             onArchiveSubject: (id) => this.toggleArchiveSubject(id),
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
-            onAddSubject: () => this.openSubjectModal()
+            onAddSubject: () => this.openSubjectModal(),
+            onShareSubject: (id) => this.shareSubject(id)
         }, this.showArchived);
 
         if (this.currentView === 'recent') this.renderRecentView();
@@ -808,6 +823,10 @@ class EscribaApp {
     }
 
     addNoteToSubject(subjectId) {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) {
+            showToast('No se puede crear apuntes en modo vista previa', 'warning');
+            return;
+        }
         const subject = this.subjects.find(s => s.id === subjectId);
         if (!subject) return;
 
@@ -867,6 +886,50 @@ class EscribaApp {
             noteLanguageSelect.value = foundNote.language || 'javascript';
         }
 
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) {
+            document.getElementById('noteTitle').disabled = true;
+            document.getElementById('noteContent').contentEditable = false;
+
+            document.getElementById('noteContent').querySelectorAll('td, th').forEach(cell => {
+                cell.contentEditable = "false";
+                cell.removeAttribute('contenteditable');
+            });
+
+            if (noteLanguageSelect) {
+                noteLanguageSelect.disabled = true;
+            }
+
+            const buttonsToHide = ['favoriteBtn', 'shareNoteBtn', 'deleteNoteBtn'];
+            buttonsToHide.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = 'none';
+            });
+
+            const toolbar = document.querySelector('.editor-toolbar');
+            if (toolbar) toolbar.style.display = 'none';
+
+            if (this.isViewingSharedSubject) {
+                this.addSharedSubjectBanner();
+            } else {
+                this.addSharedNoteBanner(foundNote);
+            }
+        } else {
+            document.getElementById('noteTitle').disabled = false;
+            document.getElementById('noteContent').contentEditable = true;
+            if (noteLanguageSelect) {
+                noteLanguageSelect.disabled = false;
+            }
+
+            const buttonsToShow = ['favoriteBtn', 'shareNoteBtn', 'deleteNoteBtn'];
+            buttonsToShow.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = 'inline-flex';
+            });
+
+            const toolbar = document.querySelector('.editor-toolbar');
+            if (toolbar) toolbar.style.display = 'flex';
+        }
+
         this.reRenderAllDiagrams();
         this.reRenderAllCodeBlocks();
         this.mathManager.sync(foundNote);
@@ -878,6 +941,7 @@ class EscribaApp {
     }
 
     async saveCurrentNote() {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) return;
         if (!this.currentNoteId) return;
 
         const title = document.getElementById('noteTitle').value.trim() || 'Apunte sin título';
@@ -1002,6 +1066,10 @@ class EscribaApp {
 
 
     toggleArchiveSubject(id) {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) {
+            showToast('No se puede archivar materias en modo vista previa', 'warning');
+            return;
+        }
         const subject = this.subjects.find(s => s.id === id);
         if (subject) {
             subject.archived = !subject.archived;
@@ -1037,6 +1105,10 @@ class EscribaApp {
     }
 
     openSubjectModal(id = null) {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) {
+            showToast('No se puede crear/editar materias en modo vista previa', 'warning');
+            return;
+        }
         if (id) {
             this.editSubject(id);
         } else {
@@ -1056,6 +1128,10 @@ class EscribaApp {
     }
 
     editSubject(id) {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) {
+            showToast('No se puede editar materias en modo vista previa', 'warning');
+            return;
+        }
         const subject = this.subjects.find(s => String(s.id) === String(id));
         if (!subject) {
             showToast('No se encontró la materia', 'error');
@@ -1207,7 +1283,8 @@ class EscribaApp {
             onEditSubject: (id) => this.editSubject(id),
             onArchiveSubject: (id) => this.toggleArchiveSubject(id),
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
-            onAddSubject: () => showModal('subjectModal')
+            onAddSubject: () => showModal('subjectModal'),
+            onShareSubject: (id) => this.shareSubject(id)
         });
 
         const activeNoteContent = document.getElementById('noteContent');
@@ -1961,6 +2038,10 @@ class EscribaApp {
     }
 
     async handleGitHubAuth(silent = false) {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) {
+            console.log('Skipping GitHub Auth/Sync in shared view mode');
+            return;
+        }
         if (this._isAuthenticating) return;
         this._isAuthenticating = true;
 
@@ -1984,7 +2065,7 @@ class EscribaApp {
                     deletedItems: this.deletedItems
                 };
 
-                const merged = await this.github.sync(data);
+                const merged = await this.github.sync(data, silent);
                 if (merged) {
                     this.subjects = merged.subjects;
                     this.events = merged.events;
@@ -2031,6 +2112,11 @@ class EscribaApp {
                 this.github.logout();
             } else {
                 console.error('Error de conexión con GitHub:', error);
+                if (!silent) {
+                    showToast('Error de sincronización con GitHub: ' + error.message, 'error');
+                } else {
+                    hideToast();
+                }
             }
         } finally {
             this._isAuthenticating = false;
@@ -2251,11 +2337,12 @@ class EscribaApp {
         const githubPath = urlParams.get('github');
 
         if (!sharedData && !gistId && !githubPath) {
+            document.body.classList.remove('shared-view-mode');
             return;
         }
 
         try {
-            this.showLoadingIndicator('Cargando apunte compartido...');
+            this.showLoadingIndicator('Cargando apunte/materia compartido...');
 
             if (githubPath) {
                 await this.loadFromGitHub(githubPath);
@@ -2263,13 +2350,17 @@ class EscribaApp {
                 await this.loadFromGist(gistId);
             } else if (sharedData) {
                 const decodedData = JSON.parse(this.base64ToUtf8(sharedData));
-                this.displaySharedNote(decodedData);
+                if (decodedData.type === 'subject') {
+                    this.displaySharedSubject(decodedData);
+                } else {
+                    this.displaySharedNote(decodedData);
+                }
             }
 
             this.isViewingSharedNote = true;
             this.hideLoadingIndicator();
         } catch (error) {
-            console.error('Error loading shared note:', error);
+            console.error('Error loading shared content:', error);
             this.hideLoadingIndicator();
             this.showSharedNoteError(error);
         }
@@ -2291,7 +2382,11 @@ class EscribaApp {
             const noteData = JSON.parse(jsonFile.content);
             if (noteData.app !== 'escriba') throw new Error('Invalid Escriba note');
 
-            this.displaySharedNote(noteData);
+            if (noteData.type === 'subject') {
+                this.displaySharedSubject(noteData);
+            } else {
+                this.displaySharedNote(noteData);
+            }
         } catch (error) {
             console.error('Error loading from Gist:', error);
             showToast('No se pudo cargar el apunte desde Gist', 'error');
@@ -2339,7 +2434,7 @@ class EscribaApp {
                 };
             } else {
                 noteData = JSON.parse(decodedContent);
-                if (!noteData.content && !noteData.c) {
+                if (noteData.type !== 'subject' && !noteData.content && !noteData.c) {
                     throw new Error('Formato de apunte inválido');
                 }
             }
@@ -2351,7 +2446,11 @@ class EscribaApp {
                 path: filePath
             };
 
-            this.displaySharedNote(noteData);
+            if (noteData.type === 'subject') {
+                this.displaySharedSubject(noteData);
+            } else {
+                this.displaySharedNote(noteData);
+            }
         } catch (error) {
             console.error('Error loading from GitHub:', error);
             showToast('No se pudo cargar desde GitHub', 'error');
@@ -2408,6 +2507,85 @@ class EscribaApp {
             }
             this.reRenderAllCodeBlocks();
         }, 100);
+    }
+
+    addSharedSubjectBanner() {
+        const noteEditor = document.getElementById('noteEditor');
+        if (!noteEditor) return;
+
+        const existing = noteEditor.querySelector('.shared-note-banner');
+        if (existing) existing.remove();
+
+        const banner = document.createElement('div');
+        banner.className = 'shared-note-banner';
+
+        const subject = this.subjects[0];
+        if (!subject) return;
+
+        banner.innerHTML = `
+            <div class="shared-banner-content">
+                <i class="fas fa-share-alt"></i>
+                <span>Materia compartida: <strong>${escapeHtml(subject.name)}</strong> (${subject.notes.length} apuntes)</span>
+                <div class="banner-actions">
+                    <button id="importSubjectBtn" class="btn btn-primary btn-sm">Importar Materia</button>
+                    <button onclick="window.location.href=window.location.pathname" class="btn btn-secondary btn-sm">Ir a mi Escriba</button>
+                </div>
+            </div>
+        `;
+
+        noteEditor.insertBefore(banner, noteEditor.firstChild);
+        document.getElementById('importSubjectBtn').addEventListener('click', () => this.importSharedSubject());
+    }
+
+    importSharedSubject() {
+        const sharedSubject = this.subjects[0];
+        if (!sharedSubject) return;
+
+        if (this.originalSubjects) {
+            this.subjects = this.originalSubjects;
+        }
+
+        let targetSubjectName = sharedSubject.name;
+        let suffixCount = 0;
+        while (this.subjects.some(s => s.name.toLowerCase() === targetSubjectName.toLowerCase())) {
+            suffixCount++;
+            targetSubjectName = `${sharedSubject.name} (${suffixCount})`;
+        }
+
+        const newSubjectId = generateId('subject');
+        const importedNotes = sharedSubject.notes.map(note => ({
+            id: generateId('note'),
+            title: note.title,
+            content: note.content,
+            type: note.type || 'lecture',
+            language: note.language || 'javascript',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            favorite: false
+        }));
+
+        const newSubject = {
+            id: newSubjectId,
+            name: targetSubjectName,
+            code: sharedSubject.code,
+            professor: sharedSubject.professor,
+            color: sharedSubject.color,
+            notes: importedNotes,
+            schedule: sharedSubject.schedule,
+            archived: false,
+            expanded: true,
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString()
+        };
+
+        this.subjects.unshift(newSubject);
+
+        this.isViewingSharedNote = false;
+        this.isViewingSharedSubject = false;
+        originalSaveSubjects(this.subjects);
+
+        showToast('Materia importada con éxito', 'success');
+        window.location.href = window.location.pathname;
     }
 
     addSharedNoteBanner(noteData) {
@@ -2550,6 +2728,7 @@ class EscribaApp {
     }
 
     startAutoSync() {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) return;
         if (this.autoSyncInterval) return;
         if (!this.github.isAuthenticated) return;
 
@@ -2589,26 +2768,80 @@ class EscribaApp {
 
     shareToWhatsApp() {
         const shareUrl = document.getElementById('shareUrl')?.value;
-        const note = this.getNoteById(this.currentNoteId);
-        const subject = this.getSubjectOfNote(this.currentNoteId);
+        if (!shareUrl) return;
 
-        if (!note || !subject || !shareUrl) return;
+        let message = '';
+        if (this.sharingType === 'subject') {
+            const subject = this.subjects.find(s => s.id === this.sharingSubjectId);
+            if (!subject) return;
+            message = `Te comparto mi materia: ${subject.name} en Escriba (${subject.notes.length} apuntes)\n\n${shareUrl}`;
+        } else {
+            const note = this.getNoteById(this.currentNoteId);
+            const subject = this.getSubjectOfNote(this.currentNoteId);
+            if (!note || !subject) return;
+            message = `Te comparto mis apuntes de ${subject.name}: "${note.title}"\n\n${shareUrl}`;
+        }
 
-        const message = `📚 Te comparto mis apuntes de ${subject.name}: "${note.title}"\n\n${shareUrl}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     }
 
     shareToEmail() {
         const shareUrl = document.getElementById('shareUrl')?.value;
-        const note = this.getNoteById(this.currentNoteId);
-        const subject = this.getSubjectOfNote(this.currentNoteId);
+        if (!shareUrl) return;
 
-        if (!note || !subject || !shareUrl) return;
+        let mailSubject = '';
+        let mailBody = '';
 
-        const mailSubject = encodeURIComponent(`Apuntes de ${subject.name}: ${note.title}`);
-        const mailBody = encodeURIComponent(`Hola! Te comparto este apunte de Escriba:\n\n${note.title} (${subject.name})\n\n${shareUrl}`);
+        if (this.sharingType === 'subject') {
+            const subject = this.subjects.find(s => s.id === this.sharingSubjectId);
+            if (!subject) return;
+            mailSubject = encodeURIComponent(`${subject.name}`);
+            mailBody = encodeURIComponent(`Hola! Te comparto esta materia:\n\n${subject.name} (${subject.notes.length} apuntes)\n\n${shareUrl}`);
+        } else {
+            const note = this.getNoteById(this.currentNoteId);
+            const subject = this.getSubjectOfNote(this.currentNoteId);
+            if (!note || !subject) return;
+            mailSubject = encodeURIComponent(`Apuntes de ${subject.name}: ${note.title}`);
+            mailBody = encodeURIComponent(`Hola! Te comparto este apunte de Escriba:\n\n${note.title} (${subject.name})\n\n${shareUrl}`);
+        }
+
         window.location.href = `mailto:?subject=${mailSubject}&body=${mailBody}`;
+    }
+
+    exportCurrentNoteOrSubjectAsJson() {
+        if (this.sharingType === 'subject') {
+            const subject = this.subjects.find(s => s.id === this.sharingSubjectId);
+            if (!subject) return;
+            const data = {
+                app: 'escriba',
+                version: '1.0',
+                type: 'subject',
+                name: subject.name,
+                code: subject.code || '',
+                professor: subject.professor || '',
+                color: subject.color || '#3b82f6',
+                schedule: subject.schedule || [],
+                notes: subject.notes.map(n => ({
+                    title: n.title,
+                    content: n.content,
+                    type: n.type || 'lecture',
+                    language: n.language || 'javascript',
+                    createdAt: n.createdAt,
+                    updatedAt: n.updatedAt,
+                    favorite: n.favorite || false
+                }))
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${subject.name.replace(/\s+/g, '_').toLowerCase()}.subject.escriba.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else {
+            this.exportCurrentNoteAsJson();
+        }
     }
 
     exportCurrentNoteAsJson() {
@@ -2739,15 +2972,28 @@ class EscribaApp {
         }
     }
     async showShareModal() {
-        if (!this.currentNoteId) {
+        if (this.sharingType === 'subject' && !this.sharingSubjectId) {
+            showToast('No se seleccionó ninguna materia para compartir', 'error');
+            return;
+        }
+        if (this.sharingType === 'note' && !this.currentNoteId) {
             showToast('No hay ningún apunte abierto para compartir', 'error');
             return;
         }
 
         showModal('shareModal');
 
+        const modalHeaderTitle = document.querySelector('#shareModal .modal-header h3');
+        if (modalHeaderTitle) {
+            if (this.sharingType === 'subject') {
+                modalHeaderTitle.innerHTML = `<i class="fas fa-share-alt"></i> Compartir Materia`;
+            } else {
+                modalHeaderTitle.innerHTML = `<i class="fas fa-share-alt"></i> Compartir Apunte`;
+            }
+        }
+
         const githubSyncInfo = document.getElementById('githubSyncShareInfo');
-        if (this.github && this.github.isAuthenticated) {
+        if (this.sharingType === 'note' && this.github && this.github.isAuthenticated) {
             githubSyncInfo.style.display = 'block';
             const repoPath = `${this.github.username}/${this.github.repoName}`;
             document.getElementById('githubRepoPath').textContent = repoPath;
@@ -2797,62 +3043,118 @@ class EscribaApp {
         } else if (url.includes('github=')) {
             methodInfo = '<i class="fab fa-github"></i> <strong>Repositorio GitHub</strong> - Enlace directo a tu repositorio';
         } else {
-            methodInfo = '<i class="fas fa-link"></i> <strong>📄 Enlace Directo</strong> - Para apuntes cortos';
+            methodInfo = '<i class="fas fa-link"></i> <strong>Enlace Directo</strong> - Para apuntes cortos';
         }
 
         return { url, methodInfo };
     }
 
     async generateShareUrl() {
-        if (!this.currentNoteId) return '';
-        const note = this.getNoteById(this.currentNoteId);
-        const subject = this.getSubjectOfNote(this.currentNoteId);
-        if (!note || !subject) return '';
+        if (this.sharingType === 'subject') {
+            const subject = this.subjects.find(s => s.id === this.sharingSubjectId);
+            if (!subject) return '';
 
-        const shareData = {
-            t: note.title,
-            c: note.content,
-            ty: note.type,
-            s: subject.name,
-            sc: subject.color,
-            d: note.updatedAt,
-            l: note.language || 'javascript',
-            app: 'escriba',
-            version: '1.0'
-        };
+            const shareData = {
+                app: 'escriba',
+                version: '1.0',
+                type: 'subject',
+                name: subject.name,
+                code: subject.code || '',
+                professor: subject.professor || '',
+                color: subject.color || '#3b82f6',
+                schedule: subject.schedule || [],
+                notes: subject.notes.map(n => ({
+                    title: n.title,
+                    content: n.content,
+                    type: n.type || 'lecture',
+                    language: n.language || 'javascript',
+                    createdAt: n.createdAt,
+                    updatedAt: n.updatedAt,
+                    favorite: n.favorite || false
+                }))
+            };
 
-        try {
-            if (this.github && this.github.isAuthenticated) {
-                const relativePath = `data/notes/${note.id}.json`;
-                const repoUrl = `${this.getShareBaseUrl()}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
-                if (repoUrl.length < 2000) return repoUrl;
+            try {
+                const gistUrl = await this.createGist(shareData, true);
+                if (gistUrl) return gistUrl;
+
+                const base64Data = this.utf8ToBase64(JSON.stringify(shareData));
+                const url = `${this.getShareBaseUrl()}?share=${base64Data}`;
+                if (url.length > 2048) {
+                    showToast('La materia es muy grande. Se recomienda conectar GitHub para compartir.', 'warning');
+                }
+                return url;
+            } catch (error) {
+                console.error('Subject Share URL generation failed:', error);
+                return '';
             }
+        } else {
+            if (!this.currentNoteId) return '';
+            const note = this.getNoteById(this.currentNoteId);
+            const subject = this.getSubjectOfNote(this.currentNoteId);
+            if (!note || !subject) return '';
 
-            const gistUrl = await this.createGist(shareData);
-            if (gistUrl) return gistUrl;
+            const shareData = {
+                t: note.title,
+                c: note.content,
+                ty: note.type,
+                s: subject.name,
+                sc: subject.color,
+                d: note.updatedAt,
+                l: note.language || 'javascript',
+                app: 'escriba',
+                version: '1.0'
+            };
 
-            return `${this.getShareBaseUrl()}?share=${this.utf8ToBase64(JSON.stringify(shareData))}`;
-        } catch (error) {
-            console.error('Share URL generation failed:', error);
-            return '';
+            try {
+                if (this.github && this.github.isAuthenticated) {
+                    const relativePath = `data/notes/${note.id}.json`;
+                    const repoUrl = `${this.getShareBaseUrl()}?github=${this.github.username}/${this.github.repoName}/${relativePath}`;
+                    if (repoUrl.length < 2000) return repoUrl;
+                }
+
+                const gistUrl = await this.createGist(shareData, false);
+                if (gistUrl) return gistUrl;
+
+                return `${this.getShareBaseUrl()}?share=${this.utf8ToBase64(JSON.stringify(shareData))}`;
+            } catch (error) {
+                console.error('Share URL generation failed:', error);
+                return '';
+            }
         }
     }
 
-    async createGist(shareData) {
+    shareSubject(id) {
+        this.sharingType = 'subject';
+        this.sharingSubjectId = id;
+        this.showShareModal();
+    }
+
+    async createGist(shareData, isSubject = false) {
         try {
+            const filename = isSubject ? 'escriba-subject.json' : 'escriba-note.json';
+            const description = isSubject
+                ? `Escriba Subject: ${shareData.name}`
+                : `Escriba Note: ${shareData.t} (${shareData.s})`;
             const gistData = {
-                description: `📚 Escriba Note: ${shareData.t} (${shareData.s})`,
+                description: description,
                 public: true,
                 files: {
-                    "escriba-note.json": {
+                    [filename]: {
                         content: JSON.stringify(shareData, null, 2)
                     }
                 }
             };
 
+            const token = localStorage.getItem('github_access_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `token ${token}`;
+            }
+
             const response = await fetch('https://api.github.com/gists', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(gistData)
             });
 
@@ -3087,6 +3389,10 @@ class EscribaApp {
     }
 
     confirmDeleteSubject(subjectId) {
+        if (this.isViewingSharedNote || this.isViewingSharedSubject) {
+            showToast('No se puede eliminar materias en modo vista previa', 'warning');
+            return;
+        }
         const subject = this.subjects.find(s => s.id === subjectId);
         if (!subject) return;
 

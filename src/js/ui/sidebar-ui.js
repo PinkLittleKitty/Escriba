@@ -50,6 +50,9 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
                             <button class="menu-item btn-edit-subject" data-subject-id="${subject.id}">
                                 <i class="fas fa-pencil"></i> <span>Editar</span>
                             </button>
+                            <button class="menu-item btn-share-subject" data-subject-id="${subject.id}">
+                                <i class="fas fa-share-alt"></i> <span>Compartir</span>
+                            </button>
                             <button class="menu-item btn-archive-subject" data-subject-id="${subject.id}">
                                 <i class="fas ${subject.archived ? 'fa-box-open' : 'fa-box-archive'}"></i> <span>${subject.archived ? 'Desarchivar' : 'Archivar'}</span>
                             </button>
@@ -143,6 +146,14 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
             e.stopPropagation();
             const subjectId = btn.dataset.subjectId;
             if (callbacks.onEditSubject) callbacks.onEditSubject(subjectId);
+        });
+    });
+
+    container.querySelectorAll('.btn-share-subject').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const subjectId = btn.dataset.subjectId;
+            if (callbacks.onShareSubject) callbacks.onShareSubject(subjectId);
         });
     });
 

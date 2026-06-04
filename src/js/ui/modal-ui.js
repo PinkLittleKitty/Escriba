@@ -88,6 +88,26 @@ export const updateToastProgress = (progress, subtext = null) => {
         subtextEl.textContent = subtext;
         subtextEl.style.display = 'block';
     }
+
+    if (progress >= 100) {
+        const icon = toast.querySelector('.toast-icon');
+        if (icon) {
+            icon.className = 'toast-icon fas fa-check-circle';
+        }
+        toast.className = 'toast success show';
+
+        const progressContainer = toast.querySelector('.toast-progress-container');
+        if (progressContainer) {
+            progressContainer.style.display = 'none';
+        }
+
+        if (toastTimeoutId) {
+            clearTimeout(toastTimeoutId);
+        }
+        toastTimeoutId = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 1500);
+    }
 };
 
 export const hideToast = () => {

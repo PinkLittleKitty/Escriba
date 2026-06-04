@@ -63,3 +63,9 @@ body {
     background: var(--border-color);
     margin: 1.5rem 0;
 }
+
+body.shared-view-mode #sidebarNewSubjectBtn,
+body.shared-view-mode #welcomeNewSubject,
+body.shared-view-mode .subject-actions {
+    display: none !important;
+}

@@ -89,7 +89,7 @@ export class GitHubManager {
         return await response.json();
     }
 
-    async sync(localData) {
+    async sync(localData, silent = false) {
         if (!this.isAuthenticated || this.syncInProgress) return null;
 
         this.syncInProgress = true;
@@ -99,7 +99,7 @@ export class GitHubManager {
             const remoteData = await this.getRemoteData();
             const mergedData = this.mergeData(localData, remoteData);
 
-            await this.uploadData(mergedData);
+            await this.uploadData(mergedData, silent);
 
             this.lastSyncTime = new Date().toISOString();
             localStorage.setItem('last_sync_time', this.lastSyncTime);
@@ -229,7 +229,7 @@ export class GitHubManager {
         };
     }
 
-    async uploadData(data) {
+    async uploadData(data, silent = false) {
         await this.ensureRepository();
 
         const files = [
@@ -293,6 +293,8 @@ export class GitHubManager {
                         this.updateToastProgress(Math.floor((i / files.length) * 100), `Subiendo ${file.path}`);
                         await this.updateFile(file.path, file.content);
                     }
+
+                    this.updateToastProgress(100, 'Completado');
                 } else {
                     this.updateToastProgress(0, `Reintentando (${batchAttempt}/${maxBatchRetries})...`);
                     await new Promise(resolve => setTimeout(resolve, 1000 * batchAttempt));

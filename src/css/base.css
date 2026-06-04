@@ -56,3 +56,10 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--border-light);
 }
+
+#noteContent hr {
+    border: none;
+    height: 1px;
+    background: var(--border-color);
+    margin: 1.5rem 0;
+}

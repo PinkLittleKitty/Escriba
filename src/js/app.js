@@ -577,6 +577,8 @@ class EscribaApp {
 
         document.getElementById('insertTableSubmit').addEventListener('click', () => this.handleInsertTable());
 
+        document.getElementById('insertHrBtn').addEventListener('click', () => this.insertHorizontalLine());
+
         const cancelTableBtn = document.getElementById('cancelTable');
         if (cancelTableBtn) cancelTableBtn.addEventListener('click', () => hideModal('tableModal'));
 
@@ -1869,6 +1871,12 @@ class EscribaApp {
         this.debouncedSave();
     }
 
+    insertHorizontalLine() {
+        document.getElementById('noteContent').focus();
+        document.execCommand('insertHorizontalRule', false, null);
+        this.debouncedSave();
+    }
+
     async handleInsertUML() {
         const umlCode = document.getElementById('umlCode').value.trim();
         if (!umlCode) {
@@ -2362,6 +2370,12 @@ class EscribaApp {
         document.getElementById('noteTitle').disabled = true;
         document.getElementById('noteContent').innerHTML = content;
         document.getElementById('noteContent').contentEditable = false;
+
+        document.getElementById('noteContent').querySelectorAll('td, th').forEach(cell => {
+            cell.contentEditable = "false";
+            cell.removeAttribute('contenteditable');
+        });
+
         document.getElementById('noteSubject').textContent = subject;
 
         const noteLanguageSelect = document.getElementById('noteLanguageSelect');

@@ -69,6 +69,16 @@ jobs:
         with:
           node-version: 20
 
+      - name: Set Dynamic Version
+        shell: bash
+        run: |
+          VERSION=$(date +%Y.%-m.%-d)-${GITHUB_SHA::7}
+          BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "Setting version to $VERSION and build time to $BUILD_TIME"
+          npm version $VERSION --allow-same-version --no-git-tag-version
+          perl -i -pe "s/id=\"appVersion\">.*?<\/span>/id=\"appVersion\">$VERSION<\/span>/g" index.html
+          perl -i -pe "s/const CURRENT_BUILD_TIME = new Date\('.*?'\);/const CURRENT_BUILD_TIME = new Date('$BUILD_TIME');/g" src/js/app.js
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:

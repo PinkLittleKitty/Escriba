@@ -1352,7 +1352,9 @@ class EscribaApp {
         const noteContent = document.getElementById('noteContent');
         const activeElement = document.activeElement;
 
-        const isNoteContentFocused = noteContent && (noteContent.contains(activeElement) || noteContent === activeElement);
+        const isNoteContentFocused = noteContent &&
+            (noteContent.contains(activeElement) || noteContent === activeElement) &&
+            !activeElement.closest('[contenteditable="false"]');
 
         if (e.ctrlKey || e.metaKey) {
             switch (e.key.toLowerCase()) {
@@ -1437,10 +1439,31 @@ class EscribaApp {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                if (!range.collapsed) {
-                    this.handleTabIndentationForSelection(range, e.shiftKey);
+                let isInsideList = false;
+                const commonAncestor = range.commonAncestorContainer;
+                if (commonAncestor) {
+                    const element = commonAncestor.nodeType === Node.ELEMENT_NODE ? commonAncestor : commonAncestor.parentElement;
+                    if (element) {
+                        if (element.closest('li, ul, ol')) {
+                            isInsideList = true;
+                        } else if (!range.collapsed && element.querySelector('li, ul, ol')) {
+                            isInsideList = true;
+                        }
+                    }
+                }
+
+                if (isInsideList) {
+                    if (e.shiftKey) {
+                        document.execCommand('outdent', false, null);
+                    } else {
+                        document.execCommand('indent', false, null);
+                    }
                 } else {
-                    this.insertTabIndentation();
+                    if (e.shiftKey) {
+                        this.removeTabIndentation();
+                    } else {
+                        this.insertTabIndentation();
+                    }
                 }
             }
             this.debouncedSave();
@@ -1465,27 +1488,40 @@ class EscribaApp {
         }
     }
 
-    handleTabIndentationForSelection(range, isShiftTab) {
-        try {
-            const selection = window.getSelection();
-            const selectedContent = range.extractContents();
-            const tempDiv = document.createElement('div');
-            tempDiv.appendChild(selectedContent);
-            let content = tempDiv.innerHTML;
+    removeTabIndentation() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const node = range.startContainer;
+            if (node && node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent;
+                const offset = range.startOffset;
+                const before = text.substring(0, offset);
+                const after = text.substring(offset);
 
-            if (isShiftTab) {
-                content = this.reduceIndentation(content);
-            } else {
-                content = this.increaseIndentation(content);
+                const matchBefore = before.match(/[\s\u00a0]+$/);
+                if (matchBefore) {
+                    const spacesCount = Math.min(matchBefore[0].length, 4);
+                    const deleteRange = document.createRange();
+                    deleteRange.setStart(node, offset - spacesCount);
+                    deleteRange.setEnd(node, offset);
+                    deleteRange.deleteContents();
+                    return;
+                }
+
+                if (before.trim() === '') {
+                    const matchAfter = after.match(/^[\s\u00a0]+/);
+                    if (matchAfter) {
+                        const spacesCount = Math.min(matchAfter[0].length, 4);
+                        const deleteRange = document.createRange();
+                        deleteRange.setStart(node, offset);
+                        deleteRange.setEnd(node, offset + spacesCount);
+                        deleteRange.deleteContents();
+                        return;
+                    }
+                }
             }
-
-            const fragment = range.createContextualFragment(content);
-            range.insertNode(fragment);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        } catch (error) {
-            console.warn('Error processing selection indentation:', error);
-            document.execCommand(isShiftTab ? 'outdent' : 'indent');
+            document.execCommand('outdent', false, null);
         }
     }
 
@@ -1558,21 +1594,6 @@ class EscribaApp {
                 break;
             }
         }
-    }
-
-    increaseIndentation(htmlContent) {
-        const tabSpaces = '&nbsp;&nbsp;&nbsp;&nbsp;';
-        return htmlContent
-            .replace(/^/gm, tabSpaces)
-            .replace(/(<br\s*\/?>)/gi, '$1' + tabSpaces)
-            .replace(/(<div[^>]*>)/gi, '$1' + tabSpaces);
-    }
-
-    reduceIndentation(htmlContent) {
-        return htmlContent
-            .replace(/^(&nbsp;|\s){1,4}/gm, '')
-            .replace(/(<br\s*\/?>)(\s|&nbsp;){1,4}/gi, '$1')
-            .replace(/(<div[^>]*>)(\s|&nbsp;){1,4}/gi, '$1');
     }
 
     exportCarpeta() {

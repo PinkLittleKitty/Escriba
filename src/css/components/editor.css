@@ -292,6 +292,67 @@
     font-size: 0.85rem;
 }
 
+.note-meta button {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.note-meta button i {
+    font-size: 1.1rem;
+}
+
+.note-meta button:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.note-meta button:active {
+    transform: scale(0.95);
+}
+
+.note-meta #favoriteBtn.active {
+    color: var(--accent-orange);
+    background: var(--accent-orange-bg);
+    border-color: var(--accent-orange);
+}
+
+.note-meta #favoriteBtn.active:hover {
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.note-meta #noteDate {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.note-meta #deleteNoteBtn {
+    color: var(--accent-red);
+    background: var(--accent-red-bg);
+    border-color: var(--accent-red-bg);
+}
+
+.note-meta #deleteNoteBtn:hover {
+    background: var(--accent-red) !important;
+    color: white !important;
+    border-color: var(--accent-red) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
 .editor-toolbar {
     padding: 0.5rem 2rem 1rem 2rem;
     background: var(--bg-primary);

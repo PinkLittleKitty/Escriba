@@ -769,6 +769,8 @@ class EscribaApp {
             btn.classList.toggle('active', btn.dataset.view === view);
         });
 
+        this.adjustCalendarContainerParent(view);
+
         if (view === 'dashboard') {
             this.updateDashboard();
             this.currentNoteId = null;
@@ -2287,6 +2289,8 @@ class EscribaApp {
             calendar: document.getElementById('calendarContainer')
         };
 
+        this.adjustCalendarContainerParent(null);
+
         Object.keys(containers).forEach(key => {
             if (containers[key]) {
                 containers[key].style.display = key === view ? (key === 'calendar' ? 'flex' : 'block') : 'none';
@@ -2306,6 +2310,35 @@ class EscribaApp {
             case 'calendar':
                 this.renderCalendar();
                 break;
+        }
+    }
+
+    adjustCalendarContainerParent(mainView) {
+        const calendarContainer = document.getElementById('calendarContainer');
+        const sidebar = document.getElementById('sidebar');
+        const mainViewContainer = document.getElementById('mainViewContainer');
+
+        if (!calendarContainer) return;
+
+        if (this.isMobile() && mainView === 'calendar') {
+            if (mainViewContainer && calendarContainer.parentElement !== mainViewContainer) {
+                mainViewContainer.appendChild(calendarContainer);
+            }
+            calendarContainer.style.display = 'flex';
+        } else {
+            if (sidebar && calendarContainer.parentElement !== sidebar) {
+                const archivedOuter = sidebar.querySelector('.archived-toggle-outer');
+                if (archivedOuter) {
+                    sidebar.insertBefore(calendarContainer, archivedOuter);
+                } else {
+                    sidebar.appendChild(calendarContainer);
+                }
+            }
+            if (this.currentView === 'calendar') {
+                calendarContainer.style.display = 'flex';
+            } else {
+                calendarContainer.style.display = 'none';
+            }
         }
     }
 

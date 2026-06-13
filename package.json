@@ -38,7 +38,8 @@
       "category": "Utility",
       "target": [
         "AppImage"
-      ]
+      ],
+      "icon": "build/icons"
     },
     "mac": {
       "target": [

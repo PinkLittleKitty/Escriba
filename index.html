@@ -275,6 +275,45 @@
                         </div>
                         <div class="toolbar-separator"></div>
                         <div class="toolbar-group">
+                            <div class="toolbar-dropdown" id="fontSizeDropdown">
+                                <button class="toolbar-btn" id="fontSizeToggleBtn" title="Tamaño de letra"><i
+                                        class="fas fa-text-height"></i></button>
+                                <div class="dropdown-menu font-size-menu">
+                                    <button class="size-menu-option" data-size="1">Muy chico</button>
+                                    <button class="size-menu-option" data-size="2">Chico</button>
+                                    <button class="size-menu-option" data-size="3">Normal</button>
+                                    <button class="size-menu-option" data-size="4">Grande</button>
+                                    <button class="size-menu-option" data-size="5">Muy grande</button>
+                                    <button class="size-menu-option" data-size="6">Gigante</button>
+                                </div>
+                            </div>
+                            <div class="toolbar-dropdown" id="textColorDropdown">
+                                <button class="toolbar-btn" id="textColorToggleBtn" title="Color de texto">
+                                    <i class="fas fa-tint"></i>
+                                    <span class="color-dot" id="textColorIndicator"></span>
+                                </button>
+                                <div class="dropdown-menu text-color-menu">
+                                    <button class="color-menu-option" data-color="var(--text-primary)"
+                                        title="Texto Principal"
+                                        style="background-color: var(--text-primary); border: 1px solid var(--border-color);"></button>
+                                    <button class="color-menu-option" data-color="var(--text-secondary)"
+                                        title="Texto Secundario"
+                                        style="background-color: var(--text-secondary); border: 1px solid var(--border-color);"></button>
+                                    <button class="color-menu-option" data-color="var(--accent-blue)" title="Azul"
+                                        style="background-color: var(--accent-blue);"></button>
+                                    <button class="color-menu-option" data-color="var(--accent-red)" title="Rojo"
+                                        style="background-color: var(--accent-red);"></button>
+                                    <button class="color-menu-option" data-color="var(--accent-green)" title="Verde"
+                                        style="background-color: var(--accent-green);"></button>
+                                    <button class="color-menu-option" data-color="var(--accent-orange)" title="Naranja"
+                                        style="background-color: var(--accent-orange);"></button>
+                                    <button class="color-menu-option" data-color="var(--accent-yellow)" title="Amarillo"
+                                        style="background-color: var(--accent-yellow);"></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group">
                             <button class="toolbar-btn" data-command="justifyLeft" title="Alinear a la izquierda"><i
                                     class="fas fa-align-left"></i></button>
                             <button class="toolbar-btn" data-command="justifyCenter" title="Centrar (Ctrl+T)"><i

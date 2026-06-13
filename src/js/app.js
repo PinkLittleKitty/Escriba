@@ -546,6 +546,63 @@ class EscribaApp {
             });
         });
 
+        const textColorDropdown = document.getElementById('textColorDropdown');
+        const fontSizeDropdown = document.getElementById('fontSizeDropdown');
+
+        if (textColorDropdown) {
+            document.getElementById('textColorToggleBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                textColorDropdown.classList.toggle('active');
+                if (fontSizeDropdown) fontSizeDropdown.classList.remove('active');
+            });
+        }
+
+        if (fontSizeDropdown) {
+            document.getElementById('fontSizeToggleBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                fontSizeDropdown.classList.toggle('active');
+                if (textColorDropdown) textColorDropdown.classList.remove('active');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.toolbar-dropdown')) {
+                document.querySelectorAll('.toolbar-dropdown.active').forEach(d => d.classList.remove('active'));
+            }
+        });
+
+        document.querySelectorAll('.size-menu-option').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const size = e.target.dataset.size;
+                if (size) {
+                    document.execCommand('styleWithCSS', false, true);
+                    document.execCommand('fontSize', false, size);
+                    updateToolbarStates();
+                    this.debouncedSave();
+                }
+                if (fontSizeDropdown) fontSizeDropdown.classList.remove('active');
+            });
+        });
+
+        document.querySelectorAll('.color-menu-option').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const color = e.target.dataset.color;
+                if (color) {
+                    document.execCommand('styleWithCSS', false, true);
+                    document.execCommand('foreColor', false, color);
+
+                    const indicator = document.getElementById('textColorIndicator');
+                    if (indicator) {
+                        indicator.style.backgroundColor = color;
+                    }
+
+                    updateToolbarStates();
+                    this.debouncedSave();
+                }
+                if (textColorDropdown) textColorDropdown.classList.remove('active');
+            });
+        });
+
         document.getElementById('highlightBtn').addEventListener('click', () => this.toggleHighlight());
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
         document.getElementById('insertCodeBtn').addEventListener('click', () => this.insertCodeBlock());

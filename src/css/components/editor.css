@@ -804,3 +804,111 @@ mark.search-highlight {
     stroke: var(--accent-green);
     stroke-opacity: 0.2;
 }
+
+.toolbar-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.toolbar-dropdown .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: auto;
+    z-index: 1000;
+    min-width: 120px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 0.5rem;
+    overflow: visible;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toolbar-dropdown.active .dropdown-menu {
+    display: block;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+}
+
+.text-color-menu {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    padding: 0.75rem;
+    min-width: 160px;
+}
+
+.toolbar-dropdown.active .text-color-menu {
+    display: grid !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+}
+
+.color-menu-option {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.color-menu-option:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 8px var(--accent-shadow);
+}
+
+.font-size-menu {
+    min-width: 140px;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.toolbar-dropdown.active .font-size-menu {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+}
+
+.size-menu-option {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.size-menu-option:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.color-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    border: 1px solid var(--bg-primary);
+}
+
+#textColorToggleBtn {
+    position: relative;
+}

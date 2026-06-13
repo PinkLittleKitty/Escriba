@@ -140,6 +140,7 @@ class EscribaApp {
         });
 
         document.body.classList.add('loading');
+        document.execCommand('defaultParagraphSeparator', false, 'div');
 
         window.addEventListener('click', (e) => {
             if (e.target.closest && !e.target.closest('.subject-options-wrapper')) {
@@ -1515,6 +1516,38 @@ class EscribaApp {
             const match = lineText.match(rule.pattern);
             if (match) {
                 e.preventDefault();
+
+                let parentBlock = node.parentElement;
+                while (parentBlock && parentBlock.id !== 'noteContent' && parentBlock.parentElement && parentBlock.parentElement.id !== 'noteContent') {
+                    parentBlock = parentBlock.parentElement;
+                }
+
+                if (parentBlock && parentBlock.id !== 'noteContent') {
+                    const brs = Array.from(parentBlock.querySelectorAll('br'));
+                    const precedingBrs = brs.filter(br => (br.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING));
+
+                    if (precedingBrs.length > 0) {
+                        const brToRemove = precedingBrs[precedingBrs.length - 1];
+
+                        const splitRange = document.createRange();
+                        splitRange.setStartAfter(brToRemove);
+                        splitRange.setEndAfter(parentBlock.lastChild);
+
+                        const fragment = splitRange.extractContents();
+
+                        const newBlock = document.createElement(parentBlock.tagName);
+                        newBlock.appendChild(fragment);
+
+                        parentBlock.parentNode.insertBefore(newBlock, parentBlock.nextSibling);
+                        brToRemove.remove();
+
+                        const newRange = document.createRange();
+                        newRange.setStart(node, offset);
+                        newRange.setEnd(node, offset);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    }
+                }
 
                 const deleteRange = document.createRange();
                 deleteRange.setStart(node, 0);

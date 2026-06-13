@@ -1333,6 +1333,18 @@ class EscribaApp {
                         this.toggleMathMode();
                     }
                     break;
+                case 't':
+                    if (isNoteContentFocused) {
+                        e.preventDefault();
+                        if (document.queryCommandState('justifyCenter')) {
+                            document.execCommand('justifyLeft', false, null);
+                        } else {
+                            document.execCommand('justifyCenter', false, null);
+                        }
+                        updateToolbarStates();
+                        this.debouncedSave();
+                    }
+                    break;
                 case 'z':
                     if (isNoteContentFocused) {
                         if (e.shiftKey) {

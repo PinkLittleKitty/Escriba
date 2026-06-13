@@ -761,6 +761,57 @@
     letter-spacing: 0.5px;
 }
 
+.hotkeys-section {
+    width: 100%;
+    max-width: 500px;
+    text-align: left;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.hotkeys-section h4 {
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.hotkeys-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.hotkey-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.hotkey-item:hover {
+    border-color: var(--accent-blue);
+    background: rgba(67, 97, 238, 0.05);
+}
+
+.hotkey-item kbd {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: var(--font-family), monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 768px) {
     .modal-content-large {
         width: 95% !important;
@@ -858,5 +909,9 @@
 
     .form-group .checkbox-label input:checked+.checkmark::after {
         left: 18px;
+    }
+
+    .hotkeys-grid {
+        grid-template-columns: 1fr !important;
     }
 }

@@ -453,15 +453,39 @@ class EscribaApp {
         const deduplicateBtn = document.getElementById('deduplicateNotesBtn');
         if (deduplicateBtn) deduplicateBtn.addEventListener('click', () => this.deduplicateNotes());
 
-        document.getElementById('noteContent').addEventListener('input', (e) => {
-            if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n')) {
-                this.handleMarkdownAutoFormat(e);
+        const handleFocus = () => {
+            if (this.isMobile()) {
+                document.body.classList.add('keyboard-active');
             }
-            updateToolbarStates();
-            this.updateNoteStats();
-            this.debouncedSave();
-        });
-        document.getElementById('noteTitle').addEventListener('input', () => this.debouncedSave());
+        };
+        const handleBlur = () => {
+            setTimeout(() => {
+                const active = document.activeElement;
+                if (active !== document.getElementById('noteContent') && active !== document.getElementById('noteTitle')) {
+                    document.body.classList.remove('keyboard-active');
+                }
+            }, 100);
+        };
+
+        const noteContentEl = document.getElementById('noteContent');
+        const noteTitleEl = document.getElementById('noteTitle');
+        if (noteContentEl) {
+            noteContentEl.addEventListener('focus', handleFocus);
+            noteContentEl.addEventListener('blur', handleBlur);
+            noteContentEl.addEventListener('input', (e) => {
+                if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n')) {
+                    this.handleMarkdownAutoFormat(e);
+                }
+                updateToolbarStates();
+                this.updateNoteStats();
+                this.debouncedSave();
+            });
+        }
+        if (noteTitleEl) {
+            noteTitleEl.addEventListener('focus', handleFocus);
+            noteTitleEl.addEventListener('blur', handleBlur);
+            noteTitleEl.addEventListener('input', () => this.debouncedSave());
+        }
 
         document.getElementById('noteContent').addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('.uml-delete-btn');
@@ -764,6 +788,12 @@ class EscribaApp {
         if (dashboard) dashboard.style.display = view === 'dashboard' ? 'flex' : 'none';
         if (editor) editor.style.display = view === 'editor' ? 'flex' : 'none';
         if (footer) footer.style.display = view === 'editor' ? 'flex' : 'none';
+
+        if (view === 'editor') {
+            document.body.classList.add('editor-active');
+        } else {
+            document.body.classList.remove('editor-active');
+        }
 
         document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.view === view);

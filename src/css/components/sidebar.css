@@ -457,3 +457,7 @@
 .sidebar.compact .btn-toggle-archived .toggle-icon {
     display: none;
 }
+
+.mobile-grabber {
+    display: none;
+}

@@ -14,6 +14,19 @@
 
     .main-content {
         height: calc(100dvh - var(--header-height) - var(--bottom-nav-height));
+        transition: height 0.2s ease;
+    }
+
+    body.editor-active header {
+        display: none !important;
+    }
+
+    body.editor-active .main-content {
+        height: calc(100dvh - var(--bottom-nav-height)) !important;
+    }
+
+    body.editor-active.keyboard-active .main-content {
+        height: 100dvh !important;
     }
 
     header {
@@ -21,6 +34,7 @@
         padding: 0 1rem !important;
         background: var(--bg-secondary);
         border-bottom: 2px solid var(--border-color);
+        z-index: 1002;
     }
 
     header h1 {
@@ -48,8 +62,7 @@
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
         z-index: 1001;
         padding: 0 10px;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .mobile-nav-btn {
@@ -64,7 +77,7 @@
         gap: 4px;
         font-size: 0.7rem;
         font-weight: 600;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         padding: 8px 0;
     }
 
@@ -81,24 +94,54 @@
         transform: translateY(-2px);
     }
 
+    .mobile-nav-btn:active {
+        transform: scale(0.92);
+        opacity: 0.8;
+    }
+
+    body.keyboard-active .mobile-bottom-nav {
+        transform: translateY(100%);
+        pointer-events: none;
+    }
+
+    body.keyboard-active .main-content {
+        height: calc(100dvh - var(--header-height)) !important;
+    }
+
+    .mobile-grabber {
+        display: block !important;
+        width: 36px;
+        height: 5px;
+        background: var(--border-color);
+        border-radius: 3px;
+        margin: 10px auto 5px auto;
+        flex-shrink: 0;
+        opacity: 0.6;
+    }
+
     .sidebar {
         position: fixed !important;
         left: 0 !important;
-        top: 0 !important;
+        right: 0 !important;
         bottom: 0 !important;
-        width: 85% !important;
-        max-width: 320px !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: 75vh !important;
         z-index: 2000 !important;
         background: var(--bg-secondary) !important;
-        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.3) !important;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25) !important;
         transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        border-right: 1px solid var(--border-color) !important;
+        border-top: 1px solid var(--border-color) !important;
+        border-right: none !important;
+        border-radius: 24px 24px 0 0 !important;
         display: flex !important;
-        transform: translateX(-100%) !important;
+        flex-direction: column !important;
+        transform: translateY(100%) !important;
     }
 
     .sidebar.compact {
-        width: 85% !important;
+        width: 100% !important;
     }
 
     .sidebar.compact .search-box input,
@@ -144,7 +187,7 @@
     }
 
     .sidebar.mobile-active {
-        transform: translateX(0) !important;
+        transform: translateY(0) !important;
     }
 
     .search-section {
@@ -223,29 +266,45 @@
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
-        overflow: hidden !important;
+        overflow-y: auto !important;
+        display: flex;
+        flex-direction: column !important;
+        height: 100% !important;
     }
 
     .note-header {
-        padding: 0.75rem 1rem !important;
+        padding: 0.5rem 1rem !important;
         flex-shrink: 0 !important;
+        gap: 0.5rem !important;
+    }
+
+    .note-breadcrumb {
+        font-size: 0.75rem !important;
+        margin-top: 1px !important;
+        opacity: 0.8;
+    }
+
+    .title-input {
+        font-size: 1.25rem !important;
+        padding: 0.25rem 0 !important;
+        margin-bottom: 0.15rem !important;
     }
 
     .note-meta {
         display: flex !important;
         align-items: center !important;
-        gap: 0.75rem !important;
+        gap: 0.5rem !important;
         width: 100% !important;
         justify-content: flex-start !important;
-        margin-top: 0.25rem !important;
+        margin-top: 0.15rem !important;
     }
 
     .note-meta button {
         background: var(--bg-card) !important;
         border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        width: 40px !important;
-        height: 40px !important;
+        border-radius: 8px !important;
+        width: 32px !important;
+        height: 32px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -256,11 +315,11 @@
     }
 
     .note-meta button i {
-        font-size: 1.1rem !important;
+        font-size: 0.95rem !important;
     }
 
     .note-meta button:active {
-        transform: scale(0.95) !important;
+        transform: scale(0.92) !important;
     }
 
     .note-meta #favoriteBtn.active {
@@ -270,10 +329,10 @@
     }
 
     .note-meta #noteDate {
-        font-size: 0.85rem !important;
+        font-size: 0.75rem !important;
         color: var(--text-muted) !important;
         font-weight: 500 !important;
-        margin-left: 0.5rem !important;
+        margin-left: 0.25rem !important;
     }
 
     .note-meta #deleteNoteBtn {
@@ -293,6 +352,12 @@
         padding-bottom: 5px;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        background: var(--bg-primary) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
     }
 
     .editor-toolbar::-webkit-scrollbar {
@@ -352,6 +417,9 @@
 
     .note-content {
         padding: 1rem !important;
+        overflow-y: visible !important;
+        height: auto !important;
+        flex: none !important;
     }
 
     .sidebar .view-toggles .view-btn[data-view="calendar"] {

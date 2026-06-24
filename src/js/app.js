@@ -555,7 +555,7 @@ class EscribaApp {
 
         document.getElementById('deleteNoteBtn').addEventListener('click', () => this.deleteCurrentNote());
         document.getElementById('favoriteBtn').addEventListener('click', () => this.toggleFavorite());
-        document.getElementById('exportMarkdownBtn').addEventListener('click', () => this.exportNoteToMarkdown());
+        document.getElementById('exportPdfBtn').addEventListener('click', () => this.exportCurrentNoteToPdf());
         document.getElementById('shareNoteBtn').addEventListener('click', () => {
             this.sharingType = 'note';
             this.showShareModal();
@@ -1752,6 +1752,111 @@ class EscribaApp {
             noteDiv.appendChild(noteContentDiv);
             printContainer.appendChild(noteDiv);
         }
+
+        document.body.classList.add('print-folder-mode');
+
+        setTimeout(() => {
+            window.print();
+
+            const cleanup = () => {
+                document.body.classList.remove('print-folder-mode');
+                printContainer.innerHTML = '';
+                window.removeEventListener('afterprint', cleanup);
+            };
+
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(cleanup, 1000);
+        }, 300);
+    }
+
+    async exportCurrentNoteToPdf() {
+        if (!this.currentNoteId) return;
+
+        let foundNote = null;
+        let foundSubject = null;
+        this.subjects.forEach(s => {
+            const note = s.notes.find(n => n.id === this.currentNoteId);
+            if (note) {
+                foundNote = note;
+                foundSubject = s;
+            }
+        });
+
+        if (!foundNote) return;
+
+        showToast('Preparando PDF del apunte...', 'info', { duration: 3000 });
+
+        let printContainer = document.getElementById('printFolderContainer');
+        if (!printContainer) {
+            printContainer = document.createElement('div');
+            printContainer.id = 'printFolderContainer';
+            document.body.appendChild(printContainer);
+        }
+        printContainer.innerHTML = '';
+
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'print-note';
+
+        const noteHeader = document.createElement('div');
+        noteHeader.className = 'print-note-header';
+        noteHeader.innerHTML = `
+            <h2 class="print-note-title">${escapeHtml(foundNote.title)}</h2>
+            <div class="print-note-meta">
+                <span>Materia: ${escapeHtml(foundSubject.name)}</span>
+                <span>Fecha: ${formatDate(foundNote.updatedAt)}</span>
+            </div>
+        `;
+        noteDiv.appendChild(noteHeader);
+
+        const noteContentDiv = document.createElement('div');
+        noteContentDiv.className = 'print-note-content note-content';
+        if (foundNote.mathMode) {
+            noteContentDiv.classList.add('math-mode');
+        }
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = foundNote.content || '';
+
+        const editors = tempDiv.querySelectorAll('.inline-ace-editor');
+        editors.forEach(container => {
+            const code = container.getAttribute('data-code') || '';
+            const pre = document.createElement('pre');
+            const codeEl = document.createElement('code');
+            codeEl.textContent = code;
+            pre.appendChild(codeEl);
+
+            const parentBlock = container.closest('.code-block-container');
+            if (parentBlock) {
+                parentBlock.parentNode.replaceChild(pre, parentBlock);
+            } else {
+                container.parentNode.replaceChild(pre, container);
+            }
+        });
+
+        const diagrams = tempDiv.querySelectorAll('.uml-diagram-container');
+        for (const container of diagrams) {
+            const contentEl = container.querySelector('.uml-diagram-content');
+            const code = container.getAttribute('data-uml-code');
+            if (code && typeof mermaid !== 'undefined') {
+                const uniqueId = 'uml-print-' + Math.random().toString(36).substr(2, 9);
+                try {
+                    const { svg } = await mermaid.render(uniqueId, code);
+                    if (contentEl) {
+                        contentEl.innerHTML = svg;
+                    } else {
+                        container.innerHTML = svg;
+                    }
+                } catch (err) {
+                    console.error('Error rendering UML in print export:', err);
+                }
+            }
+            const actions = container.querySelector('.uml-diagram-actions');
+            if (actions) actions.remove();
+        }
+
+        noteContentDiv.innerHTML = tempDiv.innerHTML;
+        noteDiv.appendChild(noteContentDiv);
+        printContainer.appendChild(noteDiv);
 
         document.body.classList.add('print-folder-mode');
 
@@ -4030,101 +4135,6 @@ class EscribaApp {
             this.debouncedSave();
         }
     }
-
-    exportNoteToMarkdown() {
-        if (!this.currentNoteId) return;
-
-        let foundNote = null;
-        let foundSubject = null;
-        this.subjects.forEach(s => {
-            const note = s.notes.find(n => n.id === this.currentNoteId);
-            if (note) {
-                foundNote = note;
-                foundSubject = s;
-            }
-        });
-
-        if (!foundNote) return;
-
-        const contentElement = document.getElementById('noteContent');
-        const markdown = this.htmlToMarkdown(contentElement);
-        const fullMarkdown = `# ${foundNote.title}\n\n*Materia: ${foundSubject.name}*\n*Fecha: ${formatDate(foundNote.updatedAt)}*\n\n---\n\n${markdown}`;
-
-        const blob = new Blob([fullMarkdown], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${foundNote.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showToast('Apunte exportado como Markdown', 'success');
-    }
-
-    htmlToMarkdown(element) {
-        let md = '';
-        const children = element.childNodes;
-
-        children.forEach(node => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                md += node.textContent;
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                const tag = node.tagName.toLowerCase();
-
-                if (node.classList.contains('uml-diagram-container')) {
-                    const code = node.getAttribute('data-uml-code');
-                    md += `\n\n\`\`\`mermaid\n${code}\n\`\`\`\n\n`;
-                    return;
-                }
-
-                if (node.classList.contains('code-block-container')) {
-                    const aceContainer = node.querySelector('.inline-ace-editor');
-                    const code = aceContainer && aceContainer.aceEditor ? aceContainer.aceEditor.getValue() : '';
-                    md += `\n\n\`\`\`\n${code}\n\`\`\`\n\n`;
-                    return;
-                }
-
-                if (node.classList.contains('math-toolbar') || node.classList.contains('katex-display')) {
-                    return;
-                }
-
-                switch (tag) {
-                    case 'b': case 'strong': md += `**${this.htmlToMarkdown(node)}**`; break;
-                    case 'i': case 'em': md += `*${this.htmlToMarkdown(node)}*`; break;
-                    case 'u': md += `<u>${this.htmlToMarkdown(node)}</u>`; break;
-                    case 'h1': md += `\n# ${this.htmlToMarkdown(node)}\n`; break;
-                    case 'h2': md += `\n## ${this.htmlToMarkdown(node)}\n`; break;
-                    case 'h3': md += `\n### ${this.htmlToMarkdown(node)}\n`; break;
-                    case 'p': md += `\n${this.htmlToMarkdown(node)}\n`; break;
-                    case 'br': md += '\n'; break;
-                    case 'ul': md += `\n${this.htmlToMarkdown(node)}\n`; break;
-                    case 'ol': md += `\n${this.htmlToMarkdown(node)}\n`; break;
-                    case 'li':
-                        const isOrdered = node.parentElement && node.parentElement.tagName.toLowerCase() === 'ol';
-                        if (isOrdered) {
-                            const index = Array.from(node.parentElement.children).indexOf(node) + 1;
-                            md += `${index}. ${this.htmlToMarkdown(node)}\n`;
-                        } else {
-                            md += `- ${this.htmlToMarkdown(node)}\n`;
-                        }
-                        break;
-                    case 'mark': md += `==${this.htmlToMarkdown(node)}==`; break;
-                    case 'div': md += `\n${this.htmlToMarkdown(node)}\n`; break;
-                    case 'code': md += `\`${node.textContent}\``; break;
-                    case 'pre':
-                        const codeBlock = node.querySelector('code');
-                        md += `\n\`\`\`\n${codeBlock ? codeBlock.textContent : node.textContent}\n\`\`\`\n`;
-                        break;
-                    default: md += this.htmlToMarkdown(node); break;
-                }
-            }
-        });
-
-        return md.replace(/\n{3,}/g, '\n\n').trim();
-    }
-
 
     updateNoteStats() {
         const content = document.getElementById('noteContent');

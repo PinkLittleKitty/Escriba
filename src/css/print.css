@@ -88,8 +88,12 @@
     }
 
     p,
-    blockquote {
-        break-inside: avoid;
+    blockquote,
+    li,
+    tr,
+    pre {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     #printFolderContainer {

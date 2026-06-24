@@ -139,6 +139,8 @@ class EscribaApp {
             showToast(e.detail.message, 'error');
         });
 
+        this.consoleUI.init(logger);
+
         document.body.classList.add('loading');
         document.execCommand('defaultParagraphSeparator', false, 'div');
 
@@ -194,8 +196,6 @@ class EscribaApp {
         if (this.isElectron()) {
             this.checkForUpdates();
         }
-
-        this.consoleUI.init(logger);
     }
 
 

@@ -73,6 +73,7 @@ export class ConsoleUI {
     }
 
     toggle(force) {
+        if (!this.container) return;
         this.isOpen = force !== undefined ? force : !this.isOpen;
         this.container.classList.toggle('active', this.isOpen);
 
@@ -82,6 +83,7 @@ export class ConsoleUI {
     }
 
     appendLog(entry) {
+        if (!this.body) return;
         const logEl = document.createElement('div');
         logEl.className = `log-entry log-${entry.level}`;
         logEl.dataset.level = entry.level;
@@ -106,11 +108,13 @@ export class ConsoleUI {
     }
 
     renderInitialLogs() {
+        if (!this.logger) return;
         const logs = this.logger.getLogs();
         logs.forEach(log => this.appendLog(log));
     }
 
     filterLogs() {
+        if (!this.body) return;
         const entries = this.body.querySelectorAll('.log-entry');
         entries.forEach(entry => {
             if (this.activeFilter === 'all' || entry.dataset.level === this.activeFilter) {
@@ -123,10 +127,12 @@ export class ConsoleUI {
     }
 
     scrollToBottom() {
+        if (!this.body) return;
         this.body.scrollTop = this.body.scrollHeight;
     }
 
     copyToClipboard() {
+        if (!this.logger) return;
         const logs = this.logger.getLogs();
         const text = logs.map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] ${l.message}`).join('\n');
         navigator.clipboard.writeText(text).then(() => {

@@ -56,6 +56,9 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
                             <button class="menu-item btn-archive-subject" data-subject-id="${subject.id}">
                                 <i class="fas ${subject.archived ? 'fa-box-open' : 'fa-box-archive'}"></i> <span>${subject.archived ? 'Desarchivar' : 'Archivar'}</span>
                             </button>
+                            <button class="menu-item btn-export-pdf-subject" data-subject-id="${subject.id}">
+                                <i class="fas fa-file-pdf"></i> <span>Exportar a PDF</span>
+                            </button>
                             <div class="menu-divider"></div>
                             <button class="menu-item btn-delete-subject" data-subject-id="${subject.id}">
                                 <i class="fas fa-trash"></i> <span>Eliminar</span>
@@ -117,8 +120,9 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
             const editBtn = e.target.closest('.btn-edit-subject');
             const archiveBtn = e.target.closest('.btn-archive-subject');
             const deleteBtn = e.target.closest('.btn-delete-subject');
+            const exportPdfBtn = e.target.closest('.btn-export-pdf-subject');
 
-            if (editBtn || archiveBtn || deleteBtn) return;
+            if (editBtn || archiveBtn || deleteBtn || exportPdfBtn) return;
 
             const subjectId = header.closest('.subject-folder').dataset.subjectId;
             if (callbacks.onSubjectClick) callbacks.onSubjectClick(subjectId);
@@ -162,6 +166,14 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
             e.stopPropagation();
             const subjectId = btn.dataset.subjectId;
             if (callbacks.onDeleteSubject) callbacks.onDeleteSubject(subjectId);
+        });
+    });
+
+    container.querySelectorAll('.btn-export-pdf-subject').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const subjectId = btn.dataset.subjectId;
+            if (callbacks.onExportPdfSubject) callbacks.onExportPdfSubject(subjectId);
         });
     });
 

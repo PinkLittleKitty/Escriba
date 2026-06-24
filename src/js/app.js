@@ -902,7 +902,8 @@ class EscribaApp {
             onArchiveSubject: (id) => this.toggleArchiveSubject(id),
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
             onAddSubject: () => this.openSubjectModal(),
-            onShareSubject: (id) => this.shareSubject(id)
+            onShareSubject: (id) => this.shareSubject(id),
+            onExportPdfSubject: (id) => this.exportSubjectToPdf(id)
         }, this.showArchived);
 
         if (this.currentView === 'recent') this.renderRecentView();
@@ -1371,7 +1372,8 @@ class EscribaApp {
             onArchiveSubject: (id) => this.toggleArchiveSubject(id),
             onDeleteSubject: (id) => this.confirmDeleteSubject(id),
             onAddSubject: () => showModal('subjectModal'),
-            onShareSubject: (id) => this.shareSubject(id)
+            onShareSubject: (id) => this.shareSubject(id),
+            onExportPdfSubject: (id) => this.exportSubjectToPdf(id)
         });
 
         const activeNoteContent = document.getElementById('noteContent');
@@ -1644,6 +1646,127 @@ class EscribaApp {
         a.click();
         URL.revokeObjectURL(url);
         showToast('Carpeta exportada', 'success');
+    }
+
+    async exportSubjectToPdf(subjectId) {
+        const subject = this.subjects.find(s => s.id === subjectId);
+        if (!subject) return;
+
+        if (!subject.notes || subject.notes.length === 0) {
+            showToast('Esta materia no tiene apuntes para exportar', 'warning');
+            return;
+        }
+
+        showToast('Preparando PDF de la materia...', 'info', { duration: 3000 });
+
+        let printContainer = document.getElementById('printFolderContainer');
+        if (!printContainer) {
+            printContainer = document.createElement('div');
+            printContainer.id = 'printFolderContainer';
+            document.body.appendChild(printContainer);
+        }
+        printContainer.innerHTML = '';
+
+        const coverPage = document.createElement('div');
+        coverPage.className = 'print-cover-page';
+        coverPage.style.borderTop = `10px solid ${subject.color || '#3b82f6'}`;
+        coverPage.innerHTML = `
+            <div class="print-cover-header">
+                <span class="print-cover-subtitle">Carpeta Completa</span>
+                <h1 class="print-cover-title">${escapeHtml(subject.name)}</h1>
+                ${subject.code ? `<p class="print-cover-meta"><strong>Código:</strong> ${escapeHtml(subject.code)}</p>` : ''}
+                ${subject.professor ? `<p class="print-cover-meta"><strong>Profesor/a:</strong> ${escapeHtml(subject.professor)}</p>` : ''}
+            </div>
+            <div class="print-cover-footer">
+                <p><strong>Cantidad de apuntes:</strong> ${subject.notes.length}</p>
+                <p><strong>Fecha de exportación:</strong> ${new Date().toLocaleDateString()}</p>
+                <p class="print-cover-watermark">Generado con Escriba</p>
+            </div>
+        `;
+        printContainer.appendChild(coverPage);
+
+        const notesToExport = [...subject.notes].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        for (const note of notesToExport) {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'print-note';
+
+            const noteHeader = document.createElement('div');
+            noteHeader.className = 'print-note-header';
+            noteHeader.innerHTML = `
+                <h2 class="print-note-title">${escapeHtml(note.title)}</h2>
+                <div class="print-note-meta">
+                    <span>Materia: ${escapeHtml(subject.name)}</span>
+                    <span>Fecha: ${formatDate(note.updatedAt)}</span>
+                </div>
+            `;
+            noteDiv.appendChild(noteHeader);
+
+            const noteContentDiv = document.createElement('div');
+            noteContentDiv.className = 'print-note-content note-content';
+            if (note.mathMode) {
+                noteContentDiv.classList.add('math-mode');
+            }
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = note.content || '';
+
+            const editors = tempDiv.querySelectorAll('.inline-ace-editor');
+            editors.forEach(container => {
+                const code = container.getAttribute('data-code') || '';
+                const pre = document.createElement('pre');
+                const codeEl = document.createElement('code');
+                codeEl.textContent = code;
+                pre.appendChild(codeEl);
+
+                const parentBlock = container.closest('.code-block-container');
+                if (parentBlock) {
+                    parentBlock.parentNode.replaceChild(pre, parentBlock);
+                } else {
+                    container.parentNode.replaceChild(pre, container);
+                }
+            });
+
+            const diagrams = tempDiv.querySelectorAll('.uml-diagram-container');
+            for (const container of diagrams) {
+                const contentEl = container.querySelector('.uml-diagram-content');
+                const code = container.getAttribute('data-uml-code');
+                if (code && typeof mermaid !== 'undefined') {
+                    const uniqueId = 'uml-print-' + Math.random().toString(36).substr(2, 9);
+                    try {
+                        const { svg } = await mermaid.render(uniqueId, code);
+                        if (contentEl) {
+                            contentEl.innerHTML = svg;
+                        } else {
+                            container.innerHTML = svg;
+                        }
+                    } catch (err) {
+                        console.error('Error rendering UML in print export:', err);
+                    }
+                }
+                const actions = container.querySelector('.uml-diagram-actions');
+                if (actions) actions.remove();
+            }
+
+            noteContentDiv.innerHTML = tempDiv.innerHTML;
+            noteDiv.appendChild(noteContentDiv);
+            printContainer.appendChild(noteDiv);
+        }
+
+        document.body.classList.add('print-folder-mode');
+
+        setTimeout(() => {
+            window.print();
+
+            const cleanup = () => {
+                document.body.classList.remove('print-folder-mode');
+                printContainer.innerHTML = '';
+                window.removeEventListener('afterprint', cleanup);
+            };
+
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(cleanup, 1000);
+        }, 300);
     }
 
     handleImport(e) {

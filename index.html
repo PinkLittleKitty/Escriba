@@ -1004,79 +1004,96 @@
     </div>
 
     <div id="umlModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3><i class="fas fa-project-diagram"></i> Insertar Diagrama UML</h3>
-                <button class="modal-close" title="Cerrar">&times;</button>
+        <div class="modal-content modal-large uml-modal-content">
+            <div class="modal-header uml-modal-header">
+                <div class="uml-header-left">
+                    <button class="btn btn-sm btn-icon btn-secondary" id="umlToggleSidebarBtn" title="Plantillas">
+                        <i class="fas fa-layer-group"></i>
+                    </button>
+                    <h3><i class="fas fa-project-diagram"></i> Diagrama UML</h3>
+                </div>
+                <div class="uml-header-actions">
+                    <button class="modal-close" title="Cerrar">&times;</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <div class="uml-editor-container">
-                    <div class="uml-sidebar">
-                        <h4><i class="fas fa-shapes"></i> Tipos de Diagrama</h4>
+            <div class="modal-body uml-modal-body">
+                <div class="uml-editor-container" id="umlEditorContainer">
+                    <div class="uml-sidebar collapsed" id="umlSidebar">
+                        <div class="uml-sidebar-header">
+                            <h4><i class="fas fa-shapes"></i> Plantillas</h4>
+                        </div>
                         <div class="uml-templates">
-                            <button class="uml-template-btn active" data-template="class">
+                            <button class="uml-template-btn active" data-template="class"
+                                title="Diagrama de Clases (POO, estructuras y atributos)">
                                 <i class="fas fa-cube"></i>
-                                <span>Diagrama de Clases</span>
+                                <span>Clases</span>
                             </button>
-                            <button class="uml-template-btn" data-template="sequence">
+                            <button class="uml-template-btn" data-template="sequence"
+                                title="Diagrama de Secuencia (Interacciones y llamadas en tiempo)">
                                 <i class="fas fa-arrows-alt-h"></i>
-                                <span>Diagrama de Secuencia</span>
+                                <span>Secuencia</span>
                             </button>
-                            <button class="uml-template-btn" data-template="flowchart">
+                            <button class="uml-template-btn" data-template="flowchart"
+                                title="Diagrama de Flujo (Algoritmos y decisiones)">
                                 <i class="fas fa-sitemap"></i>
-                                <span>Diagrama de Flujo</span>
+                                <span>Flujo</span>
                             </button>
-                            <button class="uml-template-btn" data-template="er">
+                            <button class="uml-template-btn" data-template="er"
+                                title="Diagrama Entidad-Relación (Bases de Datos)">
                                 <i class="fas fa-database"></i>
-                                <span>Diagrama ER</span>
+                                <span>Entidad-Relación</span>
                             </button>
-                            <button class="uml-template-btn" data-template="state">
+                            <button class="uml-template-btn" data-template="state"
+                                title="Diagrama de Estados (Transiciones de sistema)">
                                 <i class="fas fa-circle-notch"></i>
-                                <span>Diagrama de Estados</span>
+                                <span>Estados</span>
                             </button>
-                            <button class="uml-template-btn" data-template="usecase">
+                            <button class="uml-template-btn" data-template="usecase"
+                                title="Casos de Uso (Actores e interacciones de usuario)">
                                 <i class="fas fa-user-circle"></i>
                                 <span>Casos de Uso</span>
                             </button>
-                        </div>
-
-                        <div class="uml-help">
-                            <h5><i class="fas fa-info-circle"></i> Ayuda Rápida</h5>
-                            <div class="help-content" id="umlHelpContent">
-                                <p>Selecciona un tipo de diagrama para ver ejemplos y sintaxis.</p>
-                            </div>
+                            <button class="uml-template-btn" data-template="git"
+                                title="Git Graph (Ramificación y commits)">
+                                <i class="fab fa-git-alt"></i>
+                                <span>Git Graph</span>
+                            </button>
+                            <button class="uml-template-btn" data-template="pie"
+                                title="Gráfico Circular (Estadísticas y proporciones)">
+                                <i class="fas fa-chart-pie"></i>
+                                <span>Circular</span>
+                            </button>
+                            <button class="uml-template-btn" data-template="journey"
+                                title="User Journey (Experiencia del usuario)">
+                                <i class="fas fa-route"></i>
+                                <span>User Journey</span>
+                            </button>
                         </div>
                     </div>
 
                     <div class="uml-main">
                         <div class="uml-editor-section">
                             <div class="uml-editor-header">
-                                <h4><i class="fas fa-code"></i> Editor de Código</h4>
-                                <div class="uml-editor-actions">
-                                    <button class="btn btn-sm btn-secondary" id="umlPreviewBtn">
-                                        <i class="fas fa-eye"></i> Vista Previa
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" id="umlFullscreenBtn">
-                                        <i class="fas fa-expand"></i> Pantalla Completa
-                                    </button>
-                                </div>
+                                <h4><i class="fas fa-code"></i> Editor</h4>
                             </div>
-                            <textarea id="umlCode" class="uml-code-editor"
-                                placeholder="Escribí código Mermaid o seleccioná una plantilla..."></textarea>
+                            <div class="uml-ace-container" id="umlAceContainer">
+                                <div id="umlAceEditor" class="uml-ace-editor"></div>
+                            </div>
                         </div>
 
                         <div class="uml-preview-section">
                             <div class="uml-preview-header">
                                 <h4><i class="fas fa-eye"></i> Vista Previa</h4>
                                 <div class="uml-preview-actions">
-                                    <button class="btn btn-sm btn-secondary" id="umlZoomInBtn">
+                                    <button class="btn btn-sm btn-secondary" id="umlZoomInBtn" title="Aumentar zoom">
                                         <i class="fas fa-search-plus"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-secondary" id="umlZoomOutBtn">
+                                    <button class="btn btn-sm btn-secondary" id="umlZoomOutBtn" title="Disminuir zoom">
                                         <i class="fas fa-search-minus"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-secondary" id="umlResetZoomBtn">
-                                        <i class="fas fa-search"></i>
+                                    <button class="btn btn-sm btn-secondary" id="umlResetZoomBtn"
+                                        title="Restablecer zoom">
+                                        <i class="fas fa-redo"></i>
                                     </button>
                                 </div>
                             </div>

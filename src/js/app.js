@@ -31,7 +31,10 @@ import {
     renderUMLDiagram,
     updateUMLPreview,
     detectDiagramType,
-    getDiagramTypeName
+    getDiagramTypeName,
+    initUMLAceEditor,
+    insertSnippetIntoAce,
+    syncUMLAceTheme
 } from './modules/editor/uml-manager.js';
 import { GitHubManager } from './modules/github/github-manager.js';
 import {
@@ -511,12 +514,9 @@ class EscribaApp {
             } else if (editBtn) {
                 const container = editBtn.closest('.uml-diagram-container');
                 if (container) {
-                    const code = container.getAttribute('data-uml-code');
-                    document.getElementById('umlCode').value = code || '';
+                    const code = container.getAttribute('data-uml-code') || '';
                     this.editingUMLContainer = container;
-                    showModal('umlModal');
-                    const preview = document.getElementById('umlPreview');
-                    if (preview && code) updateUMLPreview({ getValue: () => code }, preview);
+                    this.openUMLModal(code);
                 }
             } else if (codeDeleteBtn) {
                 const container = codeDeleteBtn.closest('.code-block-container');
@@ -657,13 +657,7 @@ class EscribaApp {
                 this.savedSelectionRange = null;
             }
             this.editingUMLContainer = null;
-            const umlCodeInput = document.getElementById('umlCode');
-            if (umlCodeInput) umlCodeInput.value = '';
-            const preview = document.getElementById('umlPreview');
-            if (preview) {
-                preview.innerHTML = '<div class="uml-preview-placeholder"><i class="fas fa-project-diagram"></i><p>La vista previa aparecerá aquí</p></div>';
-            }
-            showModal('umlModal');
+            this.openUMLModal('');
         });
 
         document.getElementById('insertTableBtn').addEventListener('click', () => {
@@ -699,17 +693,39 @@ class EscribaApp {
         if (cancelUMLBtn) {
             cancelUMLBtn.addEventListener('click', () => {
                 this.editingUMLContainer = null;
+                document.getElementById('umlGuideDrawer')?.classList.remove('open');
                 hideModal('umlModal');
             });
         }
 
-        const umlCode = document.getElementById('umlCode');
-        if (umlCode) {
-            umlCode.addEventListener('input', debounce(() => {
-                const preview = document.getElementById('umlPreview');
-                if (preview) updateUMLPreview({ getValue: () => umlCode.value }, preview);
-            }, 300));
-        }
+        document.getElementById('umlToggleSidebarBtn')?.addEventListener('click', () => {
+            const sidebar = document.getElementById('umlSidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                if (this.umlAceEditor) {
+                    setTimeout(() => this.umlAceEditor.resize(true), 250);
+                }
+            }
+        });
+
+        let umlPreviewZoom = 1;
+        const updateZoom = () => {
+            const preview = document.getElementById('umlPreview');
+            if (preview) preview.style.transform = `scale(${umlPreviewZoom})`;
+        };
+
+        document.getElementById('umlZoomInBtn')?.addEventListener('click', () => {
+            umlPreviewZoom = Math.min(umlPreviewZoom + 0.15, 2.5);
+            updateZoom();
+        });
+        document.getElementById('umlZoomOutBtn')?.addEventListener('click', () => {
+            umlPreviewZoom = Math.max(umlPreviewZoom - 0.15, 0.4);
+            updateZoom();
+        });
+        document.getElementById('umlResetZoomBtn')?.addEventListener('click', () => {
+            umlPreviewZoom = 1;
+            updateZoom();
+        });
 
         document.querySelectorAll('.uml-template-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1992,6 +2008,29 @@ class EscribaApp {
         hideModal('settingsModal');
     }
 
+    openUMLModal(codeToLoad = '') {
+        const preview = document.getElementById('umlPreview');
+        document.getElementById('umlSidebar')?.classList.add('collapsed');
+        showModal('umlModal');
+
+        this.umlAceEditor = initUMLAceEditor('umlAceEditor', (code) => {
+            if (preview) updateUMLPreview(code, preview);
+        });
+
+        if (this.umlAceEditor) {
+            syncUMLAceTheme(this.umlAceEditor);
+            this.umlAceEditor.setValue(codeToLoad, -1);
+            setTimeout(() => {
+                this.umlAceEditor.resize(true);
+                this.umlAceEditor.focus();
+            }, 150);
+        }
+
+        if (preview) {
+            updateUMLPreview(codeToLoad, preview);
+        }
+    }
+
     applyUMLTemplate(type) {
         const templates = {
             'class': 'classDiagram\n    Animal <|-- Duck\n    Animal <|-- Fish\n    Animal <|-- Zebra\n    Animal : +int age\n    Animal : +String gender\n    Animal: +isMammal()\n    Animal: +mate()',
@@ -1999,15 +2038,118 @@ class EscribaApp {
             'flowchart': 'graph TD\n    A[Start] --> B{Is it?}\n    B -- Yes --> C[OK]\n    C --> D[Rethink]\n    D --> B\n    B -- No ----> E[End]',
             'er': 'erDiagram\n    CUSTOMER ||--o{ ORDER : places\n    ORDER ||--|{ LINE-ITEM : contains',
             'state': 'stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]',
+            'usecase': 'graph LR\n    subgraph Sistema\n        UC1(Iniciar Sesión)\n        UC2(Gestionar Usuarios)\n        UC3(Ver Reportes)\n    end\n    User((Usuario)) --> UC1\n    Admin((Admin)) --> UC1\n    Admin --> UC2\n    Admin --> UC3',
             'git': 'gitGraph\n    commit\n    commit\n    branch develop\n    checkout develop\n    commit\n    commit\n    checkout main\n    merge develop\n    commit',
             'pie': 'pie title Pets adopted by volunteers\n    "Dogs" : 386\n    "Cats" : 85\n    "Rats" : 15',
             'journey': 'journey\n    title My working day\n    section Go to work\n      Make tea: 5: Me\n      Go upstairs: 3: Me\n      Do work: 1: Me\n    section Go home\n      Go downstairs: 5: Me\n      Sit down: 3: Me'
         };
 
         const code = templates[type] || '';
-        document.getElementById('umlCode').value = code;
+        if (this.umlAceEditor) {
+            this.umlAceEditor.setValue(code, -1);
+            this.umlAceEditor.focus();
+        }
         const preview = document.getElementById('umlPreview');
-        if (preview) updateUMLPreview({ getValue: () => code }, preview);
+        if (preview && code) updateUMLPreview(code, preview);
+    }
+
+    async handleInsertUML() {
+        const umlCode = this.umlAceEditor ? this.umlAceEditor.getValue().trim() : '';
+        if (!umlCode) {
+            showToast('Ingresá código Mermaid', 'error');
+            return;
+        }
+
+        const diagramType = detectDiagramType(umlCode);
+        const diagramTypeName = getDiagramTypeName(diagramType);
+
+        if (this.editingUMLContainer) {
+            const content = this.editingUMLContainer.querySelector('.uml-diagram-content');
+            if (content) {
+                let diagramId = content.id;
+                if (!diagramId) {
+                    diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    content.id = diagramId;
+                }
+                this.editingUMLContainer.setAttribute('data-uml-code', umlCode);
+                this.editingUMLContainer.setAttribute('data-diagram-type', diagramType);
+
+                const titleEl = this.editingUMLContainer.querySelector('.uml-diagram-title') || this.editingUMLContainer.querySelector('.uml-diagram-type');
+                if (titleEl) {
+                    titleEl.className = 'uml-diagram-title uml-diagram-type';
+                    titleEl.innerHTML = `<i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}`;
+                }
+
+                content.innerHTML = `<div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Actualizando diagrama...</div>`;
+                await renderUMLDiagram(diagramId, umlCode);
+            }
+
+            this.editingUMLContainer = null;
+            document.getElementById('umlGuideDrawer')?.classList.remove('open');
+            hideModal('umlModal');
+            this.debouncedSave();
+            return;
+        }
+
+        const diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = `
+            <div class="uml-diagram-container" contenteditable="false" data-uml-code="${escapeHtml(umlCode)}" data-diagram-type="${diagramType}">
+                <div class="uml-diagram-header">
+                    <span class="uml-diagram-title uml-diagram-type"><i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}</span>
+                    <div class="uml-diagram-actions">
+                        <button class="uml-edit-btn" title="Editar diagrama"><i class="fas fa-edit"></i></button>
+                        <button class="uml-delete-btn" title="Eliminar diagrama"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div id="${diagramId}" class="uml-diagram-content">
+                    <div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Generando...</div>
+                </div>
+            </div>
+            <p><br></p>
+        `;
+
+        const noteContent = document.getElementById('noteContent');
+        noteContent.focus();
+        let inserted = false;
+
+        let range = this.savedSelectionRange;
+        if (!range) {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && noteContent.contains(sel.anchorNode)) {
+                range = sel.getRangeAt(0);
+            }
+        }
+
+        if (range && noteContent.contains(range.commonAncestorContainer)) {
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            range.deleteContents();
+
+            const fragment = document.createDocumentFragment();
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
+            range.insertNode(fragment);
+            inserted = true;
+        }
+
+        if (!inserted) {
+            const brBefore = document.createElement('br');
+            noteContent.appendChild(brBefore);
+            while (tempDiv.firstChild) {
+                noteContent.appendChild(tempDiv.firstChild);
+            }
+        }
+
+        this.savedSelectionRange = null;
+
+        await renderUMLDiagram(diagramId, umlCode);
+
+        document.getElementById('umlGuideDrawer')?.classList.remove('open');
+        hideModal('umlModal');
+        this.debouncedSave();
     }
 
     updateSettingsStats() {
@@ -2092,6 +2234,12 @@ class EscribaApp {
 
         this.initMermaid();
         this.reRenderAllDiagrams();
+
+        if (this.umlAceEditor) {
+            syncUMLAceTheme(this.umlAceEditor);
+            const preview = document.getElementById('umlPreview');
+            if (preview) updateUMLPreview(this.umlAceEditor, preview);
+        }
     }
 
     reRenderAllDiagrams() {
@@ -2351,105 +2499,6 @@ class EscribaApp {
         this.debouncedSave();
     }
 
-    async handleInsertUML() {
-        const umlCodeInput = document.getElementById('umlCode');
-        const umlCode = umlCodeInput ? umlCodeInput.value.trim() : '';
-        if (!umlCode) {
-            showToast('Ingresá código Mermaid', 'error');
-            return;
-        }
-
-        const diagramType = detectDiagramType(umlCode);
-        const diagramTypeName = getDiagramTypeName(diagramType);
-
-        if (this.editingUMLContainer) {
-            const content = this.editingUMLContainer.querySelector('.uml-diagram-content');
-            if (content) {
-                let diagramId = content.id;
-                if (!diagramId) {
-                    diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-                    content.id = diagramId;
-                }
-                this.editingUMLContainer.setAttribute('data-uml-code', umlCode);
-                this.editingUMLContainer.setAttribute('data-diagram-type', diagramType);
-
-                const titleEl = this.editingUMLContainer.querySelector('.uml-diagram-title') || this.editingUMLContainer.querySelector('.uml-diagram-type');
-                if (titleEl) {
-                    titleEl.className = 'uml-diagram-title uml-diagram-type';
-                    titleEl.innerHTML = `<i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}`;
-                }
-
-                content.innerHTML = `<div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Actualizando diagrama...</div>`;
-                await renderUMLDiagram(diagramId, umlCode);
-            }
-
-            this.editingUMLContainer = null;
-            hideModal('umlModal');
-            if (umlCodeInput) umlCodeInput.value = '';
-            this.debouncedSave();
-            return;
-        }
-
-        const diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = `
-            <div class="uml-diagram-container" contenteditable="false" data-uml-code="${escapeHtml(umlCode)}" data-diagram-type="${diagramType}">
-                <div class="uml-diagram-header">
-                    <span class="uml-diagram-title uml-diagram-type"><i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}</span>
-                    <div class="uml-diagram-actions">
-                        <button class="uml-edit-btn" title="Editar diagrama"><i class="fas fa-edit"></i></button>
-                        <button class="uml-delete-btn" title="Eliminar diagrama"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-                <div id="${diagramId}" class="uml-diagram-content">
-                    <div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Generando...</div>
-                </div>
-            </div>
-            <p><br></p>
-        `;
-
-        const noteContent = document.getElementById('noteContent');
-        noteContent.focus();
-        let inserted = false;
-
-        let range = this.savedSelectionRange;
-        if (!range) {
-            const sel = window.getSelection();
-            if (sel.rangeCount > 0 && noteContent.contains(sel.anchorNode)) {
-                range = sel.getRangeAt(0);
-            }
-        }
-
-        if (range && noteContent.contains(range.commonAncestorContainer)) {
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            range.deleteContents();
-
-            const fragment = document.createDocumentFragment();
-            while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
-            }
-            range.insertNode(fragment);
-            inserted = true;
-        }
-
-        if (!inserted) {
-            const brBefore = document.createElement('br');
-            noteContent.appendChild(brBefore);
-            while (tempDiv.firstChild) {
-                noteContent.appendChild(tempDiv.firstChild);
-            }
-        }
-
-        this.savedSelectionRange = null;
-
-        await renderUMLDiagram(diagramId, umlCode);
-
-        hideModal('umlModal');
-        if (umlCodeInput) umlCodeInput.value = '';
-        this.debouncedSave();
-    }
 
     selectColor(color) {
         this.selectedColor = color;
@@ -4156,16 +4205,9 @@ class EscribaApp {
     editUMLDiagram(btn) {
         const container = btn.closest('.uml-diagram-container');
         if (container) {
-            const code = container.getAttribute('data-uml-code');
-            const umlCodeInput = document.getElementById('umlCode');
-            if (umlCodeInput) umlCodeInput.value = code || '';
-
-            showModal('umlModal');
-            container.remove();
-            this.debouncedSave();
-
-            const preview = document.getElementById('umlPreview');
-            if (preview && code) updateUMLPreview({ getValue: () => code }, preview);
+            const code = container.getAttribute('data-uml-code') || '';
+            this.editingUMLContainer = container;
+            this.openUMLModal(code);
         }
     }
 

@@ -1,15 +1,16 @@
 export const detectDiagramType = (code) => {
-    const firstLine = code.split('\n')[0].trim().toLowerCase();
+    if (!code) return 'diagram';
+    const lowerCode = code.toLowerCase();
 
-    if (firstLine.includes('classdiagram')) return 'class';
-    if (firstLine.includes('sequencediagram')) return 'sequence';
-    if (firstLine.includes('flowchart') || firstLine.includes('graph')) return 'flowchart';
-    if (firstLine.includes('erdiagram')) return 'er';
-    if (firstLine.includes('statediagram')) return 'state';
-    if (firstLine.includes('gitgraph')) return 'git';
-    if (firstLine.includes('pie')) return 'pie';
-    if (firstLine.includes('journey')) return 'journey';
-    if (firstLine.includes('usecase')) return 'usecase';
+    if (lowerCode.includes('classdiagram')) return 'class';
+    if (lowerCode.includes('sequencediagram')) return 'sequence';
+    if (lowerCode.includes('erdiagram')) return 'er';
+    if (lowerCode.includes('statediagram')) return 'state';
+    if (lowerCode.includes('gitgraph')) return 'git';
+    if (lowerCode.includes('pie')) return 'pie';
+    if (lowerCode.includes('journey')) return 'journey';
+    if (lowerCode.includes('casos de uso') || lowerCode.includes('usecase') || lowerCode.includes('user((')) return 'usecase';
+    if (lowerCode.includes('flowchart') || lowerCode.includes('graph')) return 'flowchart';
 
     return 'diagram';
 };
@@ -28,6 +29,68 @@ export const getDiagramTypeName = (type) => {
         'diagram': 'UML'
     };
     return names[type] || 'UML';
+};
+
+export const initUMLAceEditor = (containerId, onChangeCallback) => {
+    if (typeof ace === 'undefined') return null;
+
+    const container = document.getElementById(containerId);
+    if (!container) return null;
+
+    let editor = container.aceEditor;
+    if (!editor) {
+        editor = ace.edit(containerId);
+        container.aceEditor = editor;
+    }
+
+    const appTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const aceTheme = appTheme === 'light' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
+
+    editor.setTheme(aceTheme);
+    editor.session.setMode('ace/mode/markdown');
+
+    editor.setOptions({
+        fontSize: 13.5,
+        fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+        showPrintMargin: false,
+        wrap: true,
+        useWorker: false,
+        highlightActiveLine: true,
+        showGutter: true,
+        displayIndentGuides: true,
+        tabSize: 4,
+        useSoftTabs: true
+    });
+
+    if (onChangeCallback) {
+        let changeTimeout;
+        editor.session.off('change');
+        editor.session.on('change', () => {
+            clearTimeout(changeTimeout);
+            changeTimeout = setTimeout(() => {
+                onChangeCallback(editor.getValue());
+            }, 250);
+        });
+    }
+
+    setTimeout(() => {
+        editor.resize(true);
+    }, 100);
+
+    return editor;
+};
+
+export const insertSnippetIntoAce = (editor, snippet) => {
+    if (!editor) return;
+    editor.insert(snippet);
+    editor.focus();
+};
+
+export const syncUMLAceTheme = (editor) => {
+    if (!editor) return;
+    const appTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const aceTheme = appTheme === 'light' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
+    editor.setTheme(aceTheme);
 };
 
 export const renderUMLDiagram = async (containerId, code) => {
@@ -56,12 +119,18 @@ export const renderUMLDiagram = async (containerId, code) => {
     }
 };
 
-export const updateUMLPreview = async (editor, previewContainer) => {
-    if (!editor || !previewContainer) return;
+export const updateUMLPreview = async (editorOrCode, previewContainer) => {
+    if (!editorOrCode || !previewContainer) return;
 
-    const code = editor.getValue().trim();
+    let code = '';
+    if (typeof editorOrCode === 'string') {
+        code = editorOrCode.trim();
+    } else if (editorOrCode.getValue) {
+        code = editorOrCode.getValue().trim();
+    }
+
     if (!code) {
-        previewContainer.innerHTML = '<div class="uml-preview-placeholder"><i class="fas fa-project-diagram"></i><p>Escribí código Mermaid</p></div>';
+        previewContainer.innerHTML = '<div class="uml-preview-placeholder"><i class="fas fa-project-diagram"></i><p>Escribí código Mermaid o seleccioná una plantilla</p></div>';
         return;
     }
 

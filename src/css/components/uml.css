@@ -1,48 +1,130 @@
-.uml-editor-container {
+.uml-modal-content {
+    width: 92vw;
+    max-width: 1150px;
+    height: 82vh;
+    max-height: 720px;
     display: flex;
-    height: 100%;
-    gap: 1px;
-    background: var(--border-color);
+    flex-direction: column;
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
 }
 
-.uml-sidebar {
-    width: 300px;
-    min-width: 300px;
+.uml-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 1rem;
     background: var(--bg-secondary);
-    padding: 1rem;
-    overflow-y: auto;
-    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
-.uml-sidebar h4 {
-    color: var(--text-primary);
-    margin-bottom: 1rem;
+.uml-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.uml-header-left h3 {
+    margin: 0;
     font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.uml-header-left h3 i {
+    color: var(--accent-blue);
+}
+
+.uml-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.uml-modal-body {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    padding: 0 !important;
+    display: flex;
+    background: var(--bg-primary);
+    min-height: 0;
+}
+
+.uml-editor-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    background: var(--bg-primary);
+}
+
+.uml-sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: var(--bg-secondary);
+    padding: 0.75rem 0.625rem;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-color);
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, opacity 0.2s ease;
+    scrollbar-width: thin;
+}
+
+.uml-sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    border-right: none;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.uml-sidebar-header h4 {
+    color: var(--text-muted);
+    margin: 0 0 0.625rem 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 .uml-templates {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
+    gap: 0.35rem;
 }
 
 .uml-template-btn {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.875rem;
+    gap: 0.625rem;
+    padding: 0.55rem 0.75rem;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 6px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     text-align: left;
-    font-size: 0.875rem;
+    font-size: 0.825rem;
+    font-weight: 500;
+}
+
+.uml-template-btn i {
+    font-size: 0.9rem;
+    width: 16px;
+    text-align: center;
+    color: var(--accent-blue);
 }
 
 .uml-template-btn:hover {
@@ -57,11 +139,8 @@
     border-color: var(--accent-blue);
 }
 
-.uml-help {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 1rem;
+.uml-template-btn.active i {
+    color: #ffffff;
 }
 
 .uml-main {
@@ -69,6 +148,8 @@
     display: flex;
     background: var(--bg-primary);
     min-width: 0;
+    height: 100%;
+    min-height: 0;
 }
 
 .uml-editor-section {
@@ -77,6 +158,8 @@
     flex-direction: column;
     border-right: 1px solid var(--border-color);
     min-width: 0;
+    height: 100%;
+    min-height: 0;
 }
 
 .uml-editor-header,
@@ -84,16 +167,84 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 0.4rem 0.875rem;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
+    min-height: 40px;
+    gap: 0.5rem;
+    flex-shrink: 0;
 }
 
-.uml-code-editor {
+.uml-editor-header h4,
+.uml-preview-header h4 {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.uml-quick-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.uml-quick-toolbar::-webkit-scrollbar {
+    display: none;
+}
+
+.uml-snippet-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    padding: 0.18rem 0.4rem;
+    font-size: 0.725rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.uml-snippet-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--accent-blue);
+}
+
+.uml-snippet-btn code {
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.uml-ace-container {
     flex: 1;
-    min-height: 400px;
-    background: var(--bg-primary);
     position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    background: var(--bg-primary);
+}
+
+.uml-ace-editor {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    font-size: 13.5px;
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    line-height: 1.55;
 }
 
 .uml-preview-section {
@@ -101,44 +252,74 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    height: 100%;
+    min-height: 0;
     background: var(--bg-primary);
+}
+
+.uml-preview-actions {
+    display: flex;
+    gap: 0.25rem;
 }
 
 .uml-preview-container {
     flex: 1;
     overflow: auto;
-    background: var(--bg-primary);
+    background-color: var(--bg-primary);
+    background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+    background-size: 16px 16px;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    min-height: 0;
 }
 
 .uml-preview {
-    padding: 1rem;
     min-height: 100%;
+    width: 100%;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    transform-origin: top center;
-    transition: transform 0.2s ease;
-    overflow: visible;
+    transform-origin: center center;
+    transition: transform 0.15s ease;
 }
 
-.uml-diagram {
-    background: white;
-    border-radius: 4px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-    max-width: none;
-    width: fit-content;
-    margin: 1rem auto;
+.uml-preview svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.uml-preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.uml-preview-placeholder i {
+    font-size: 2.25rem;
+    opacity: 0.5;
+    color: var(--accent-blue);
+}
+
+.uml-preview-placeholder p {
+    font-size: 0.85rem;
+    margin: 0;
 }
 
 .uml-diagram-container {
-    margin: 1.5rem 0;
+    margin: 1.25rem 0;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
     background: var(--bg-card);
-    box-shadow: none;
     transition: all 0.2s ease;
 }
 
@@ -148,7 +329,7 @@
 
 .uml-diagram-header {
     background: var(--bg-secondary);
-    padding: 0.6rem 1rem;
+    padding: 0.5rem 0.875rem;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
@@ -156,19 +337,19 @@
 }
 
 .uml-diagram-type {
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.775rem;
+    font-weight: 700;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .uml-diagram-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .uml-edit-btn,
@@ -180,14 +361,14 @@
     border: 1px solid var(--border-color) !important;
     color: var(--text-secondary) !important;
     cursor: pointer !important;
-    width: 32px !important;
-    height: 32px !important;
+    width: 30px !important;
+    height: 30px !important;
     border-radius: 4px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    font-size: 0.85rem !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.825rem !important;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
@@ -209,7 +390,7 @@
 }
 
 .uml-diagram-content {
-    padding: 2rem;
+    padding: 1.25rem;
     background: var(--bg-primary);
     overflow: auto;
     max-height: 700px;
@@ -224,21 +405,22 @@
     display: block;
     margin: 0 auto;
 }
+
 .uml-loading,
 .uml-error {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
-    padding: 3rem;
+    gap: 0.75rem;
+    padding: 2rem;
     color: var(--text-muted);
     width: 100%;
     text-align: center;
 }
 
 .uml-loading i {
-    font-size: 2rem;
+    font-size: 1.75rem;
     color: var(--accent-blue);
 }
 
@@ -247,11 +429,11 @@
 }
 
 .uml-error i {
-    font-size: 2rem;
+    font-size: 1.75rem;
 }
 
 .uml-error small {
     display: block;
-    margin-top: 0.5rem;
-    opacity: 0.8;
+    margin-top: 0.35rem;
+    opacity: 0.85;
 }

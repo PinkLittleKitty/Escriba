@@ -323,6 +323,8 @@ class EscribaApp {
 
             mermaid.initialize({
                 startOnLoad: false,
+                suppressErrorRendering: true,
+                parseError: () => {},
                 theme: mermaidTheme,
                 securityLevel: 'loose',
                 fontFamily: 'Inter, Arial, sans-serif',
@@ -1129,6 +1131,22 @@ class EscribaApp {
             }
         });
 
+        const activeUMLs = noteContent.querySelectorAll('.uml-diagram-container');
+        const cloneUMLs = contentClone.querySelectorAll('.uml-diagram-container');
+
+        activeUMLs.forEach((container, index) => {
+            const code = container.getAttribute('data-uml-code');
+            const type = container.getAttribute('data-diagram-type');
+            if (code && cloneUMLs[index]) {
+                cloneUMLs[index].setAttribute('data-uml-code', code);
+                if (type) cloneUMLs[index].setAttribute('data-diagram-type', type);
+                const contentEl = cloneUMLs[index].querySelector('.uml-diagram-content');
+                if (contentEl) {
+                    contentEl.innerHTML = '<div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Generando...</div>';
+                }
+            }
+        });
+
         const content = contentClone.innerHTML;
         const language = document.getElementById('noteLanguageSelect')?.value || 'javascript';
 
@@ -1815,6 +1833,7 @@ class EscribaApp {
                 if (code && typeof mermaid !== 'undefined') {
                     const uniqueId = 'uml-print-' + Math.random().toString(36).substr(2, 9);
                     try {
+                        await mermaid.parse(code);
                         const { svg } = await mermaid.render(uniqueId, code);
                         if (contentEl) {
                             contentEl.innerHTML = svg;
@@ -1823,6 +1842,7 @@ class EscribaApp {
                         }
                     } catch (err) {
                         console.error('Error rendering UML in print export:', err);
+                        document.querySelectorAll('body > svg[id^="d"], body > .mermaid').forEach(el => el.remove());
                     }
                 }
                 const actions = container.querySelector('.uml-diagram-actions');
@@ -2292,6 +2312,8 @@ class EscribaApp {
 
     reRenderAllDiagrams() {
         if (typeof mermaid === 'undefined') return;
+
+        document.querySelectorAll('body > svg[id^="d"], body > .mermaid').forEach(el => el.remove());
 
         const diagrams = document.querySelectorAll('.uml-diagram-container');
         diagrams.forEach(container => {

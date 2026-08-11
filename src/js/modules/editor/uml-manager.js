@@ -1,3 +1,5 @@
+import { escapeHtml } from '../../utils/helpers.js';
+
 export const detectDiagramType = (code) => {
     if (!code) return 'diagram';
     const lowerCode = code.toLowerCase();
@@ -98,19 +100,31 @@ export const renderUMLDiagram = async (containerId, code) => {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    if (!code || !code.trim()) {
+        container.innerHTML = `
+            <div class="uml-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Código UML vacío</p>
+            </div>
+        `;
+        return;
+    }
+
     if (typeof mermaid !== 'undefined') {
         try {
+            await mermaid.parse(code);
             const diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
             const { svg } = await mermaid.render(diagramId, code);
             container.innerHTML = svg;
         } catch (error) {
             console.error('Error rendering UML diagram:', error);
-            const errorMsg = error?.message || 'Verifica la sintaxis';
+            document.querySelectorAll('body > svg[id^="d"], body > .mermaid').forEach(el => el.remove());
+            const errorMsg = error?.message || 'Verificá la sintaxis';
             container.innerHTML = `
                 <div class="uml-error">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>Error al renderizar el diagrama</p>
-                    <small>${errorMsg}</small>
+                    <small>${escapeHtml(errorMsg)}</small>
                 </div>
             `;
         }
@@ -138,18 +152,20 @@ export const updateUMLPreview = async (editorOrCode, previewContainer) => {
 
     try {
         if (typeof mermaid !== 'undefined') {
+            await mermaid.parse(code);
             const diagramId = 'preview-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
             const { svg } = await mermaid.render(diagramId, code);
             previewContainer.innerHTML = svg;
         }
     } catch (error) {
         console.error('Mermaid preview error:', error);
-        const errorMsg = error?.message || 'Verifica la sintaxis';
+        document.querySelectorAll('body > svg[id^="d"], body > .mermaid').forEach(el => el.remove());
+        const errorMsg = error?.message || 'Verificá la sintaxis';
         previewContainer.innerHTML = `
             <div class="uml-error">
                 <i class="fas fa-exclamation-triangle"></i>
                 <p>Error en la vista previa</p>
-                <small>${errorMsg}</small>
+                <small>${escapeHtml(errorMsg)}</small>
             </div>
         `;
     }

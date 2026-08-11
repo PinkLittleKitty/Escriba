@@ -223,6 +223,7 @@
     padding: 1.5rem;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-tertiary);
+    flex-shrink: 0;
 }
 
 .search-box-container {
@@ -354,6 +355,7 @@
 .calendar-container {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1rem;
     display: none;
 }
@@ -375,6 +377,7 @@
     border-top: 1px solid var(--border-color);
     padding-top: 1.25rem;
     background: var(--bg-secondary);
+    flex-shrink: 0;
 }
 
 .btn-toggle-archived {

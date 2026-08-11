@@ -9,6 +9,7 @@
     z-index: 1000;
     position: relative;
     animation: slideDown 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    flex-shrink: 0;
 }
 
 @keyframes slideDown {

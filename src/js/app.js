@@ -940,9 +940,28 @@ class EscribaApp {
         });
     }
 
+    updateArchivedToggleVisibility() {
+        const archivedOuter = document.querySelector('.archived-toggle-outer');
+        const hasArchived = this.subjects && this.subjects.some(s => s.archived);
+        if (archivedOuter) {
+            archivedOuter.style.display = hasArchived ? 'block' : 'none';
+        }
+        if (!hasArchived && this.showArchived) {
+            this.showArchived = false;
+            const toggleArchivedBtn = document.getElementById('toggleArchivedBtn');
+            if (toggleArchivedBtn) {
+                toggleArchivedBtn.classList.remove('active');
+                const label = toggleArchivedBtn.querySelector('span');
+                if (label) label.textContent = 'Mostrar materias archivadas';
+            }
+        }
+    }
+
     renderSubjects() {
         const container = document.getElementById('subjectsContainer');
         if (!container) return;
+
+        this.updateArchivedToggleVisibility();
 
         this.subjects.forEach(s => {
             s.notes.forEach(n => {

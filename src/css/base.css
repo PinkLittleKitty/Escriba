@@ -13,12 +13,16 @@ body {
     height: 100vh;
     overflow: hidden;
     font-weight: 400;
+    display: flex;
+    flex-direction: column;
 }
 
 .container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     background: var(--bg-primary);
     overflow: hidden;
     position: relative;

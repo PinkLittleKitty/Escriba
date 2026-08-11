@@ -944,7 +944,7 @@ class EscribaApp {
         const archivedOuter = document.querySelector('.archived-toggle-outer');
         const hasArchived = this.subjects && this.subjects.some(s => s.archived);
         if (archivedOuter) {
-            archivedOuter.style.display = hasArchived ? 'block' : 'none';
+            archivedOuter.style.display = hasArchived ? '' : 'none';
         }
         if (!hasArchived && this.showArchived) {
             this.showArchived = false;

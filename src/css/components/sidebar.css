@@ -63,18 +63,19 @@
 .sidebar.compact .view-toggles {
     display: flex;
     flex-direction: column;
-    padding: 0.5rem 0;
-    gap: 0.75rem;
+    padding: 0.5rem 0 0;
+    gap: 0.5rem;
     align-items: center;
 }
 
 .sidebar.compact .view-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     margin: 0 auto;
     padding: 0;
     justify-content: center;
+    flex: none !important;
 }
 
 .sidebar.compact .view-btn.active {
@@ -83,25 +84,23 @@
     padding: 0 !important;
     justify-content: center !important;
     flex: none !important;
-    width: 44px !important;
-    height: 44px !important;
-}
-
-.sidebar.compact .view-btn:not([data-view="subjects"]) {
-    display: none !important;
-}
-
-.sidebar.compact .recent-container,
-.sidebar.compact .favorites-container,
-.sidebar.compact .calendar-container {
-    display: none !important;
+    width: 36px !important;
+    height: 36px !important;
 }
 
 .sidebar.compact .subjects-container,
 .sidebar.compact .recent-container,
-.sidebar.compact .favorites-container {
-    padding: 1rem 0.5rem;
-    display: block !important;
+.sidebar.compact .favorites-container,
+.sidebar.compact .calendar-container {
+    padding: 0.75rem 0.25rem;
+    scrollbar-width: none;
+}
+
+.sidebar.compact .subjects-container::-webkit-scrollbar,
+.sidebar.compact .recent-container::-webkit-scrollbar,
+.sidebar.compact .favorites-container::-webkit-scrollbar,
+.sidebar.compact .calendar-container::-webkit-scrollbar {
+    display: none;
 }
 
 .sidebar.compact .recent-note-item,
@@ -120,20 +119,23 @@
 }
 
 .sidebar.compact .subject-folder {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     padding: 0;
     border: none;
     background: transparent;
+    pointer-events: auto;
 }
 
 .sidebar.compact .subject-header {
     justify-content: center;
-    padding: 0;
+    padding: 0.25rem 0;
+    cursor: pointer;
+    pointer-events: auto;
 }
 
 .sidebar.compact .subject-icon {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     margin: 0 auto;
     border-radius: 8px;
     flex-shrink: 0;
@@ -169,22 +171,6 @@
 
 .sidebar.compact .subject-icon:hover {
     transform: scale(1.1);
-}
-
-.sidebar.compact .subject-folder {
-    margin-bottom: 0.75rem;
-    padding: 0;
-    border: none;
-    background: transparent;
-    pointer-events: auto;
-}
-
-.sidebar.compact .subject-header {
-    justify-content: center;
-    padding: 0.5rem 0;
-    cursor: pointer;
-    pointer-events: auto;
-    min-height: 42px;
 }
 
 .sidebar.compact [data-tooltip] {

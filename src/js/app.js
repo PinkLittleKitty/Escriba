@@ -1756,7 +1756,7 @@ class EscribaApp {
             return;
         }
 
-        showToast('Preparando PDF de la materia...', 'info', { duration: 3000 });
+        showToast('Preparando vista de impresión...', 'info', { duration: 3000 });
 
         let printContainer = document.getElementById('printFolderContainer');
         if (!printContainer) {
@@ -1885,7 +1885,7 @@ class EscribaApp {
 
         if (!foundNote) return;
 
-        showToast('Preparando PDF del apunte...', 'info', { duration: 3000 });
+        showToast('Preparando vista de impresión...', 'info', { duration: 3000 });
 
         let printContainer = document.getElementById('printFolderContainer');
         if (!printContainer) {

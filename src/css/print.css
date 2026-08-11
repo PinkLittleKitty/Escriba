@@ -59,18 +59,212 @@
     }
 
     .uml-diagram-container {
-        break-inside: avoid;
-        margin: 2rem 0 !important;
-        border: 1px solid #ddd !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin: 1.25rem auto !important;
+        width: fit-content !important;
+        max-width: 80% !important;
+        border: 1px solid #d0d7de !important;
+        border-radius: 6px !important;
+        overflow: hidden !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
     }
 
     .uml-diagram-header {
-        background: #f5f5f5 !important;
-        color: black !important;
+        background: #f6f8fa !important;
+        border-bottom: 1px solid #d0d7de !important;
+        color: #1f2328 !important;
+        padding: 0.4rem 0.75rem !important;
+    }
+
+    .uml-diagram-type {
+        color: #1f2328 !important;
+        font-weight: 700 !important;
+        font-size: 0.75rem !important;
     }
 
     .uml-diagram-actions {
         display: none !important;
+    }
+
+    .uml-diagram-content {
+        background: #ffffff !important;
+        padding: 0.75rem 1rem !important;
+        max-height: 320px !important;
+        overflow: hidden !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .uml-diagram-container svg,
+    .print-note-content .uml-diagram-container svg,
+    .note-content .uml-diagram-container svg {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        max-width: 100% !important;
+        max-height: 280px !important;
+        width: auto !important;
+        height: auto !important;
+        display: block !important;
+        margin: 0 auto !important;
+    }
+
+    .uml-diagram-container svg rect,
+    .uml-diagram-container svg polygon,
+    .uml-diagram-container svg circle,
+    .uml-diagram-container svg ellipse,
+    .uml-diagram-container svg .node rect,
+    .uml-diagram-container svg .node polygon,
+    .uml-diagram-container svg .node circle,
+    .uml-diagram-container svg .node ellipse,
+    .uml-diagram-container svg .classGroup rect,
+    .uml-diagram-container svg .actor,
+    .uml-diagram-container svg .entityBox,
+    .uml-diagram-container svg .stateGroup rect,
+    .print-note-content svg rect,
+    .print-note-content svg polygon,
+    .print-note-content svg circle,
+    .print-note-content svg ellipse,
+    .print-note-content svg .node rect,
+    .print-note-content svg .node polygon,
+    .print-note-content svg .node circle,
+    .print-note-content svg .node ellipse,
+    .print-note-content svg .classGroup rect,
+    .print-note-content svg .actor,
+    .print-note-content svg .entityBox,
+    .print-note-content svg .stateGroup rect {
+        fill: #ffffff !important;
+        stroke: #1f2328 !important;
+        stroke-width: 1.25px !important;
+    }
+
+    .uml-diagram-container svg .classGroup rect.title-state,
+    .uml-diagram-container svg .classGroup rect:first-of-type,
+    .print-note-content svg .classGroup rect.title-state,
+    .print-note-content svg .classGroup rect:first-of-type {
+        fill: #f3f4f6 !important;
+    }
+
+    .uml-diagram-container svg .classGroup line,
+    .print-note-content svg .classGroup line,
+    .uml-diagram-container svg .divider,
+    .print-note-content svg .divider {
+        stroke: #1f2328 !important;
+        stroke-width: 1.25px !important;
+    }
+
+    .uml-diagram-container svg .cluster rect,
+    .print-note-content svg .cluster rect {
+        fill: #f8f9fa !important;
+        stroke: #d0d7de !important;
+        stroke-width: 1px !important;
+        stroke-dasharray: 4, 4 !important;
+    }
+
+    .uml-diagram-container svg path,
+    .uml-diagram-container svg line,
+    .uml-diagram-container svg polyline,
+    .uml-diagram-container svg .edgePath path,
+    .uml-diagram-container svg .relation,
+    .uml-diagram-container svg .flowchart-link,
+    .uml-diagram-container svg .messageLine0,
+    .uml-diagram-container svg .messageLine1,
+    .uml-diagram-container svg .actor-line,
+    .uml-diagram-container svg .transition,
+    .print-note-content svg path,
+    .print-note-content svg line,
+    .print-note-content svg polyline,
+    .print-note-content svg .edgePath path,
+    .print-note-content svg .relation,
+    .print-note-content svg .flowchart-link,
+    .print-note-content svg .messageLine0,
+    .print-note-content svg .messageLine1,
+    .print-note-content svg .actor-line,
+    .print-note-content svg .transition {
+        stroke: #1f2328 !important;
+        stroke-width: 1.25px !important;
+    }
+
+    .uml-diagram-container svg marker path,
+    .uml-diagram-container svg marker polygon,
+    .uml-diagram-container svg marker circle,
+    .uml-diagram-container svg .marker,
+    .print-note-content svg marker path,
+    .print-note-content svg marker polygon,
+    .print-note-content svg .marker {
+        fill: #1f2328 !important;
+        stroke: #1f2328 !important;
+    }
+
+    .uml-diagram-container svg marker[id*="extension"] path,
+    .print-note-content svg marker[id*="extension"] path {
+        fill: #ffffff !important;
+        stroke: #1f2328 !important;
+        stroke-width: 1.25px !important;
+    }
+
+    .uml-diagram-container svg marker[id*="aggregation"] path,
+    .print-note-content svg marker[id*="aggregation"] path {
+        fill: #ffffff !important;
+        stroke: #1f2328 !important;
+        stroke-width: 1.25px !important;
+    }
+
+    .uml-diagram-container svg marker[id*="composition"] path,
+    .print-note-content svg marker[id*="composition"] path {
+        fill: #1f2328 !important;
+        stroke: #1f2328 !important;
+    }
+
+    .uml-diagram-container svg marker[id*="dependency"] path,
+    .print-note-content svg marker[id*="dependency"] path {
+        fill: none !important;
+        stroke: #1f2328 !important;
+        stroke-width: 1.25px !important;
+    }
+
+    .uml-diagram-container svg text,
+    .uml-diagram-container svg tspan,
+    .uml-diagram-container svg span,
+    .uml-diagram-container svg div,
+    .uml-diagram-container svg p,
+    .uml-diagram-container svg .label,
+    .uml-diagram-container svg .nodeLabel,
+    .uml-diagram-container svg .edgeLabel,
+    .print-note-content svg text,
+    .print-note-content svg tspan,
+    .print-note-content svg span,
+    .print-note-content svg div,
+    .print-note-content svg p,
+    .print-note-content svg .label,
+    .print-note-content svg .nodeLabel,
+    .print-note-content svg .edgeLabel {
+        fill: #000000 !important;
+        color: #000000 !important;
+        font-family: Inter, system-ui, -apple-system, sans-serif !important;
+        font-weight: 500 !important;
+        opacity: 1 !important;
+        text-shadow: none !important;
+    }
+
+    .uml-diagram-container svg .classTitle,
+    .print-note-content svg .classTitle,
+    .uml-diagram-container svg .title,
+    .print-note-content svg .title,
+    .uml-diagram-container svg .node .label,
+    .print-note-content svg .node .label {
+        font-weight: 700 !important;
+        fill: #000000 !important;
+    }
+
+    .uml-diagram-container svg .edgeLabel rect,
+    .print-note-content svg .edgeLabel rect,
+    .uml-diagram-container svg .labelBBox,
+    .print-note-content svg .labelBBox {
+        fill: #ffffff !important;
+        stroke: none !important;
     }
 
     pre,

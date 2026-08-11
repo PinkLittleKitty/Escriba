@@ -57,7 +57,7 @@ export const renderSubjects = (container, subjects, callbacks = {}, showArchived
                                 <i class="fas ${subject.archived ? 'fa-box-open' : 'fa-box-archive'}"></i> <span>${subject.archived ? 'Desarchivar' : 'Archivar'}</span>
                             </button>
                             <button class="menu-item btn-export-pdf-subject" data-subject-id="${subject.id}">
-                                <i class="fas fa-file-pdf"></i> <span>Exportar a PDF</span>
+                                <i class="fas fa-print"></i> <span>Imprimir carpeta</span>
                             </button>
                             <div class="menu-divider"></div>
                             <button class="menu-item btn-delete-subject" data-subject-id="${subject.id}">

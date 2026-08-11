@@ -166,3 +166,74 @@ export const initModalEvents = (onClose) => {
         }
     });
 };
+
+export const showConfirmModal = ({
+    title = 'Confirmar acción',
+    message = '',
+    confirmText = 'Confirmar',
+    cancelText = 'Cancelar',
+    isDanger = true,
+    icon = 'fas fa-exclamation-triangle'
+} = {}) => {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        if (!modal) {
+            resolve(window.confirm(message || title));
+            return;
+        }
+
+        const titleEl = document.getElementById('confirmModalTitle');
+        const iconEl = document.getElementById('confirmModalIcon');
+        const messageEl = document.getElementById('confirmModalMessage');
+        const cancelBtn = document.getElementById('confirmModalCancel');
+        const okBtn = document.getElementById('confirmModalOk');
+        const closeBtn = document.getElementById('confirmModalClose');
+
+        if (titleEl) {
+            titleEl.childNodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) node.textContent = ` ${title}`;
+            });
+            if (!titleEl.childNodes.length) titleEl.textContent = title;
+        }
+        if (iconEl) iconEl.className = icon;
+        if (messageEl) messageEl.textContent = message;
+
+        if (cancelBtn) cancelBtn.textContent = cancelText;
+        if (okBtn) {
+            okBtn.textContent = confirmText;
+            okBtn.className = isDanger ? 'btn btn-danger' : 'btn btn-primary';
+        }
+
+        let cleanup = null;
+
+        const handleResult = (result) => {
+            hideModal('confirmModal');
+            if (cleanup) cleanup();
+            resolve(result);
+        };
+
+        const onOk = () => handleResult(true);
+        const onCancel = () => handleResult(false);
+        const onKeydown = (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                handleResult(false);
+            }
+        };
+
+        cleanup = () => {
+            if (okBtn) okBtn.removeEventListener('click', onOk);
+            if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
+            if (closeBtn) closeBtn.removeEventListener('click', onCancel);
+            document.removeEventListener('keydown', onKeydown);
+        };
+
+        if (okBtn) okBtn.addEventListener('click', onOk);
+        if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
+        if (closeBtn) closeBtn.addEventListener('click', onCancel);
+        document.addEventListener('keydown', onKeydown);
+
+        showModal('confirmModal', () => {
+            if (okBtn) okBtn.focus();
+        });
+    });
+};

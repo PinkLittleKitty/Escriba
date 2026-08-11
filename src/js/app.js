@@ -56,7 +56,8 @@ import {
     hideToast,
     showModal,
     hideModal,
-    initModalEvents
+    initModalEvents,
+    showConfirmModal
 } from './ui/modal-ui.js';
 import {
     updateToolbarStates,
@@ -446,8 +447,14 @@ class EscribaApp {
             });
         }
 
-        document.getElementById('clearAllData').addEventListener('click', () => {
-            if (confirm('¿Estás seguro de que querés borrar todos tus datos?')) {
+        document.getElementById('clearAllData').addEventListener('click', async () => {
+            const confirmed = await showConfirmModal({
+                title: 'Borrar todos los datos',
+                message: '¿Estás seguro de que querés borrar todos tus datos? Esta acción no se puede deshacer.',
+                confirmText: 'Borrar todo',
+                isDanger: true
+            });
+            if (confirmed) {
                 localStorage.clear();
                 window.location.reload();
             }
@@ -490,7 +497,7 @@ class EscribaApp {
             noteTitleEl.addEventListener('input', () => this.debouncedSave());
         }
 
-        document.getElementById('noteContent').addEventListener('click', (e) => {
+        document.getElementById('noteContent').addEventListener('click', async (e) => {
             const deleteBtn = e.target.closest('.uml-delete-btn');
             const editBtn = e.target.closest('.uml-edit-btn');
             const codeDeleteBtn = e.target.closest('.code-block-delete-btn');
@@ -507,9 +514,17 @@ class EscribaApp {
 
             if (deleteBtn) {
                 const container = deleteBtn.closest('.uml-diagram-container');
-                if (container && confirm('¿Eliminar este diagrama?')) {
-                    container.remove();
-                    this.debouncedSave();
+                if (container) {
+                    const confirmed = await showConfirmModal({
+                        title: 'Eliminar Diagrama',
+                        message: '¿Eliminar este diagrama?',
+                        confirmText: 'Eliminar',
+                        isDanger: true
+                    });
+                    if (confirmed) {
+                        container.remove();
+                        this.debouncedSave();
+                    }
                 }
             } else if (editBtn) {
                 const container = editBtn.closest('.uml-diagram-container');
@@ -520,9 +535,17 @@ class EscribaApp {
                 }
             } else if (codeDeleteBtn) {
                 const container = codeDeleteBtn.closest('.code-block-container');
-                if (container && confirm('¿Eliminar este bloque de código?')) {
-                    container.remove();
-                    this.debouncedSave();
+                if (container) {
+                    const confirmed = await showConfirmModal({
+                        title: 'Eliminar Bloque de Código',
+                        message: '¿Eliminar este bloque de código?',
+                        confirmText: 'Eliminar',
+                        isDanger: true
+                    });
+                    if (confirmed) {
+                        container.remove();
+                        this.debouncedSave();
+                    }
                 }
             }
         });
@@ -1341,9 +1364,15 @@ class EscribaApp {
         }
     }
 
-    deleteCurrentNote() {
+    async deleteCurrentNote() {
         if (!this.currentNoteId) return;
-        if (!confirm('¿Estás seguro de que querés borrar este apunte?')) return;
+        const confirmed = await showConfirmModal({
+            title: 'Eliminar Apunte',
+            message: '¿Estás seguro de que querés borrar este apunte?',
+            confirmText: 'Eliminar',
+            isDanger: true
+        });
+        if (!confirmed) return;
 
         this.subjects.forEach(s => {
             const index = s.notes.findIndex(n => n.id === this.currentNoteId);
@@ -3222,7 +3251,13 @@ class EscribaApp {
     }
 
     async handleForcePull() {
-        if (!confirm('Esto reemplazará tus datos locales con los de GitHub. ¿Continuar?')) return;
+        const confirmed = await showConfirmModal({
+            title: 'Descargar datos de GitHub',
+            message: 'Esto reemplazará tus datos locales con los de GitHub. ¿Continuar?',
+            confirmText: 'Reemplazar datos',
+            isDanger: true
+        });
+        if (!confirmed) return;
         try {
             const remoteData = await this.github.getRemoteData();
             this.subjects = remoteData.subjects;
@@ -3239,7 +3274,13 @@ class EscribaApp {
     }
 
     async handleForcePush() {
-        if (!confirm('Esto reemplazará los datos en GitHub con tus datos locales. ¿Continuar?')) return;
+        const confirmed = await showConfirmModal({
+            title: 'Subir datos a GitHub',
+            message: 'Esto reemplazará los datos en GitHub con tus datos locales. ¿Continuar?',
+            confirmText: 'Reemplazar en GitHub',
+            isDanger: true
+        });
+        if (!confirmed) return;
         try {
             const data = {
                 subjects: this.subjects,
@@ -3254,8 +3295,14 @@ class EscribaApp {
         }
     }
 
-    disconnectGitHub() {
-        if (confirm('¿Estás seguro de que querés desconectar tu cuenta de GitHub?')) {
+    async disconnectGitHub() {
+        const confirmed = await showConfirmModal({
+            title: 'Desconectar GitHub',
+            message: '¿Estás seguro de que querés desconectar tu cuenta de GitHub?',
+            confirmText: 'Desconectar',
+            isDanger: true
+        });
+        if (confirmed) {
             this.stopAutoSync();
             this.github.logout();
             showToast('Cuenta desconectada', 'info');
@@ -3498,9 +3545,15 @@ class EscribaApp {
     }
 
 
-    deleteEvent() {
+    async deleteEvent() {
         if (!this.currentEventId) return;
-        if (confirm('¿Eliminar este evento?')) {
+        const confirmed = await showConfirmModal({
+            title: 'Eliminar Evento',
+            message: '¿Eliminar este evento?',
+            confirmText: 'Eliminar',
+            isDanger: true
+        });
+        if (confirmed) {
             this.events = this.events.filter(e => e.id !== this.currentEventId);
             saveEvents(this.events);
             this.renderCalendar();
@@ -3929,7 +3982,7 @@ class EscribaApp {
         this.debouncedSave();
     }
 
-    confirmDeleteSubject(subjectId) {
+    async confirmDeleteSubject(subjectId) {
         if (this.isViewingSharedNote || this.isViewingSharedSubject) {
             showToast('No se puede eliminar materias en modo vista previa', 'warning');
             return;
@@ -3946,7 +3999,14 @@ class EscribaApp {
 
         message += '\n\nEsta acción no se puede deshacer.';
 
-        if (confirm(message)) {
+        const confirmed = await showConfirmModal({
+            title: 'Eliminar Materia',
+            message: message,
+            confirmText: 'Eliminar Materia',
+            isDanger: true
+        });
+
+        if (confirmed) {
             this.deleteSubject(subjectId);
         }
     }
@@ -4211,11 +4271,19 @@ class EscribaApp {
         }
     }
 
-    deleteUMLDiagram(btn) {
+    async deleteUMLDiagram(btn) {
         const container = btn.closest('.uml-diagram-container');
-        if (container && confirm('¿Eliminar este diagrama?')) {
-            container.remove();
-            this.debouncedSave();
+        if (container) {
+            const confirmed = await showConfirmModal({
+                title: 'Eliminar Diagrama',
+                message: '¿Eliminar este diagrama?',
+                confirmText: 'Eliminar',
+                isDanger: true
+            });
+            if (confirmed) {
+                container.remove();
+                this.debouncedSave();
+            }
         }
     }
 

@@ -690,6 +690,35 @@
     border: 1px solid var(--border-color);
 }
 
+.about-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.about-label {
+    color: var(--text-muted);
+}
+
+.about-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.about-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: opacity 0.2s ease;
+}
+
+.about-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
 .btn-ghost {
     background: var(--bg-card);
     border: 1px solid var(--border-color);

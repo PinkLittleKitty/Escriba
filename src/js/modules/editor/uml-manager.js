@@ -9,6 +9,7 @@ export const detectDiagramType = (code) => {
     if (firstLine.includes('gitgraph')) return 'git';
     if (firstLine.includes('pie')) return 'pie';
     if (firstLine.includes('journey')) return 'journey';
+    if (firstLine.includes('usecase')) return 'usecase';
 
     return 'diagram';
 };
@@ -20,6 +21,7 @@ export const getDiagramTypeName = (type) => {
         'flowchart': 'de Flujo',
         'er': 'Entidad-Relación',
         'state': 'de Estados',
+        'usecase': 'de Casos de Uso',
         'git': 'Git',
         'pie': 'Circular',
         'journey': 'de Viaje del Usuario',
@@ -40,11 +42,12 @@ export const renderUMLDiagram = async (containerId, code) => {
             container.innerHTML = svg;
         } catch (error) {
             console.error('Error rendering UML diagram:', error);
+            const errorMsg = error?.message || 'Verifica la sintaxis';
             container.innerHTML = `
                 <div class="uml-error">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>Error al renderizar el diagrama</p>
-                    <small>${error.message || 'Verifica la sintaxis'}</small>
+                    <small>${errorMsg}</small>
                 </div>
             `;
         }
@@ -66,11 +69,19 @@ export const updateUMLPreview = async (editor, previewContainer) => {
 
     try {
         if (typeof mermaid !== 'undefined') {
-            const diagramId = 'preview-' + Date.now();
+            const diagramId = 'preview-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
             const { svg } = await mermaid.render(diagramId, code);
             previewContainer.innerHTML = svg;
         }
     } catch (error) {
         console.error('Mermaid preview error:', error);
+        const errorMsg = error?.message || 'Verifica la sintaxis';
+        previewContainer.innerHTML = `
+            <div class="uml-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error en la vista previa</p>
+                <small>${errorMsg}</small>
+            </div>
+        `;
     }
 };

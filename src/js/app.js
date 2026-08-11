@@ -656,6 +656,13 @@ class EscribaApp {
             } else {
                 this.savedSelectionRange = null;
             }
+            this.editingUMLContainer = null;
+            const umlCodeInput = document.getElementById('umlCode');
+            if (umlCodeInput) umlCodeInput.value = '';
+            const preview = document.getElementById('umlPreview');
+            if (preview) {
+                preview.innerHTML = '<div class="uml-preview-placeholder"><i class="fas fa-project-diagram"></i><p>La vista previa aparecerá aquí</p></div>';
+            }
             showModal('umlModal');
         });
 
@@ -689,7 +696,12 @@ class EscribaApp {
         }
 
         const cancelUMLBtn = document.getElementById('cancelUML');
-        if (cancelUMLBtn) cancelUMLBtn.addEventListener('click', () => hideModal('umlModal'));
+        if (cancelUMLBtn) {
+            cancelUMLBtn.addEventListener('click', () => {
+                this.editingUMLContainer = null;
+                hideModal('umlModal');
+            });
+        }
 
         const umlCode = document.getElementById('umlCode');
         if (umlCode) {
@@ -700,7 +712,12 @@ class EscribaApp {
         }
 
         document.querySelectorAll('.uml-template-btn').forEach(btn => {
-            btn.addEventListener('click', () => this.applyUMLTemplate(btn.dataset.type));
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.uml-template-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const templateType = btn.dataset.template || btn.dataset.type;
+                this.applyUMLTemplate(templateType);
+            });
         });
 
         document.addEventListener('click', (e) => {
@@ -2335,7 +2352,8 @@ class EscribaApp {
     }
 
     async handleInsertUML() {
-        const umlCode = document.getElementById('umlCode').value.trim();
+        const umlCodeInput = document.getElementById('umlCode');
+        const umlCode = umlCodeInput ? umlCodeInput.value.trim() : '';
         if (!umlCode) {
             showToast('Ingresá código Mermaid', 'error');
             return;
@@ -2345,29 +2363,39 @@ class EscribaApp {
         const diagramTypeName = getDiagramTypeName(diagramType);
 
         if (this.editingUMLContainer) {
-            const diagramId = this.editingUMLContainer.querySelector('.uml-diagram-content').id;
-            this.editingUMLContainer.setAttribute('data-uml-code', umlCode);
-            this.editingUMLContainer.setAttribute('data-diagram-type', diagramType);
-            this.editingUMLContainer.querySelector('.uml-diagram-type').innerHTML = `<i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}`;
-
             const content = this.editingUMLContainer.querySelector('.uml-diagram-content');
-            content.innerHTML = `<div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Actualizando diagrama...</div>`;
+            if (content) {
+                let diagramId = content.id;
+                if (!diagramId) {
+                    diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    content.id = diagramId;
+                }
+                this.editingUMLContainer.setAttribute('data-uml-code', umlCode);
+                this.editingUMLContainer.setAttribute('data-diagram-type', diagramType);
 
-            await renderUMLDiagram(diagramId, umlCode);
+                const titleEl = this.editingUMLContainer.querySelector('.uml-diagram-title') || this.editingUMLContainer.querySelector('.uml-diagram-type');
+                if (titleEl) {
+                    titleEl.className = 'uml-diagram-title uml-diagram-type';
+                    titleEl.innerHTML = `<i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}`;
+                }
+
+                content.innerHTML = `<div class="uml-loading"><i class="fas fa-spinner fa-spin"></i> Actualizando diagrama...</div>`;
+                await renderUMLDiagram(diagramId, umlCode);
+            }
+
             this.editingUMLContainer = null;
-
             hideModal('umlModal');
-            document.getElementById('umlCode').value = '';
+            if (umlCodeInput) umlCodeInput.value = '';
             this.debouncedSave();
             return;
         }
 
-        const diagramId = 'uml-' + Date.now();
-        const container = document.createElement('div');
-        const html = `
-            <div class="uml-diagram-container" contenteditable="false" data-uml-code="${escapeHtml(umlCode)}">
+        const diagramId = 'uml-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = `
+            <div class="uml-diagram-container" contenteditable="false" data-uml-code="${escapeHtml(umlCode)}" data-diagram-type="${diagramType}">
                 <div class="uml-diagram-header">
-                    <span class="uml-diagram-title"><i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}</span>
+                    <span class="uml-diagram-title uml-diagram-type"><i class="fas fa-project-diagram"></i> Diagrama ${diagramTypeName}</span>
                     <div class="uml-diagram-actions">
                         <button class="uml-edit-btn" title="Editar diagrama"><i class="fas fa-edit"></i></button>
                         <button class="uml-delete-btn" title="Eliminar diagrama"><i class="fas fa-trash"></i></button>
@@ -2380,33 +2408,46 @@ class EscribaApp {
             <p><br></p>
         `;
 
+        const noteContent = document.getElementById('noteContent');
+        noteContent.focus();
         let inserted = false;
 
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            if (noteContent.contains(range.commonAncestorContainer)) {
-                range.deleteContents();
-                range.insertNode(container);
-
-                const brBefore = document.createElement('br');
-                const brAfter = document.createElement('br');
-                container.before(brBefore);
-                container.after(brAfter);
-
-                inserted = true;
+        let range = this.savedSelectionRange;
+        if (!range) {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0 && noteContent.contains(sel.anchorNode)) {
+                range = sel.getRangeAt(0);
             }
         }
 
-        if (!inserted) {
-            noteContent.appendChild(document.createElement('br'));
-            noteContent.appendChild(container);
-            noteContent.appendChild(document.createElement('br'));
+        if (range && noteContent.contains(range.commonAncestorContainer)) {
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            range.deleteContents();
+
+            const fragment = document.createDocumentFragment();
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
+            range.insertNode(fragment);
+            inserted = true;
         }
+
+        if (!inserted) {
+            const brBefore = document.createElement('br');
+            noteContent.appendChild(brBefore);
+            while (tempDiv.firstChild) {
+                noteContent.appendChild(tempDiv.firstChild);
+            }
+        }
+
+        this.savedSelectionRange = null;
 
         await renderUMLDiagram(diagramId, umlCode);
 
         hideModal('umlModal');
-        document.getElementById('umlCode').value = '';
+        if (umlCodeInput) umlCodeInput.value = '';
         this.debouncedSave();
     }
 

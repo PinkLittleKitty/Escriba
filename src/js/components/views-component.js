@@ -1,3 +1,5 @@
+import { renderColorPickerHTML } from './color-picker-component.js';
+
 export const viewsHTML = `
     <div id="mainViewContainer" class="main-view-container">
         <div id="dashboardScreen" class="dashboard-screen" style="display: none;"></div>
@@ -116,24 +118,14 @@ export const viewsHTML = `
                             <i class="fas fa-tint"></i>
                             <span class="color-dot" id="textColorIndicator"></span>
                         </button>
-                        <div class="dropdown-menu text-color-menu">
-                            <button class="color-menu-option" data-color="var(--text-primary)"
-                                title="Texto Principal"
-                                style="background-color: var(--text-primary); border: 1px solid var(--border-color);"></button>
-                            <button class="color-menu-option" data-color="var(--text-secondary)"
-                                title="Texto Secundario"
-                                style="background-color: var(--text-secondary); border: 1px solid var(--border-color);"></button>
-                            <button class="color-menu-option" data-color="var(--accent-blue)" title="Azul"
-                                style="background-color: var(--accent-blue);"></button>
-                            <button class="color-menu-option" data-color="var(--accent-red)" title="Rojo"
-                                style="background-color: var(--accent-red);"></button>
-                            <button class="color-menu-option" data-color="var(--accent-green)" title="Verde"
-                                style="background-color: var(--accent-green);"></button>
-                            <button class="color-menu-option" data-color="var(--accent-orange)" title="Naranja"
-                                style="background-color: var(--accent-orange);"></button>
-                            <button class="color-menu-option" data-color="var(--accent-yellow)" title="Amarillo"
-                                style="background-color: var(--accent-yellow);"></button>
-                        </div>
+                        ${renderColorPickerHTML({
+    containerId: 'textColorMenu',
+    containerClass: 'dropdown-menu text-color-menu',
+    optionClass: 'color-menu-option',
+    customInputId: 'customTextColorPickerInput',
+    includeThemeOptions: true,
+    size: 'small'
+})}
                     </div>
                 </div>
                 <div class="toolbar-separator"></div>

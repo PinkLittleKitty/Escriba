@@ -637,24 +637,34 @@ class EscribaApp {
             });
         });
 
+        const applyTextColor = (color) => {
+            if (color) {
+                document.execCommand('styleWithCSS', false, true);
+                document.execCommand('foreColor', false, color);
+
+                const indicator = document.getElementById('textColorIndicator');
+                if (indicator) {
+                    indicator.style.backgroundColor = color;
+                }
+
+                updateToolbarStates();
+                this.debouncedSave();
+            }
+            if (textColorDropdown) textColorDropdown.classList.remove('active');
+        };
+
         document.querySelectorAll('.color-menu-option').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const color = e.target.dataset.color;
-                if (color) {
-                    document.execCommand('styleWithCSS', false, true);
-                    document.execCommand('foreColor', false, color);
-
-                    const indicator = document.getElementById('textColorIndicator');
-                    if (indicator) {
-                        indicator.style.backgroundColor = color;
-                    }
-
-                    updateToolbarStates();
-                    this.debouncedSave();
-                }
-                if (textColorDropdown) textColorDropdown.classList.remove('active');
+                applyTextColor(color);
             });
         });
+
+        const customTextColorInput = document.getElementById('customTextColorPickerInput');
+        if (customTextColorInput) {
+            customTextColorInput.addEventListener('input', (e) => applyTextColor(e.target.value));
+            customTextColorInput.addEventListener('change', (e) => applyTextColor(e.target.value));
+        }
 
         document.getElementById('highlightBtn').addEventListener('click', () => this.toggleHighlight());
         document.getElementById('inlineCodeBtn').addEventListener('click', () => this.toggleInlineCode());
@@ -820,6 +830,12 @@ class EscribaApp {
         document.querySelectorAll('.color-option').forEach(option => {
             option.addEventListener('click', (e) => this.selectColor(e.target.dataset.color));
         });
+
+        const customColorInput = document.getElementById('customColorPickerInput');
+        if (customColorInput) {
+            customColorInput.addEventListener('input', (e) => this.selectColor(e.target.value));
+            customColorInput.addEventListener('change', (e) => this.selectColor(e.target.value));
+        }
 
         const fontSizeInput = document.getElementById('fontSize');
         if (fontSizeInput) {

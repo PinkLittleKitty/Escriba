@@ -155,7 +155,6 @@
     color: white;
     border-color: var(--accent-blue);
     transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(var(--accent-blue-rgb), 0.3);
 }
 
 .btn-subject-options:hover,
@@ -164,7 +163,6 @@
     color: var(--text-primary);
     border-color: var(--border-light);
     transform: none;
-    box-shadow: none;
 }
 
 .subject-options-wrapper {

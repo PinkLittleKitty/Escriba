@@ -1,3 +1,5 @@
+import { renderColorPickerHTML } from './color-picker-component.js';
+
 export const modalsHTML = `
     <div id="subjectModal" class="modal">
         <div class="modal-content">
@@ -20,16 +22,14 @@ export const modalsHTML = `
                 </div>
                 <div class="form-group">
                     <label>Color de la Materia</label>
-                    <div class="color-picker" id="colorPicker">
-                        <div class="color-option active" style="background-color: #3b82f6" data-color="#3b82f6"></div>
-                        <div class="color-option" style="background-color: #ef4444" data-color="#ef4444"></div>
-                        <div class="color-option" style="background-color: #10b981" data-color="#10b981"></div>
-                        <div class="color-option" style="background-color: #f59e0b" data-color="#f59e0b"></div>
-                        <div class="color-option" style="background-color: #8b5cf6" data-color="#8b5cf6"></div>
-                        <div class="color-option" style="background-color: #ec4899" data-color="#ec4899"></div>
-                        <div class="color-option" style="background-color: #06b6d4" data-color="#06b6d4"></div>
-                        <div class="color-option" style="background-color: #64748b" data-color="#64748b"></div>
-                    </div>
+                    ${renderColorPickerHTML({
+    containerId: 'colorPicker',
+    containerClass: 'color-picker',
+    optionClass: 'color-option',
+    customInputId: 'customColorPickerInput',
+    includeThemeOptions: false,
+    size: 'normal'
+})}
                 </div>
 
                 <div class="form-group schedule-section">

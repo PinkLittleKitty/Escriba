@@ -74,7 +74,6 @@
 .settings-tab-btn.active {
     background: var(--accent-blue);
     color: white !important;
-    box-shadow: 0 4px 15px var(--accent-shadow);
     position: relative;
     z-index: 10;
 }
@@ -979,7 +978,6 @@
 .storage-option-card:has(input[type="radio"]:checked) {
     border-color: var(--accent-blue) !important;
     background: rgba(var(--accent-blue-rgb, 59, 130, 246), 0.08) !important;
-    box-shadow: 0 4px 12px var(--accent-shadow);
 }
 
 .storage-card-content {

@@ -900,10 +900,10 @@ mark.search-highlight {
 
 .text-color-menu {
     display: none;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 0.5rem;
     padding: 0.75rem;
-    min-width: 160px;
+    min-width: 180px;
 }
 
 .toolbar-dropdown.active .text-color-menu {
@@ -925,7 +925,42 @@ mark.search-highlight {
 
 .color-menu-option:hover {
     transform: scale(1.15);
-    box-shadow: 0 0 8px var(--accent-shadow);
+}
+
+.custom-color-btn-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: var(--bg-tertiary);
+    border: 1.5px dashed var(--border-light);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.custom-color-btn-small:hover {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    background: var(--bg-hover);
+}
+
+.custom-color-btn-small i {
+    font-size: 0.65rem;
+    pointer-events: none;
+}
+
+.custom-color-btn-small input[type="color"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    top: 0;
+    left: 0;
 }
 
 .font-size-menu {

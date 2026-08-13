@@ -331,7 +331,6 @@
     border-color: var(--accent-blue);
     justify-content: flex-start;
     padding: 0 1rem;
-    box-shadow: 0 4px 12px rgba(var(--accent-blue-rgb), 0.2);
 }
 
 .view-btn i {

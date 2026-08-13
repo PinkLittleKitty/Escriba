@@ -2500,6 +2500,10 @@ class EscribaApp {
         });
         document.documentElement.setAttribute('data-theme', theme);
 
+        this.settings = this.settings || JSON.parse(localStorage.getItem('escribaSettings')) || {};
+        this.settings.theme = theme;
+        localStorage.setItem('escribaSettings', JSON.stringify(this.settings));
+
         this.initMermaid();
         this.reRenderAllDiagrams();
 

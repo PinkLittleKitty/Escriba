@@ -31,7 +31,7 @@ export const sidebarHTML = `
                     data-tooltip="Favoritos">
                     <i class="fas fa-star"></i><span class="view-btn-label">Favoritos</span>
                 </button>
-                <button class="view-btn" data-view="calendar" title="Ver calendario de exámenes"
+                <button class="view-btn" data-view="calendar" title="Ver calendario"
                     data-tooltip="Calendario">
                     <i class="fas fa-calendar-alt"></i><span class="view-btn-label">Calendario</span>
                 </button>

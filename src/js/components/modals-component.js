@@ -124,24 +124,6 @@ export const modalsHTML = `
                                     </div>
                                     <span>Oscuro</span>
                                 </div>
-                                <div class="theme-option" data-theme="unq">
-                                    <div class="theme-preview" style="background: #0a0a0a;">
-                                        <div class="preview-header" style="background: #141414;">
-                                            <div class="mock-dots"></div>
-                                        </div>
-                                        <div class="preview-body">
-                                            <div class="preview-sidebar" style="background: #0f0f0f;">
-                                                <div class="mock-item" style="background: #990000;"></div>
-                                                <div class="mock-item" style="background: #990000;"></div>
-                                            </div>
-                                            <div class="preview-content" style="background: #0a0a0a;">
-                                                <div class="mock-line-main" style="background: #e5e5e5;"></div>
-                                                <div class="mock-line-sub"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span>UNQ</span>
-                                </div>
                                 <div class="theme-option" data-theme="light">
                                     <div class="theme-preview" style="background: #f8f9fa;">
                                         <div class="preview-header" style="background: #ffffff;">
@@ -159,6 +141,60 @@ export const modalsHTML = `
                                         </div>
                                     </div>
                                     <span>Claro</span>
+                                </div>
+                                <div class="theme-option" data-theme="sakura">
+                                    <div class="theme-preview" style="background: #faf4ed;">
+                                        <div class="preview-header" style="background: #ffffff;">
+                                            <div class="mock-dots"></div>
+                                        </div>
+                                        <div class="preview-body">
+                                            <div class="preview-sidebar" style="background: #f2e9e1;">
+                                                <div class="mock-item" style="background: #eb6f92;"></div>
+                                                <div class="mock-item" style="background: #907aa9;"></div>
+                                            </div>
+                                            <div class="preview-content" style="background: #faf4ed;">
+                                                <div class="mock-line-main" style="background: #575279;"></div>
+                                                <div class="mock-line-sub"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>Sakura</span>
+                                </div>
+                                <div class="theme-option" data-theme="github">
+                                    <div class="theme-preview" style="background: #0d1117;">
+                                        <div class="preview-header" style="background: #161b22;">
+                                            <div class="mock-dots"></div>
+                                        </div>
+                                        <div class="preview-body">
+                                            <div class="preview-sidebar" style="background: #161b22;">
+                                                <div class="mock-item" style="background: #2f81f7;"></div>
+                                                <div class="mock-item" style="background: #2f81f7;"></div>
+                                            </div>
+                                            <div class="preview-content" style="background: #0d1117;">
+                                                <div class="mock-line-main" style="background: #e6edf3;"></div>
+                                                <div class="mock-line-sub"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>GitHub</span>
+                                </div>
+                                <div class="theme-option" data-theme="catppuccin">
+                                    <div class="theme-preview" style="background: #1e1e2e;">
+                                        <div class="preview-header" style="background: #181825;">
+                                            <div class="mock-dots"></div>
+                                        </div>
+                                        <div class="preview-body">
+                                            <div class="preview-sidebar" style="background: #181825;">
+                                                <div class="mock-item" style="background: #cba6f7;"></div>
+                                                <div class="mock-item" style="background: #89b4fa;"></div>
+                                            </div>
+                                            <div class="preview-content" style="background: #1e1e2e;">
+                                                <div class="mock-line-main" style="background: #cdd6f4;"></div>
+                                                <div class="mock-line-sub"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>Catppuccin</span>
                                 </div>
                                 <div class="theme-option" data-theme="blue">
                                     <div class="theme-preview" style="background: #0f172a;">
@@ -178,23 +214,41 @@ export const modalsHTML = `
                                     </div>
                                     <span>Azul</span>
                                 </div>
-                                <div class="theme-option" data-theme="forest">
-                                    <div class="theme-preview" style="background: #06170d;">
-                                        <div class="preview-header" style="background: #0d2818;">
+                                <div class="theme-option" data-theme="matcha">
+                                    <div class="theme-preview" style="background: #151e18;">
+                                        <div class="preview-header" style="background: #1d2a22;">
                                             <div class="mock-dots"></div>
                                         </div>
                                         <div class="preview-body">
-                                            <div class="preview-sidebar" style="background: #091f13;">
-                                                <div class="mock-item" style="background: #2ec4b6;"></div>
-                                                <div class="mock-item" style="background: #2ec4b6;"></div>
+                                            <div class="preview-sidebar" style="background: #1d2a22;">
+                                                <div class="mock-item" style="background: #52b788;"></div>
+                                                <div class="mock-item" style="background: #52b788;"></div>
                                             </div>
-                                            <div class="preview-content" style="background: #06170d;">
-                                                <div class="mock-line-main"></div>
+                                            <div class="preview-content" style="background: #151e18;">
+                                                <div class="mock-line-main" style="background: #e8f5e9;"></div>
                                                 <div class="mock-line-sub"></div>
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Bosque</span>
+                                    <span>Matcha</span>
+                                </div>
+                                <div class="theme-option" data-theme="unq">
+                                    <div class="theme-preview" style="background: #0a0a0a;">
+                                        <div class="preview-header" style="background: #141414;">
+                                            <div class="mock-dots"></div>
+                                        </div>
+                                        <div class="preview-body">
+                                            <div class="preview-sidebar" style="background: #0f0f0f;">
+                                                <div class="mock-item" style="background: #990000;"></div>
+                                                <div class="mock-item" style="background: #990000;"></div>
+                                            </div>
+                                            <div class="preview-content" style="background: #0a0a0a;">
+                                                <div class="mock-line-main" style="background: #e5e5e5;"></div>
+                                                <div class="mock-line-sub"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>UNQ</span>
                                 </div>
                                 <div class="theme-option" data-theme="sunset">
                                     <div class="theme-preview" style="background: #1c0f13;">
@@ -213,43 +267,7 @@ export const modalsHTML = `
                                         </div>
                                     </div>
                                     <span>Atardecer</span>
-                                </div>
-                                <div class="theme-option" data-theme="zenith">
-                                    <div class="theme-preview" style="background: #0b0d14;">
-                                        <div class="preview-header" style="background: #121520;">
-                                            <div class="mock-dots"></div>
-                                        </div>
-                                        <div class="preview-body">
-                                            <div class="preview-sidebar" style="background: #0e101a;">
-                                                <div class="mock-item" style="background: #6366f1;"></div>
-                                                <div class="mock-item" style="background: #6366f1;"></div>
-                                            </div>
-                                            <div class="preview-content" style="background: #0b0d14;">
-                                                <div class="mock-line-main"></div>
-                                                <div class="mock-line-sub"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span>Zénith</span>
-                                </div>
-                                <div class="theme-option" data-theme="carbon">
-                                    <div class="theme-preview" style="background: #000000;">
-                                        <div class="preview-header" style="background: #0a0a0a;">
-                                            <div class="mock-dots"></div>
-                                        </div>
-                                        <div class="preview-body">
-                                            <div class="preview-sidebar" style="background: #050505;">
-                                                <div class="mock-item" style="background: #ffffff;"></div>
-                                                <div class="mock-item" style="background: #ffffff;"></div>
-                                            </div>
-                                            <div class="preview-content" style="background: #000000;">
-                                                <div class="mock-line-main" style="background: #ffffff;"></div>
-                                                <div class="mock-line-sub"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span>Carbón</span>
-                                </div>
+                                </div> </div>
                             </div>
                         </div>
 

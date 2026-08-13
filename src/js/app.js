@@ -2240,7 +2240,7 @@ class EscribaApp {
         }
 
         if (cloudActions) {
-            cloudActions.style.display = (!isLocal && this.github?.isAuthenticated) ? 'block' : 'none';
+            cloudActions.style.display = isLocal ? 'none' : 'block';
         }
 
         if (localPathDisplay) {
@@ -2250,21 +2250,21 @@ class EscribaApp {
 
     updateStorageStatusDisplay() {
         const isLocal = (this.settings.storageMode || 'github') === 'local';
-        const githubStatus = document.getElementById('githubStatus');
-        const statusText = document.getElementById('githubStatusText');
-        const statusIcon = githubStatus?.querySelector('i');
+        const githubControls = document.querySelector('.github-controls');
         const syncButtons = document.getElementById('syncButtons');
 
         this.updateStorageUI();
 
+        if (githubControls) {
+            githubControls.style.display = isLocal ? 'none' : 'flex';
+        }
+
+        if (syncButtons) {
+            syncButtons.style.display = isLocal ? 'none' : 'flex';
+        }
+
         if (isLocal) {
-            if (githubStatus && statusText) {
-                githubStatus.classList.remove('syncing', 'error', 'disconnected');
-                githubStatus.classList.add('connected');
-                if (statusIcon) statusIcon.className = 'fas fa-desktop';
-                statusText.textContent = 'Disco Local';
-            }
-            if (syncButtons) syncButtons.style.display = 'none';
+            this.stopAutoSync();
         } else {
             const hasGitHubToken = !!localStorage.getItem('github_access_token');
             this.handleGitHubStatusChange(hasGitHubToken ? 'connected' : 'disconnected');
@@ -2782,6 +2782,7 @@ class EscribaApp {
     }
 
     async handleGitHubAuth(silent = false) {
+        if ((this.settings.storageMode || 'github') === 'local') return;
         if (this.isViewingSharedNote || this.isViewingSharedSubject) {
             console.log('Skipping GitHub Auth/Sync in shared view mode');
             return;
@@ -4109,6 +4110,8 @@ class EscribaApp {
     }
 
     handleGitHubStatusChange(status, error) {
+        const isLocal = (this.settings.storageMode || 'github') === 'local';
+        const githubControls = document.querySelector('.github-controls');
         const githubStatus = document.getElementById('githubStatus');
         const statusText = document.getElementById('githubStatusText');
         const statusIcon = githubStatus?.querySelector('i');
@@ -4117,6 +4120,17 @@ class EscribaApp {
         const settingsSyncStatus = document.getElementById('settingsSyncStatus');
         const settingsSyncButton = document.getElementById('settingsSyncButton');
         const cloudActions = document.getElementById('cloudActionsArea');
+
+        if (githubControls) {
+            githubControls.style.display = isLocal ? 'none' : 'flex';
+        }
+
+        if (isLocal) {
+            if (syncButtons) syncButtons.style.display = 'none';
+            if (cloudActions) cloudActions.style.display = 'none';
+            this.stopAutoSync();
+            return;
+        }
 
         if (!githubStatus || !statusText) return;
 
@@ -4157,11 +4171,11 @@ class EscribaApp {
             default:
                 githubStatus.classList.add('disconnected');
                 statusText.textContent = 'No conectado';
-                if (syncButtons) syncButtons.style.display = 'none';
+                if (syncButtons) syncButtons.style.display = 'flex';
                 if (modalDisconnect) modalDisconnect.style.display = 'none';
                 if (settingsSyncStatus) settingsSyncStatus.textContent = 'No conectado a GitHub';
                 if (settingsSyncButton) settingsSyncButton.style.display = 'flex';
-                if (cloudActions) cloudActions.style.display = 'none';
+                if (cloudActions) cloudActions.style.display = 'block';
                 this.stopAutoSync();
                 break;
         }

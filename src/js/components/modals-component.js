@@ -122,7 +122,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Oscuro Pro</span>
+                                    <span>Oscuro</span>
                                 </div>
                                 <div class="theme-option" data-theme="unq">
                                     <div class="theme-preview" style="background: #0a0a0a;">
@@ -140,7 +140,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Rojo UNQ</span>
+                                    <span>UNQ</span>
                                 </div>
                                 <div class="theme-option" data-theme="light">
                                     <div class="theme-preview" style="background: #f8f9fa;">
@@ -158,7 +158,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Claro Limpio</span>
+                                    <span>Claro</span>
                                 </div>
                                 <div class="theme-option" data-theme="blue">
                                     <div class="theme-preview" style="background: #0f172a;">
@@ -176,7 +176,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Azul Noche</span>
+                                    <span>Azul</span>
                                 </div>
                                 <div class="theme-option" data-theme="forest">
                                     <div class="theme-preview" style="background: #06170d;">
@@ -194,7 +194,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Bosque Encantado</span>
+                                    <span>Bosque</span>
                                 </div>
                                 <div class="theme-option" data-theme="sunset">
                                     <div class="theme-preview" style="background: #1c0f13;">
@@ -212,7 +212,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Atardecer Neón</span>
+                                    <span>Atardecer</span>
                                 </div>
                                 <div class="theme-option" data-theme="zenith">
                                     <div class="theme-preview" style="background: #0b0d14;">
@@ -230,7 +230,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Zénith Deep</span>
+                                    <span>Zénith</span>
                                 </div>
                                 <div class="theme-option" data-theme="carbon">
                                     <div class="theme-preview" style="background: #000000;">
@@ -248,7 +248,7 @@ export const modalsHTML = `
                                             </div>
                                         </div>
                                     </div>
-                                    <span>Carbón Puro</span>
+                                    <span>Carbón</span>
                                 </div>
                             </div>
                         </div>

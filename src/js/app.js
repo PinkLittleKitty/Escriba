@@ -37,6 +37,7 @@ import {
     syncUMLAceTheme
 } from './modules/editor/uml-manager.js';
 import { GitHubManager } from './modules/github/github-manager.js';
+import { localFileManager } from './modules/storage/local-file-manager.js';
 import {
     renderSubjects,
     renderRecentNotes,
@@ -187,11 +188,11 @@ class EscribaApp {
         }, 100);
 
         this.setupAutoSync();
+        this.initStorageModeListeners();
+        this.updateStorageStatusDisplay();
 
         const hasGitHubToken = !!localStorage.getItem('github_access_token');
-        this.handleGitHubStatusChange(hasGitHubToken ? 'connected' : 'disconnected');
-
-        if (hasGitHubToken) {
+        if (hasGitHubToken && this.settings.storageMode !== 'local') {
             this.handleGitHubAuth(true);
         }
 
@@ -324,7 +325,7 @@ class EscribaApp {
             mermaid.initialize({
                 startOnLoad: false,
                 suppressErrorRendering: true,
-                parseError: () => {},
+                parseError: () => { },
                 theme: mermaidTheme,
                 securityLevel: 'loose',
                 fontFamily: 'Inter, Arial, sans-serif',
@@ -400,6 +401,7 @@ class EscribaApp {
         document.getElementById('settingsBtn').addEventListener('click', () => {
             this.updateSettingsStats();
             loadSettingsToModal(this.settings);
+            this.updateStorageUI();
             showModal('settingsModal');
         });
 
@@ -2055,6 +2057,9 @@ class EscribaApp {
         const expandSubjects = document.getElementById('expandSubjects').checked;
         const showWelcome = document.getElementById('showWelcome').checked;
 
+        const storageModeRadio = document.querySelector('input[name="storageMode"]:checked');
+        const storageMode = storageModeRadio ? storageModeRadio.value : 'github';
+
         this.settings = {
             theme,
             fontFamily,
@@ -2062,13 +2067,171 @@ class EscribaApp {
             autoSave,
             autoSync,
             expandSubjects,
-            showWelcome
+            showWelcome,
+            storageMode
         };
 
         saveSettings(this.settings);
         applySettings();
+        this.updateStorageStatusDisplay();
         hideModal('settingsModal');
         showToast('Configuración guardada', 'success');
+    }
+
+    initStorageModeListeners() {
+        const storageRadios = document.querySelectorAll('input[name="storageMode"]');
+        storageRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isLocal = e.target.value === 'local';
+                const githubSection = document.getElementById('githubSyncSection');
+                const localSection = document.getElementById('localStorageSection');
+                const modeGithubCard = document.getElementById('modeGithubCard');
+                const modeLocalCard = document.getElementById('modeLocalCard');
+
+                if (modeGithubCard && modeLocalCard) {
+                    modeGithubCard.classList.toggle('active', !isLocal);
+                    modeLocalCard.classList.toggle('active', isLocal);
+                }
+
+                if (githubSection && localSection) {
+                    githubSection.style.display = isLocal ? 'none' : 'block';
+                    localSection.style.display = isLocal ? 'block' : 'none';
+                }
+
+                const localPathDisplay = document.getElementById('localFolderPathDisplay');
+                if (localPathDisplay) {
+                    localPathDisplay.textContent = localFileManager.getActivePath();
+                }
+            });
+        });
+
+        const selectFolderBtn = document.getElementById('selectLocalFolderBtn');
+        if (selectFolderBtn) {
+            selectFolderBtn.addEventListener('click', async () => {
+                const path = await localFileManager.selectCustomFolder();
+                if (path) {
+                    const display = document.getElementById('localFolderPathDisplay');
+                    if (display) display.textContent = path;
+                    showToast('Carpeta local seleccionada: ' + path, 'success');
+                }
+            });
+        }
+
+        const openFolderBtn = document.getElementById('openLocalFolderBtn');
+        if (openFolderBtn) {
+            openFolderBtn.addEventListener('click', async () => {
+                await localFileManager.openLocalDirectory();
+                showToast('Carpeta local abierta', 'info');
+            });
+        }
+
+        const resetFolderBtn = document.getElementById('resetLocalFolderBtn');
+        if (resetFolderBtn) {
+            resetFolderBtn.addEventListener('click', () => {
+                localFileManager.setCustomPath(null);
+                const display = document.getElementById('localFolderPathDisplay');
+                if (display) display.textContent = localFileManager.getDefaultPath();
+                showToast('Carpeta restablecida a predeterminada', 'info');
+            });
+        }
+
+        const saveLocalNowBtn = document.getElementById('saveLocalNowBtn');
+        if (saveLocalNowBtn) {
+            saveLocalNowBtn.addEventListener('click', () => {
+                const success = localFileManager.saveAllData({
+                    subjects: this.subjects,
+                    events: this.events,
+                    settings: this.settings,
+                    deletedItems: this.deletedItems
+                });
+                if (success) {
+                    showToast('Todos los datos guardados en disco local', 'success');
+                } else {
+                    showToast('Error al guardar datos en disco local', 'error');
+                }
+            });
+        }
+
+        const loadLocalNowBtn = document.getElementById('loadLocalNowBtn');
+        if (loadLocalNowBtn) {
+            loadLocalNowBtn.addEventListener('click', () => {
+                const loaded = localFileManager.loadAllData();
+                if (loaded && Array.isArray(loaded.subjects)) {
+                    this.subjects = loaded.subjects;
+                    this.events = loaded.events || [];
+                    if (loaded.settings) this.settings = { ...this.settings, ...loaded.settings };
+                    this.deletedItems = loaded.deletedItems || { notes: [], subjects: [] };
+
+                    saveSubjects(this.subjects);
+                    saveEvents(this.events);
+                    saveSettings(this.settings);
+                    saveDeletedItems(this.deletedItems);
+
+                    this.renderAll();
+                    showToast('Datos cargados desde disco local', 'success');
+                } else {
+                    showToast('No se encontraron datos en la carpeta local', 'warning');
+                }
+            });
+        }
+    }
+
+    updateStorageUI() {
+        const isLocal = (this.settings.storageMode || 'github') === 'local';
+        const storageGithubRadio = document.getElementById('storageModeGithub');
+        const storageLocalRadio = document.getElementById('storageModeLocal');
+        const modeGithubCard = document.getElementById('modeGithubCard');
+        const modeLocalCard = document.getElementById('modeLocalCard');
+        const githubSection = document.getElementById('githubSyncSection');
+        const localSection = document.getElementById('localStorageSection');
+        const cloudActions = document.getElementById('cloudActionsArea');
+        const localPathDisplay = document.getElementById('localFolderPathDisplay');
+
+        if (storageGithubRadio && storageLocalRadio) {
+            storageGithubRadio.checked = !isLocal;
+            storageLocalRadio.checked = isLocal;
+        }
+
+        if (modeGithubCard && modeLocalCard) {
+            modeGithubCard.classList.toggle('active', !isLocal);
+            modeLocalCard.classList.toggle('active', isLocal);
+        }
+
+        if (githubSection && localSection) {
+            githubSection.style.display = isLocal ? 'none' : 'block';
+            localSection.style.display = isLocal ? 'block' : 'none';
+        }
+
+        if (cloudActions) {
+            cloudActions.style.display = (!isLocal && this.github?.isAuthenticated) ? 'block' : 'none';
+        }
+
+        if (localPathDisplay) {
+            localPathDisplay.textContent = localFileManager.getActivePath();
+        }
+    }
+
+    updateStorageStatusDisplay() {
+        const isLocal = (this.settings.storageMode || 'github') === 'local';
+        const githubStatus = document.getElementById('githubStatus');
+        const statusText = document.getElementById('githubStatusText');
+        const statusIcon = githubStatus?.querySelector('i');
+        const syncButtons = document.getElementById('syncButtons');
+
+        this.updateStorageUI();
+
+        if (isLocal) {
+            if (githubStatus && statusText) {
+                githubStatus.classList.remove('syncing', 'error', 'disconnected');
+                githubStatus.classList.add('connected');
+                if (statusIcon) statusIcon.className = 'fas fa-desktop';
+                statusText.textContent = 'Disco Local';
+            }
+            if (syncButtons) syncButtons.style.display = 'none';
+        } else {
+            const hasGitHubToken = !!localStorage.getItem('github_access_token');
+            this.handleGitHubStatusChange(hasGitHubToken ? 'connected' : 'disconnected');
+        }
     }
 
     cancelSettings() {

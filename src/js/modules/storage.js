@@ -1,4 +1,5 @@
 import { sanitizeText, cleanNoteContent, generateId } from '../utils/helpers.js';
+import { localFileManager } from './storage/local-file-manager.js';
 
 const STORAGE_KEY = 'cuadernoDigital';
 const EVENTS_KEY = 'cuadernoEvents';
@@ -72,12 +73,43 @@ export const validateAndCleanEvents = (events) => {
     }));
 };
 
+const isLocalDiskMode = () => {
+    try {
+        const rawSettings = localStorage.getItem(SETTINGS_KEY);
+        if (rawSettings) {
+            const parsed = JSON.parse(rawSettings);
+            return parsed.storageMode === 'local';
+        }
+    } catch (e) { }
+    return localStorage.getItem('storage_mode') === 'local';
+};
+
 export const loadAllData = () => {
     try {
-        const rawSubjects = localStorage.getItem(STORAGE_KEY);
-        const rawEvents = localStorage.getItem(EVENTS_KEY);
-        const rawSettings = localStorage.getItem(SETTINGS_KEY);
-        const rawDeletedItems = localStorage.getItem(DELETED_ITEMS_KEY);
+        let rawSubjects = localStorage.getItem(STORAGE_KEY);
+        let rawEvents = localStorage.getItem(EVENTS_KEY);
+        let rawSettings = localStorage.getItem(SETTINGS_KEY);
+        let rawDeletedItems = localStorage.getItem(DELETED_ITEMS_KEY);
+
+        if (isLocalDiskMode() && localFileManager.isAvailable()) {
+            const diskData = localFileManager.loadAllData();
+            if (diskData && Array.isArray(diskData.subjects)) {
+                console.log('Cargando datos primarios desde Disco Local (%appdata% / ~/.config)');
+                const data = {
+                    subjects: validateAndCleanSubjects(diskData.subjects),
+                    events: validateAndCleanEvents(diskData.events),
+                    settings: diskData.settings || (rawSettings ? JSON.parse(rawSettings) : null),
+                    deletedItems: diskData.deletedItems || { notes: [], subjects: [] }
+                };
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.subjects));
+                localStorage.setItem(EVENTS_KEY, JSON.stringify(data.events));
+                if (data.settings) localStorage.setItem(SETTINGS_KEY, JSON.stringify(data.settings));
+                localStorage.setItem(DELETED_ITEMS_KEY, JSON.stringify(data.deletedItems));
+
+                return data;
+            }
+        }
 
         console.log('Cargando todos los datos desde localStorage...');
 
@@ -96,21 +128,39 @@ export const loadAllData = () => {
     }
 };
 
+export const syncToLocalDiskIfNeeded = () => {
+    if (isLocalDiskMode() && localFileManager.isAvailable()) {
+        const rawSubjects = localStorage.getItem(STORAGE_KEY);
+        const rawEvents = localStorage.getItem(EVENTS_KEY);
+        const rawSettings = localStorage.getItem(SETTINGS_KEY);
+        const rawDeletedItems = localStorage.getItem(DELETED_ITEMS_KEY);
+
+        localFileManager.saveAllData({
+            subjects: rawSubjects ? JSON.parse(rawSubjects) : [],
+            events: rawEvents ? JSON.parse(rawEvents) : [],
+            settings: rawSettings ? JSON.parse(rawSettings) : {},
+            deletedItems: rawDeletedItems ? JSON.parse(rawDeletedItems) : { notes: [], subjects: [] }
+        });
+    }
+};
+
 export const saveSubjects = (subjects) => {
     console.debug(`Guardando materias (${subjects.length})...`);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
+    syncToLocalDiskIfNeeded();
 };
 
 export const saveEvents = (events) => {
     console.debug(`Guardando eventos (${events.length})...`);
     localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+    syncToLocalDiskIfNeeded();
 };
 
 export const saveSettings = (settings) => {
     console.debug('Guardando nueva configuración.');
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    syncToLocalDiskIfNeeded();
 };
-
 
 export const loadDeletedItems = () => {
     const raw = localStorage.getItem(DELETED_ITEMS_KEY);
@@ -120,6 +170,7 @@ export const loadDeletedItems = () => {
 export const saveDeletedItems = (deletedItems) => {
     console.debug('Guardando elementos eliminados.');
     localStorage.setItem(DELETED_ITEMS_KEY, JSON.stringify(deletedItems));
+    syncToLocalDiskIfNeeded();
 };
 
 export const addDeletedItem = (id, type) => {

@@ -463,7 +463,7 @@
                         <i class="fas fa-paint-brush"></i> Apariencia
                     </button>
                     <button class="settings-tab-btn" data-tab="tab-sync">
-                        <i class="fab fa-github"></i> Sincronización
+                        <i class="fas fa-hard-drive"></i> Almacenamiento & Sync
                     </button>
                     <button class="settings-tab-btn" data-tab="tab-datos">
                         <i class="fas fa-database"></i> Datos y Carpeta
@@ -693,7 +693,36 @@
 
                     <div class="settings-tab-panel" id="tab-sync">
                         <div class="settings-section">
-                            <h4><i class="fab fa-github"></i> GitHub Sync</h4>
+                            <h4><i class="fas fa-hard-drive"></i> Modo de Almacenamiento</h4>
+                            <p class="settings-help-text" style="margin-bottom: 12px; font-size: 0.9em; opacity: 0.8;">
+                                Elegí dónde querés guardar y respaldar tus apuntes.</p>
+                            <div class="storage-mode-selector">
+                                <label class="storage-option-card active" id="modeGithubCard">
+                                    <input type="radio" name="storageMode" value="github" id="storageModeGithub"
+                                        checked>
+                                    <div class="storage-card-content">
+                                        <div class="storage-card-icon"><i class="fab fa-github"></i></div>
+                                        <div class="storage-card-info">
+                                            <strong>GitHub</strong>
+                                            <span>Sincronizá tus apuntes entre distintos dispositivos con GitHub.</span>
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="storage-option-card" id="modeLocalCard">
+                                    <input type="radio" name="storageMode" value="local" id="storageModeLocal">
+                                    <div class="storage-card-content">
+                                        <div class="storage-card-icon"><i class="fas fa-desktop"></i></div>
+                                        <div class="storage-card-info">
+                                            <strong>Disco Local (Offline)</strong>
+                                            <span>Guardá tus apuntes en la carpeta de tu equipo</span>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-section" id="githubSyncSection">
+                            <h4><i class="fab fa-github"></i> Sincronización GitHub</h4>
                             <div class="sync-settings">
                                 <div class="form-group">
                                     <div class="sync-info-box" id="syncInfo">
@@ -719,6 +748,45 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="settings-section" id="localStorageSection" style="display: none;">
+                            <h4><i class="fas fa-folder-open"></i> Configuración de Carpeta Local</h4>
+                            <div class="local-storage-settings">
+                                <div class="form-group">
+                                    <label style="font-weight: 500; font-size: 0.9em;">Carpeta local donde se guardan
+                                        tus apuntes:</label>
+                                    <div class="local-path-display-box"
+                                        style="margin-top: 6px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                                        <code id="localFolderPathDisplay"
+                                            style="word-break: break-all; font-family: monospace;">C:\Users\...</code>
+                                    </div>
+                                </div>
+                                <div class="sync-actions-group"
+                                    style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+                                    <button class="btn btn-secondary" id="selectLocalFolderBtn"
+                                        title="Cambiar la carpeta en donde se guardan los archivos">
+                                        <i class="fas fa-folder-plus"></i> Seleccionar Carpeta...
+                                    </button>
+                                    <button class="btn btn-secondary" id="openLocalFolderBtn"
+                                        title="Abrir la carpeta local en el explorador de archivos">
+                                        <i class="fas fa-external-link-alt"></i> Abrir Carpeta
+                                    </button>
+                                    <button class="btn btn-ghost" id="resetLocalFolderBtn"
+                                        title="Volver a la carpeta predeterminada (%appdata% / ~/.config)">
+                                        <i class="fas fa-undo"></i> Restablecer
+                                    </button>
+                                </div>
+                                <div class="cloud-actions-grid" style="margin-top: 16px;">
+                                    <button class="btn btn-secondary" id="saveLocalNowBtn">
+                                        <i class="fas fa-save"></i> Guardar Ahora
+                                    </button>
+                                    <button class="btn btn-secondary" id="loadLocalNowBtn">
+                                        <i class="fas fa-file-import"></i> Recargar desde Disco
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="settings-section" id="cloudActionsArea" style="display:none;">
                             <h4><i class="fas fa-cloud"></i> Acciones Directas</h4>
                             <div class="cloud-actions-grid">

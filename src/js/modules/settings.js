@@ -40,5 +40,15 @@ export const loadSettingsToModal = (settings) => {
 
     const showWelcomeEl = document.getElementById('showWelcome');
     if (showWelcomeEl) showWelcomeEl.checked = settings.showWelcome !== false;
-};
 
+    const storageMode = settings.storageMode || 'github';
+    const storageGithubRadio = document.getElementById('storageModeGithub');
+    const storageLocalRadio = document.getElementById('storageModeLocal');
+    if (storageGithubRadio && storageLocalRadio) {
+        if (storageMode === 'local') {
+            storageLocalRadio.checked = true;
+        } else {
+            storageGithubRadio.checked = true;
+        }
+    }
+};

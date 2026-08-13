@@ -1,3 +1,4 @@
+import { loadComponents } from './components/component-loader.js';
 import {
     loadAllData,
     saveSubjects as originalSaveSubjects,
@@ -4931,6 +4932,8 @@ class EscribaGraph {
         requestAnimationFrame(() => this.animate());
     }
 }
+
+loadComponents();
 
 const app = new EscribaApp();
 window.cuaderno = app;

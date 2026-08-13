@@ -442,22 +442,20 @@ export const modalsHTML = `
                     <div class="settings-tab-panel" id="tab-ayuda">
                         <div class="settings-about">
                             <div class="about-logo">
-                                <i class="fa-solid fa-book-open"></i>
+                                <div class="about-icon-badge">
+                                    <i class="fa-solid fa-book-open"></i>
+                                </div>
                                 <h2>Escriba</h2>
                                 <p>Tu carpeta digital de estudio</p>
                             </div>
                             <div class="about-info">
                                 <div class="about-item">
-                                    <span class="about-label">Versión</span>
-                                    <span class="about-value">1.0.0</span>
+                                    <span class="about-label">Build</span>
+                                    <span class="about-value" id="appBuildDisplay">nightly</span>
                                 </div>
                                 <div class="about-item">
-                                    <span class="about-label">Desarrollador</span>
-                                    <span class="about-value">Santiago</span>
-                                </div>
-                                <div class="about-item">
-                                    <span class="about-label">Estado</span>
-                                    <span class="about-value" style="color: var(--accent-green);">Estable</span>
+                                    <span class="about-label">Desarrollado por</span>
+                                    <span class="about-value">JustNeki</span>
                                 </div>
                                 <div class="about-item">
                                     <span class="about-label">Código Fuente</span>

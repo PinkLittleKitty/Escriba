@@ -168,6 +168,7 @@ class EscribaApp {
         applySettings();
         this.loadSidebarState();
         this.initMermaid();
+        this.initAboutSection();
 
         await this.checkForSharedNote();
 
@@ -294,6 +295,25 @@ class EscribaApp {
             }
         } catch (error) {
             console.error('Error checking for updates:', error);
+        }
+    }
+
+    async initAboutSection() {
+        const appBuildDisplay = document.getElementById('appBuildDisplay');
+        if (!appBuildDisplay) return;
+
+        if (window.require) {
+            try {
+                const { ipcRenderer } = window.require('electron');
+                const info = await ipcRenderer.invoke('get-app-version');
+                if (info && info.version && info.version !== '1.0.0') {
+                    appBuildDisplay.textContent = info.version.includes('-b')
+                        ? `Build #${info.version.split('-b')[1]}`
+                        : info.version;
+                }
+            } catch (e) {
+                console.log('IPC get-app-version fallback', e);
+            }
         }
     }
 

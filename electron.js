@@ -61,3 +61,11 @@ ipcMain.handle('open-local-folder', async (event, folderPath) => {
     return true;
 });
 
+ipcMain.handle('get-app-version', () => {
+    return {
+        version: app.getVersion(),
+        name: app.getName(),
+        isPackaged: app.isPackaged
+    };
+});
+

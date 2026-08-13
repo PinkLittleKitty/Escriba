@@ -267,7 +267,7 @@ export const modalsHTML = `
                                         </div>
                                     </div>
                                     <span>Atardecer</span>
-                                </div> </div>
+                                </div>
                             </div>
                         </div>
 

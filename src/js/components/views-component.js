@@ -60,11 +60,11 @@ export const viewsHTML = `
                         title="Lenguaje para bloques de código" style="display: none;">
                         <option value="javascript">JavaScript</option>
                         <option value="python">Python</option>
+                        <option value="java">Java</option>
                         <option value="html">HTML</option>
                         <option value="css">CSS</option>
                         <option value="json">JSON</option>
                         <option value="markdown">Markdown</option>
-                        <option value="text"><i class="fas fa-file-alt"></i> Texto plano</option>
                     </select>
                     <div class="note-meta">
                         <button id="favoriteBtn" class="btn btn-icon" title="Marcar como favorito">

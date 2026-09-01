@@ -117,8 +117,9 @@ export const NoteEditor = () => {
         editor.session.on('change', () => {
           const val = editor.getValue();
           container.setAttribute('data-code', val);
-          if (autoSave !== false && currentNote) {
-            debouncedSave(currentNote.id, title, contentRef.current?.innerHTML || '');
+          const note = currentNoteRef.current;
+          if (autoSave !== false && note) {
+            debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
           }
         });
 
@@ -127,16 +128,27 @@ export const NoteEditor = () => {
 
         const parentBlock = container.closest('.code-block-container');
         if (parentBlock) {
+          const titleEl = parentBlock.querySelector('.code-block-title');
+          if (titleEl && (titleEl.querySelector('i') || !titleEl.querySelector('svg'))) {
+            const text = titleEl.textContent?.trim() || 'Bloque de Código';
+            titleEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg> ${text}`;
+          }
+
           const deleteBtn = parentBlock.querySelector('.code-block-delete-btn');
           if (deleteBtn) {
+            if (deleteBtn.querySelector('i') || !deleteBtn.querySelector('svg')) {
+              deleteBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+            }
+
             deleteBtn.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
               editor.destroy();
               aceEditorsRef.current.delete(container);
               parentBlock.remove();
-              if (currentNote) {
-                debouncedSave(currentNote.id, title, contentRef.current?.innerHTML || '');
+              const note = currentNoteRef.current;
+              if (note) {
+                debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
               }
             };
           }

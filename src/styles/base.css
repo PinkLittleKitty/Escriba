@@ -236,6 +236,22 @@ textarea:focus-visible {
   padding: 0 !important;
 }
 
+.code-block-delete-btn svg {
+  width: 13px !important;
+  height: 13px !important;
+  stroke: currentColor !important;
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+
+.code-block-title svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke: currentColor !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+}
+
 .code-block-delete-btn:hover {
   background: var(--accent-red-bg) !important;
   color: var(--accent-red) !important;

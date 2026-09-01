@@ -1,13 +1,18 @@
 {
   "name": "cuaderno-digital",
   "version": "1.0.0",
+  "type": "module",
   "author": "Santiago",
   "description": "Digital notebook application with cross-device sync",
   "main": "electron.js",
   "scripts": {
-    "electron:start": "electron .",
-    "electron:build": "electron-builder --publish never",
-    "mobile:prepare": "node scripts/prepare-mobile.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:start": "npm run build && electron .",
+    "electron:dev": "electron .",
+    "electron:build": "npm run build && electron-builder --publish never",
+    "mobile:prepare": "npm run build",
     "mobile:sync": "npm run mobile:prepare && npx cap sync android",
     "mobile:build": "npm run mobile:sync && chmod +x android/gradlew && cd android && ./gradlew assembleDebug",
     "mobile:assets": "npx @capacitor/assets generate --android"
@@ -17,9 +22,11 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.6.1",
     "@capacitor/core": "^8.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "electron": "^41.1.0",
     "electron-builder": "^26.8.1",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "vite": "^8.2.2"
   },
   "build": {
     "appId": "com.santiago.escriba",
@@ -49,5 +56,14 @@
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "ace-builds": "^1.44.0",
+    "katex": "^0.18.5",
+    "lucide-react": "^1.38.0",
+    "mermaid": "^11.17.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.15"
   }
 }

@@ -1,0 +1,431 @@
+import React, { useState, useEffect, useRef } from 'react';
+import ace from 'ace-builds';
+import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/mode-python';
+import 'ace-builds/src-noconflict/mode-java';
+import 'ace-builds/src-noconflict/mode-c_cpp';
+import 'ace-builds/src-noconflict/mode-html';
+import 'ace-builds/src-noconflict/mode-css';
+import 'ace-builds/src-noconflict/mode-json';
+import 'ace-builds/src-noconflict/mode-markdown';
+import 'ace-builds/src-noconflict/mode-sql';
+import 'ace-builds/src-noconflict/theme-tomorrow_night';
+import 'ace-builds/src-noconflict/theme-github';
+import 'ace-builds/src-noconflict/theme-monokai';
+
+import {
+  Star,
+  Printer,
+  Share2,
+  Trash2,
+  FileText,
+  Clock,
+  Link as LinkIcon
+} from 'lucide-react';
+import { useNotesStore } from '../../store/useNotesStore.js';
+import { useUIStore } from '../../store/useUIStore.js';
+import { useSettingsStore } from '../../store/useSettingsStore.js';
+import { EditorToolbar } from './EditorToolbar.jsx';
+import { formatDate, calculateReadingStats, debounce } from '../../utils/helpers.js';
+import styles from './NoteEditor.module.css';
+
+export const NoteEditor = () => {
+  const subjects = useNotesStore((state) => state.subjects);
+  const activeSubjectId = useNotesStore((state) => state.activeSubjectId);
+  const activeNoteId = useNotesStore((state) => state.activeNoteId);
+
+  const updateNote = useNotesStore((state) => state.updateNote);
+  const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
+  const deleteNote = useNotesStore((state) => state.deleteNote);
+  const setActiveNote = useNotesStore((state) => state.setActiveNote);
+
+  const addToast = useUIStore((state) => state.addToast);
+  const autoSave = useSettingsStore((state) => state.autoSave);
+  const theme = useSettingsStore((state) => state.theme);
+
+  const contentRef = useRef(null);
+  const aceEditorsRef = useRef(new Map());
+
+  let currentSubject = subjects.find((s) => s.id === activeSubjectId);
+  let currentNote = null;
+
+  for (const s of subjects) {
+    const found = s.notes.find((n) => n.id === activeNoteId);
+    if (found) {
+      currentNote = found;
+      currentSubject = s;
+      break;
+    }
+  }
+
+  const [title, setTitle] = useState('');
+  const [stats, setStats] = useState({ words: 0, chars: 0, readingTime: 0 });
+
+  const debouncedSave = useRef(
+    debounce((noteId, newTitle, newContent) => {
+      updateNote(noteId, { title: newTitle, content: newContent });
+    }, 400)
+  ).current;
+
+  const initAceEditors = () => {
+    if (!contentRef.current) return;
+    const containers = contentRef.current.querySelectorAll('.inline-ace-editor');
+
+    containers.forEach((container) => {
+      if (container.getAttribute('data-initialized') === 'true' && aceEditorsRef.current.has(container)) {
+        return;
+      }
+
+      if (!container.id) {
+        container.id = `ace-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      }
+
+      const code = container.getAttribute('data-code') || container.innerText || '// Escribí tu código acá...';
+      const lang = container.getAttribute('data-lang') || 'javascript';
+      const aceTheme = theme === 'light' || theme === 'sakura' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
+
+      container.innerHTML = '';
+      container.style.height = '110px';
+      container.style.minHeight = '60px';
+      container.style.position = 'relative';
+
+      try {
+        const editor = ace.edit(container.id, {
+          mode: `ace/mode/${lang}`,
+          theme: aceTheme,
+          maxLines: 40,
+          minLines: 3,
+          fontSize: 14,
+          fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
+          showPrintMargin: false,
+          tabSize: 4,
+          useSoftTabs: true,
+          highlightActiveLine: true,
+          wrap: true
+        });
+
+        editor.setValue(code, -1);
+
+        editor.session.on('change', () => {
+          const val = editor.getValue();
+          container.setAttribute('data-code', val);
+          if (autoSave !== false && currentNote) {
+            debouncedSave(currentNote.id, title, contentRef.current?.innerHTML || '');
+          }
+        });
+
+        container.setAttribute('data-initialized', 'true');
+        aceEditorsRef.current.set(container, editor);
+
+        const parentBlock = container.closest('.code-block-container');
+        if (parentBlock) {
+          const deleteBtn = parentBlock.querySelector('.code-block-delete-btn');
+          if (deleteBtn) {
+            deleteBtn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              editor.destroy();
+              aceEditorsRef.current.delete(container);
+              parentBlock.remove();
+              if (currentNote) {
+                debouncedSave(currentNote.id, title, contentRef.current?.innerHTML || '');
+              }
+            };
+          }
+        }
+      } catch (err) {
+        console.error('Error mounting Ace editor:', err);
+      }
+    });
+  };
+
+  useEffect(() => {
+    const aceTheme = theme === 'light' || theme === 'sakura' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
+    aceEditorsRef.current.forEach((editor) => {
+      try {
+        editor.setTheme(aceTheme);
+      } catch (e) { }
+    });
+  }, [theme]);
+
+  useEffect(() => {
+    aceEditorsRef.current.forEach((editor) => {
+      try {
+        editor.destroy();
+      } catch (e) { }
+    });
+    aceEditorsRef.current.clear();
+
+    if (currentNote) {
+      setTitle(currentNote.title || '');
+      if (contentRef.current) {
+        contentRef.current.innerHTML = currentNote.content || '';
+      }
+      setStats(calculateReadingStats(currentNote.content || ''));
+
+      setTimeout(() => {
+        initAceEditors();
+      }, 50);
+    }
+  }, [activeNoteId]);
+
+  const handleTitleChange = (e) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    if (currentNote && autoSave !== false) {
+      debouncedSave(currentNote.id, newTitle, contentRef.current?.innerHTML || '');
+    }
+  };
+
+  const handleContentInput = () => {
+    if (!currentNote || !contentRef.current) return;
+    const html = contentRef.current.innerHTML;
+    setStats(calculateReadingStats(html));
+
+    if (autoSave !== false) {
+      debouncedSave(currentNote.id, title, html);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleShare = () => {
+    if (!currentNote) return;
+    const textContent = contentRef.current?.innerText || currentNote.title;
+    if (navigator.share) {
+      navigator.share({
+        title: currentNote.title,
+        text: textContent
+      }).catch(() => { });
+    } else {
+      navigator.clipboard.writeText(textContent);
+      addToast({ message: 'Contenido del apunte copiado al portapapeles', type: 'success' });
+    }
+  };
+
+  const handleInsertTable = () => {
+    const tableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+        <thead>
+          <tr>
+            <th style="border: 1px solid var(--border-color); padding: 0.5rem; background: var(--bg-tertiary);">Columna 1</th>
+            <th style="border: 1px solid var(--border-color); padding: 0.5rem; background: var(--bg-tertiary);">Columna 2</th>
+            <th style="border: 1px solid var(--border-color); padding: 0.5rem; background: var(--bg-tertiary);">Columna 3</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border: 1px solid var(--border-color); padding: 0.5rem;">Dato A1</td>
+            <td style="border: 1px solid var(--border-color); padding: 0.5rem;">Dato B1</td>
+            <td style="border: 1px solid var(--border-color); padding: 0.5rem;">Dato C1</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><br></p>
+    `;
+    document.execCommand('insertHTML', false, tableHTML);
+  };
+
+  const handleInsertCodeBlock = () => {
+    const aceId = `ace-${Date.now()}`;
+    const initialCode = '// Escribí tu código acá...\n';
+    const blockHTML = `
+      <div class="code-block-container" contenteditable="false">
+        <div class="code-block-header">
+          <span class="code-block-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            Bloque de Código
+          </span>
+          <div class="code-block-actions">
+            <button type="button" class="code-block-delete-btn" title="Eliminar bloque">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div id="${aceId}" class="inline-ace-editor" data-code="${initialCode}"></div>
+      </div>
+      <p><br></p>
+    `;
+    document.execCommand('insertHTML', false, blockHTML);
+    setTimeout(() => {
+      initAceEditors();
+      if (currentNote) {
+        debouncedSave(currentNote.id, title, contentRef.current?.innerHTML || '');
+      }
+    }, 50);
+  };
+
+  const handleInsertMath = () => {
+    const mathHTML = `
+      <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan); margin: 1rem 0; font-family: var(--font-mono); font-size: 0.9rem;">
+        $$ f(x) = \\int_{-\\infty}^{\\infty} \\hat{f}(\\xi)\\,e^{2 \\pi i \\xi x}\\,d\\xi $$
+      </div>
+      <p></p>
+    `;
+    document.execCommand('insertHTML', false, mathHTML);
+  };
+
+  const handleInsertUML = () => {
+    const umlHTML = `
+      <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-purple); margin: 1rem 0; font-family: var(--font-mono); font-size: 0.85rem;">
+        graph TD<br>
+        &nbsp;&nbsp;A[Inicio] --&gt; B{¿Es correcto?}<br>
+        &nbsp;&nbsp;B --&gt;|Sí| C[Continuar]<br>
+        &nbsp;&nbsp;B --&gt;|No| D[Revisar]
+      </div>
+      <p></p>
+    `;
+    document.execCommand('insertHTML', false, umlHTML);
+  };
+
+  const backlinks = [];
+  if (currentNote && currentNote.title) {
+    const searchTarget = currentNote.title.toLowerCase();
+    subjects.forEach((s) => {
+      s.notes.forEach((n) => {
+        if (n.id !== currentNote.id && n.content && n.content.toLowerCase().includes(searchTarget)) {
+          backlinks.push({ note: n, subject: s });
+        }
+      });
+    });
+  }
+
+  if (!currentNote) {
+    return (
+      <div className={styles.editorContainer}>
+        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+          No hay ningún apunte seleccionado. Elegí uno del panel lateral o creá uno nuevo.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.editorContainer}>
+      <div className={styles.noteHeader}>
+        <div className={styles.titleSection}>
+          <input
+            type="text"
+            className={styles.titleInput}
+            value={title}
+            onChange={handleTitleChange}
+            placeholder="Apunte sin título"
+          />
+          {currentSubject && (
+            <div className={styles.breadcrumb}>
+              <span
+                className={styles.subjectDot}
+                style={{ backgroundColor: currentSubject.color || 'var(--accent-blue)' }}
+              />
+              <span>{currentSubject.name}</span>
+            </div>
+          )}
+        </div>
+
+        <div className={styles.metaActions}>
+          <button
+            type="button"
+            className={`btn-icon ${currentNote.favorite ? 'active' : ''}`}
+            onClick={() => toggleFavorite(currentNote.id)}
+            title={currentNote.favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
+          >
+            <Star
+              size={18}
+              fill={currentNote.favorite ? 'var(--accent-yellow)' : 'none'}
+              color={currentNote.favorite ? 'var(--accent-yellow)' : 'currentColor'}
+            />
+          </button>
+
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={handlePrint}
+            title="Imprimir / Exportar PDF"
+          >
+            <Printer size={18} />
+          </button>
+
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={handleShare}
+            title="Compartir apunte"
+          >
+            <Share2 size={18} />
+          </button>
+
+          <span className={styles.updatedDate}>
+            {formatDate(currentNote.updatedAt || currentNote.createdAt)}
+          </span>
+
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => deleteNote(currentNote.id)}
+            title="Eliminar apunte"
+            style={{ color: 'var(--accent-red)' }}
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
+      </div>
+
+      <EditorToolbar
+        onInsertCodeBlock={handleInsertCodeBlock}
+        onInsertMath={handleInsertMath}
+        onInsertUML={handleInsertUML}
+        onInsertTable={handleInsertTable}
+      />
+
+      <div className={styles.editorScrollArea}>
+        <div
+          ref={contentRef}
+          className={styles.editorBody}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleContentInput}
+          data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
+        />
+      </div>
+
+      {backlinks.length > 0 && (
+        <div className={styles.backlinksPanel}>
+          <div className={styles.backlinksHeader}>
+            <LinkIcon size={14} color="var(--accent-blue)" />
+            <span>Menciones a este apunte ({backlinks.length})</span>
+          </div>
+          <div className={styles.backlinksList}>
+            {backlinks.map(({ note, subject }) => (
+              <button
+                key={note.id}
+                type="button"
+                className={styles.backlinkTag}
+                onClick={() => setActiveNote(subject.id, note.id)}
+              >
+                {subject.name} &rsaquo; {note.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={styles.editorFooter}>
+        <div className={styles.statsGroup}>
+          <div className={styles.statItem}>
+            <FileText size={13} />
+            <span>{stats.words} palabras</span>
+          </div>
+          <div className={styles.statItem}>
+            <span>{stats.chars} caracteres</span>
+          </div>
+          <div className={styles.statItem}>
+            <Clock size={13} />
+            <span>{stats.readingTime} min lectura</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

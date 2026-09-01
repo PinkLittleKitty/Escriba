@@ -174,7 +174,6 @@
     }
 }
 
-/* Scrollbar for console */
 .console-body::-webkit-scrollbar {
     width: 8px;
 }

@@ -25,7 +25,72 @@
   gap: 0.5rem;
   font-weight: 600;
   color: var(--text-primary);
+  flex: 1;
 }
+
+.headerTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.presetsWrapper {
+  position: relative;
+}
+
+.presetsBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.presetsBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.presetsDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 500;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.25));
+  min-width: 190px;
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.presetItem {
+  text-align: left;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.presetItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+
 
 .tabGroup {
   display: flex;
@@ -52,6 +117,27 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  padding: 0.1rem 0.25rem;
+  margin-right: 0.25rem;
+}
+
+.zoomLabel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  min-width: 2.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .actionBtn {
@@ -75,13 +161,25 @@
 }
 
 .previewArea {
-  padding: 1.5rem;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 140px;
+  min-height: 180px;
+  max-height: 520px;
   background: var(--bg-primary);
-  overflow-x: auto;
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+}
+
+.svgCanvas {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  will-change: transform;
+  padding: 1.5rem;
+  transition: transform 0.05s linear;
 }
 
 .codeArea {
@@ -93,8 +191,31 @@
   color: var(--text-primary);
   border: none;
   resize: vertical;
-  min-height: 120px;
+  min-height: 260px;
   outline: none;
+}
+
+.splitLayout {
+  display: flex;
+  flex-direction: row;
+  min-height: 260px;
+  max-height: 520px;
+}
+
+.splitLayout .previewArea {
+  flex: 3;
+  min-height: 260px;
+  max-height: 520px;
+  border-right: 1px solid var(--border-color);
+}
+
+.splitCode {
+  flex: 2;
+  min-height: 260px;
+  max-height: 520px;
+  resize: none !important;
+  border-radius: 0 !important;
+  border-left: none !important;
 }
 
 .errorBox {
@@ -103,4 +224,10 @@
   padding: 0.75rem;
   border-radius: var(--radius-sm);
   font-size: 0.8125rem;
+}
+
+.loadingBox {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-style: italic;
 }

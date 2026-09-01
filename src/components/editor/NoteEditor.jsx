@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import * as ReactDOM from 'react-dom/client';
 import ace from 'ace-builds';
 import 'ace-builds/src-noconflict/mode-javascript';
 import 'ace-builds/src-noconflict/mode-python';
@@ -26,6 +27,7 @@ import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
 import { EditorToolbar } from './EditorToolbar.jsx';
+import { UMLBlock } from './UMLBlock.jsx';
 import { formatDate, calculateReadingStats, debounce } from '../../utils/helpers.js';
 import styles from './NoteEditor.module.css';
 
@@ -45,6 +47,9 @@ export const NoteEditor = () => {
 
   const contentRef = useRef(null);
   const aceEditorsRef = useRef(new Map());
+  const umlRootsRef = useRef(new Map());
+  const currentNoteRef = useRef(null);
+  const titleRef = useRef('');
 
   let currentSubject = subjects.find((s) => s.id === activeSubjectId);
   let currentNote = null;
@@ -60,6 +65,9 @@ export const NoteEditor = () => {
 
   const [title, setTitle] = useState('');
   const [stats, setStats] = useState({ words: 0, chars: 0, readingTime: 0 });
+
+  currentNoteRef.current = currentNote;
+  titleRef.current = title;
 
   const debouncedSave = useRef(
     debounce((noteId, newTitle, newContent) => {
@@ -148,13 +156,76 @@ export const NoteEditor = () => {
     });
   }, [theme]);
 
+  const initUMLBlocks = () => {
+    if (!contentRef.current) return;
+
+    const legacyBlocks = contentRef.current.querySelectorAll('.uml-diagram-container');
+    legacyBlocks.forEach((legacy) => {
+      const code = legacy.getAttribute('data-uml-code') || '';
+      const sentinel = document.createElement('div');
+      sentinel.className = 'uml-block-container';
+      sentinel.setAttribute('data-uml-code', code);
+      sentinel.setAttribute('data-initialized', 'false');
+      sentinel.setAttribute('contenteditable', 'false');
+      legacy.replaceWith(sentinel);
+    });
+
+    const containers = contentRef.current.querySelectorAll('.uml-block-container');
+
+    containers.forEach((el) => {
+      if (el.getAttribute('data-initialized') === 'true' && umlRootsRef.current.has(el)) return;
+
+      const elRef = el;
+
+      const handleUMLChange = (newCode) => {
+        elRef.setAttribute('data-uml-code', newCode);
+        const note = currentNoteRef.current;
+        if (note) {
+          debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+        }
+      };
+
+      const handleUMLDelete = () => {
+        const root = umlRootsRef.current.get(elRef);
+        if (root) {
+          root.unmount();
+          umlRootsRef.current.delete(elRef);
+        }
+        elRef.remove();
+        const note = currentNoteRef.current;
+        if (note) {
+          debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+        }
+      };
+
+      const initialCode = el.getAttribute('data-uml-code') ||
+        'graph TD\n  A[Inicio] --> B{¿Es correcto?}\n  B -->|Sí| C[Continuar]\n  B -->|No| D[Revisar]';
+
+      el.setAttribute('data-initialized', 'true');
+      el.innerHTML = '';
+
+      const root = ReactDOM.createRoot(el);
+      root.render(
+        <UMLBlock
+          code={initialCode}
+          onChange={handleUMLChange}
+          onDelete={handleUMLDelete}
+        />
+      );
+      umlRootsRef.current.set(el, root);
+    });
+  };
+
   useEffect(() => {
     aceEditorsRef.current.forEach((editor) => {
-      try {
-        editor.destroy();
-      } catch (e) { }
+      try { editor.destroy(); } catch (e) { }
     });
     aceEditorsRef.current.clear();
+
+    umlRootsRef.current.forEach((root) => {
+      try { root.unmount(); } catch (e) { }
+    });
+    umlRootsRef.current.clear();
 
     if (currentNote) {
       setTitle(currentNote.title || '');
@@ -165,6 +236,7 @@ export const NoteEditor = () => {
 
       setTimeout(() => {
         initAceEditors();
+        initUMLBlocks();
       }, 50);
     }
   }, [activeNoteId]);
@@ -268,16 +340,42 @@ export const NoteEditor = () => {
   };
 
   const handleInsertUML = () => {
-    const umlHTML = `
-      <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-purple); margin: 1rem 0; font-family: var(--font-mono); font-size: 0.85rem;">
-        graph TD<br>
-        &nbsp;&nbsp;A[Inicio] --&gt; B{¿Es correcto?}<br>
-        &nbsp;&nbsp;B --&gt;|Sí| C[Continuar]<br>
-        &nbsp;&nbsp;B --&gt;|No| D[Revisar]
-      </div>
-      <p></p>
-    `;
-    document.execCommand('insertHTML', false, umlHTML);
+    if (!contentRef.current) return;
+
+    const defaultCode = 'graph TD\n  A[Inicio] --> B{¿Es correcto?}\n  B -->|Sí| C[Continuar]\n  B -->|No| D[Revisar]';
+
+    const sentinel = document.createElement('div');
+    sentinel.className = 'uml-block-container';
+    sentinel.setAttribute('data-uml-code', defaultCode);
+    sentinel.setAttribute('data-initialized', 'false');
+    sentinel.setAttribute('contenteditable', 'false');
+
+    const spacer = document.createElement('p');
+    spacer.innerHTML = '<br>';
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (contentRef.current.contains(range.commonAncestorContainer)) {
+        range.collapse(false);
+        range.insertNode(spacer);
+        range.insertNode(sentinel);
+      } else {
+        contentRef.current.appendChild(sentinel);
+        contentRef.current.appendChild(spacer);
+      }
+    } else {
+      contentRef.current.appendChild(sentinel);
+      contentRef.current.appendChild(spacer);
+    }
+
+    setTimeout(() => {
+      initUMLBlocks();
+      const note = currentNoteRef.current;
+      if (note) {
+        debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+      }
+    }, 50);
   };
 
   const backlinks = [];

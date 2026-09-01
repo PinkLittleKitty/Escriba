@@ -10,6 +10,7 @@ import { SubjectModal } from './components/modals/SubjectModal.jsx';
 import { SettingsModal } from './components/modals/SettingsModal.jsx';
 import { TrashModal } from './components/modals/TrashModal.jsx';
 import { LinkNoteModal } from './components/modals/LinkNoteModal.jsx';
+import { TableModal } from './components/modals/TableModal.jsx';
 import { ToastContainer } from './components/common/ToastContainer.jsx';
 
 import { useNotesStore } from './store/useNotesStore.js';
@@ -84,6 +85,7 @@ export const App = () => {
       {activeModal === 'settings' && <SettingsModal />}
       {activeModal === 'trash' && <TrashModal />}
       {activeModal === 'linkNote' && <LinkNoteModal />}
+      {(activeModal === 'table' || activeModal === 'insertTable') && <TableModal />}
 
       <ToastContainer />
     </div>

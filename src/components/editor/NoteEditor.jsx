@@ -21,7 +21,13 @@ import {
   Trash2,
   FileText,
   Clock,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  MinusCircle,
+  Paintbrush
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
@@ -30,6 +36,16 @@ import { EditorToolbar } from './EditorToolbar.jsx';
 import { UMLBlock } from './UMLBlock.jsx';
 import { formatDate, calculateReadingStats, debounce } from '../../utils/helpers.js';
 import styles from './NoteEditor.module.css';
+
+const TABLE_PALETTE = [
+  { bg: 'transparent', text: 'inherit', label: 'Sin color' },
+  { bg: '#fee2e2', text: '#991b1b', label: 'Rojo suave' },
+  { bg: '#fef3c7', text: '#92400e', label: 'Amarillo suave' },
+  { bg: '#dcfce7', text: '#166534', label: 'Verde suave' },
+  { bg: '#dbeafe', text: '#1e40af', label: 'Azul suave' },
+  { bg: '#f3e8ff', text: '#6b21a8', label: 'Violeta suave' },
+  { bg: '#e2e8f0', text: '#334155', label: 'Gris suave' },
+];
 
 export const NoteEditor = () => {
   const subjects = useNotesStore((state) => state.subjects);
@@ -42,6 +58,7 @@ export const NoteEditor = () => {
   const setActiveNote = useNotesStore((state) => state.setActiveNote);
 
   const addToast = useUIStore((state) => state.addToast);
+  const openModal = useUIStore((state) => state.openModal);
   const autoSave = useSettingsStore((state) => state.autoSave);
   const theme = useSettingsStore((state) => state.theme);
 
@@ -50,6 +67,8 @@ export const NoteEditor = () => {
   const umlRootsRef = useRef(new Map());
   const currentNoteRef = useRef(null);
   const titleRef = useRef('');
+
+  const [tableMenu, setTableMenu] = useState(null);
 
   let currentSubject = subjects.find((s) => s.id === activeSubjectId);
   let currentNote = null;
@@ -68,6 +87,16 @@ export const NoteEditor = () => {
 
   currentNoteRef.current = currentNote;
   titleRef.current = title;
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (tableMenu && !e.target.closest('.table-context-menu')) {
+        setTableMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [tableMenu]);
 
   const debouncedSave = useRef(
     debounce((noteId, newTitle, newContent) => {
@@ -290,26 +319,117 @@ export const NoteEditor = () => {
   };
 
   const handleInsertTable = () => {
-    const tableHTML = `
-      <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
-        <thead>
-          <tr>
-            <th style="border: 1px solid var(--border-color); padding: 0.5rem; background: var(--bg-tertiary);">Columna 1</th>
-            <th style="border: 1px solid var(--border-color); padding: 0.5rem; background: var(--bg-tertiary);">Columna 2</th>
-            <th style="border: 1px solid var(--border-color); padding: 0.5rem; background: var(--bg-tertiary);">Columna 3</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="border: 1px solid var(--border-color); padding: 0.5rem;">Dato A1</td>
-            <td style="border: 1px solid var(--border-color); padding: 0.5rem;">Dato B1</td>
-            <td style="border: 1px solid var(--border-color); padding: 0.5rem;">Dato C1</td>
-          </tr>
-        </tbody>
-      </table>
-      <p><br></p>
-    `;
-    document.execCommand('insertHTML', false, tableHTML);
+    openModal('table');
+  };
+
+  const handleContextMenu = (e) => {
+    const cell = e.target.closest('td, th');
+    if (cell && contentRef.current?.contains(cell)) {
+      e.preventDefault();
+      const menuWidth = 250;
+      const menuHeight = 360;
+      const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
+      const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
+      setTableMenu({ x, y, cell });
+    } else {
+      setTableMenu(null);
+    }
+  };
+
+  const executeTableAction = (action) => {
+    if (!tableMenu?.cell) return;
+    const cell = tableMenu.cell;
+    const row = cell.parentElement;
+    const table = row.closest('table');
+    if (!table) return;
+
+    const rowIndex = row.rowIndex;
+    const cellIndex = cell.cellIndex;
+
+    switch (action) {
+      case 'insert-row-above': {
+        const newRow = table.insertRow(rowIndex);
+        const colCount = row.cells.length;
+        for (let i = 0; i < colCount; i++) {
+          const newCell = newRow.insertCell();
+          newCell.contentEditable = 'true';
+          newCell.innerHTML = '<br>';
+        }
+        break;
+      }
+      case 'insert-row-below': {
+        const newRow = table.insertRow(rowIndex + 1);
+        const colCount = row.cells.length;
+        for (let i = 0; i < colCount; i++) {
+          const newCell = newRow.insertCell();
+          newCell.contentEditable = 'true';
+          newCell.innerHTML = '<br>';
+        }
+        break;
+      }
+      case 'insert-col-left': {
+        for (let i = 0; i < table.rows.length; i++) {
+          const r = table.rows[i];
+          const isHeader = r.parentElement?.tagName === 'THEAD' || r.cells[0]?.tagName === 'TH';
+          const newCell = document.createElement(isHeader ? 'th' : 'td');
+          newCell.contentEditable = 'true';
+          newCell.innerHTML = isHeader ? 'Encabezado' : '<br>';
+          r.insertBefore(newCell, r.cells[cellIndex] || null);
+        }
+        break;
+      }
+      case 'insert-col-right': {
+        for (let i = 0; i < table.rows.length; i++) {
+          const r = table.rows[i];
+          const isHeader = r.parentElement?.tagName === 'THEAD' || r.cells[0]?.tagName === 'TH';
+          const newCell = document.createElement(isHeader ? 'th' : 'td');
+          newCell.contentEditable = 'true';
+          newCell.innerHTML = isHeader ? 'Encabezado' : '<br>';
+          r.insertBefore(newCell, r.cells[cellIndex + 1] || null);
+        }
+        break;
+      }
+      case 'delete-row': {
+        table.deleteRow(rowIndex);
+        if (table.rows.length === 0) table.remove();
+        break;
+      }
+      case 'delete-col': {
+        for (let i = table.rows.length - 1; i >= 0; i--) {
+          const r = table.rows[i];
+          if (r.cells[cellIndex]) {
+            r.deleteCell(cellIndex);
+          }
+        }
+        if (table.rows[0]?.cells.length === 0) table.remove();
+        break;
+      }
+      case 'delete-table': {
+        table.remove();
+        break;
+      }
+      default:
+        break;
+    }
+
+    setTableMenu(null);
+    const note = currentNoteRef.current;
+    if (note) {
+      debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+    }
+  };
+
+  const executeTableColor = (bgColor, textColor) => {
+    if (!tableMenu?.cell) return;
+    tableMenu.cell.style.backgroundColor = bgColor;
+    if (textColor) {
+      tableMenu.cell.style.color = textColor;
+    }
+    setTableMenu(null);
+    const note = currentNoteRef.current;
+    if (note) {
+      debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+    }
   };
 
   const handleInsertCodeBlock = () => {
@@ -496,9 +616,73 @@ export const NoteEditor = () => {
           contentEditable
           suppressContentEditableWarning
           onInput={handleContentInput}
+          onContextMenu={handleContextMenu}
           data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
         />
       </div>
+
+      {tableMenu && (
+        <div
+          className="table-context-menu"
+          style={{
+            position: 'fixed',
+            left: `${tableMenu.x}px`,
+            top: `${tableMenu.y}px`,
+            zIndex: 10000
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="menu-item" onClick={() => executeTableAction('insert-row-above')}>
+            <ArrowUp size={14} />
+            <span>Insertar fila arriba</span>
+          </div>
+          <div className="menu-item" onClick={() => executeTableAction('insert-row-below')}>
+            <ArrowDown size={14} />
+            <span>Insertar fila abajo</span>
+          </div>
+          <div className="menu-divider" />
+          <div className="menu-item" onClick={() => executeTableAction('insert-col-left')}>
+            <ArrowLeft size={14} />
+            <span>Insertar columna a la izquierda</span>
+          </div>
+          <div className="menu-item" onClick={() => executeTableAction('insert-col-right')}>
+            <ArrowRight size={14} />
+            <span>Insertar columna a la derecha</span>
+          </div>
+          <div className="menu-divider" />
+          <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-row')}>
+            <MinusCircle size={14} />
+            <span>Eliminar fila</span>
+          </div>
+          <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-col')}>
+            <MinusCircle size={14} />
+            <span>Eliminar columna</span>
+          </div>
+          <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-table')}>
+            <Trash2 size={14} />
+            <span>Eliminar tabla</span>
+          </div>
+          <div className="menu-divider" />
+          <div className="menu-color-picker">
+            <span className="color-label">
+              <Paintbrush size={12} />
+              <span>Fondo de celda</span>
+            </span>
+            <div className="color-options-grid">
+              {TABLE_PALETTE.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  className="color-picker-dot"
+                  style={{ backgroundColor: p.bg }}
+                  title={p.label}
+                  onClick={() => executeTableColor(p.bg, p.text)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {backlinks.length > 0 && (
         <div className={styles.backlinksPanel}>

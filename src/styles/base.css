@@ -292,3 +292,148 @@ textarea:focus-visible {
 .fade-in {
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+.editable-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.editable-table thead {
+  background: var(--bg-secondary);
+}
+
+.editable-table th {
+  border: 1px solid var(--border-color);
+  padding: 0.65rem 0.85rem;
+  min-width: 4.5rem;
+  height: 2.4rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.editable-table td {
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 0.85rem;
+  min-width: 4.5rem;
+  height: 2.2rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.editable-table th:focus,
+.editable-table td:focus {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+  background: var(--bg-hover);
+}
+
+.table-context-menu {
+  position: fixed;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.3));
+  padding: 6px;
+  min-width: 220px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(12px);
+  user-select: none;
+  animation: fadeIn 0.12s ease forwards;
+}
+
+.table-context-menu .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: background 0.12s, color 0.12s;
+}
+
+.table-context-menu .menu-item svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.table-context-menu .menu-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.table-context-menu .menu-item:hover svg {
+  color: var(--accent-blue);
+}
+
+.table-context-menu .menu-item.data-destructive:hover {
+  background: var(--accent-red-bg);
+  color: var(--accent-red);
+}
+
+.table-context-menu .menu-item.data-destructive:hover svg {
+  color: var(--accent-red);
+}
+
+.table-context-menu .menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 5px 0;
+}
+
+.table-context-menu .menu-color-picker {
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.table-context-menu .menu-color-picker .color-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-context-menu .color-options-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.table-context-menu .color-picker-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light, var(--border-color));
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.table-context-menu .color-picker-dot:hover {
+  transform: scale(1.2);
+  border-color: var(--text-primary);
+}

@@ -102,8 +102,30 @@
   gap: 0.35rem;
   width: 100%;
   align-items: center;
-  padding: 0;
-  transition: all 0.2s ease;
+  padding: 0 0 2px 0;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.sidebar.collapsed .viewToggles .viewBtn:not(.activeView) {
+  display: none;
+}
+
+.sidebar.collapsed .viewToggles:hover .viewBtn {
+  display: flex !important;
+  animation: fadeInBtn 0.15s ease-out;
+}
+
+@keyframes fadeInBtn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .sidebar.collapsed .viewBtn {
@@ -114,39 +136,36 @@
   padding: 0;
   justify-content: center;
   align-items: center;
-  flex: none;
-  display: none;
+  flex-shrink: 0;
+  display: flex;
   border-radius: 8px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  transition: all 0.15s ease;
-}
-
-.sidebar.collapsed .viewBtn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-  border-color: var(--accent-blue);
+  box-sizing: border-box;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .sidebar.collapsed .viewBtn.activeView {
-  display: flex !important;
   background: var(--accent-blue);
   border-color: var(--accent-blue);
   color: #ffffff;
+  box-shadow: 0 2px 6px var(--accent-shadow);
 }
 
 .sidebar.collapsed .viewBtn.activeView svg {
   color: #ffffff;
 }
 
-.sidebar.collapsed .viewToggles:hover .viewBtn {
-  display: flex !important;
-  animation: fadeInDown 0.15s ease-out;
+.sidebar.collapsed .viewBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+  transform: translateY(-1px);
 }
 
-.sidebar.collapsed:not(:hover) .viewBtn:not(.activeView) {
-  display: none !important;
+.sidebar.collapsed .viewBtn:active {
+  transform: scale(0.95);
 }
 
 .sidebar.collapsed .viewBtnLabel {

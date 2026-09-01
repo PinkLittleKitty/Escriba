@@ -6,6 +6,18 @@
   overflow-y: auto;
   background: var(--bg-primary);
   height: 100%;
+  animation: dashboardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dashboardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dashboardHeader {
@@ -53,13 +65,13 @@
   padding: 1.75rem;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
   display: flex;
   flex-direction: column;
 }
 
 .dashboardCard:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
   border-color: var(--accent-blue);
 }
@@ -398,6 +410,17 @@
   padding: 0.8rem;
   font-weight: 700;
   border-radius: 14px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btnFull:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 4px 12px var(--shadow-sm);
+}
+
+.btnFull:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .btnIconSm {
@@ -411,13 +434,18 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .btnIconSm:hover {
   background: var(--accent-blue-bg);
   color: var(--accent-blue);
   border-color: var(--accent-blue);
+  transform: scale(1.08);
+}
+
+.btnIconSm:active {
+  transform: scale(0.92);
 }
 
 .emptyState {

@@ -16,7 +16,8 @@ import {
   ArchiveRestore,
   MoreVertical,
   ChevronDown,
-  Clock
+  Clock,
+  Share2
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
@@ -362,6 +363,18 @@ export const Sidebar = () => {
                   >
                     <Edit2 size={13} />
                     <span>Editar materia</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.subjectMenuItem}
+                    onClick={() => {
+                      setOpenMenuSubjectId(null);
+                      openModal('export', { subject });
+                    }}
+                  >
+                    <Share2 size={13} color="var(--accent-blue)" />
+                    <span>Compartir materia</span>
                   </button>
 
                   <button

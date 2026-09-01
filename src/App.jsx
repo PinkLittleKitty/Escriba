@@ -11,7 +11,9 @@ import { SettingsModal } from './components/modals/SettingsModal.jsx';
 import { TrashModal } from './components/modals/TrashModal.jsx';
 import { LinkNoteModal } from './components/modals/LinkNoteModal.jsx';
 import { TableModal } from './components/modals/TableModal.jsx';
+import { ExportModal } from './components/modals/ExportModal.jsx';
 import { ToastContainer } from './components/common/ToastContainer.jsx';
+import { loadRemoteSharedContent } from './utils/exportHelpers.js';
 
 import { useNotesStore } from './store/useNotesStore.js';
 import { useUIStore } from './store/useUIStore.js';
@@ -22,11 +24,86 @@ export const App = () => {
   const subjects = useNotesStore((state) => state.subjects);
   const activeModal = useUIStore((state) => state.activeModal);
   const openModal = useUIStore((state) => state.openModal);
+  const addToast = useUIStore((state) => state.addToast);
   const theme = useSettingsStore((state) => state.theme);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme || 'dark');
   }, [theme]);
+
+  useEffect(() => {
+    const handleRemoteContent = async () => {
+      try {
+        const result = await loadRemoteSharedContent();
+        if (!result || !result.data) return;
+
+        const store = useNotesStore.getState();
+
+        if (result.type === 'subject') {
+          const subData = result.data;
+          let subName = subData.name || 'Materia Compartida';
+          let count = 0;
+          while (store.subjects.some((s) => s.name.toLowerCase() === subName.toLowerCase())) {
+            count++;
+            subName = `${subData.name || 'Materia Compartida'} (${count})`;
+          }
+
+          const newSub = store.addSubject({
+            name: subName,
+            code: subData.code || '',
+            professor: subData.professor || '',
+            color: subData.color || '#3b82f6',
+            schedule: subData.schedule || []
+          });
+
+          if (newSub && Array.isArray(subData.notes)) {
+            subData.notes.forEach((n) => {
+              store.addNote(newSub.id, {
+                title: n.title,
+                content: n.content,
+                tags: n.tags || ['compartido'],
+                favorite: !!n.favorite
+              });
+            });
+
+            addToast({ message: `Materia "${subName}" importada desde ${result.source}`, type: 'success' });
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } else {
+          const noteData = result.data;
+          const noteTitle = noteData.title || noteData.t || 'Apunte Compartido';
+          const noteContent = noteData.content || noteData.c || '';
+          const subName = noteData.subjectName || noteData.subject || noteData.s || 'Compartidos';
+
+          let targetSub = store.subjects.find((s) => s.name.toLowerCase() === subName.toLowerCase() && !s.archived);
+          if (!targetSub) {
+            targetSub = store.addSubject({
+              name: subName,
+              color: noteData.subjectColor || noteData.sc || '#3b82f6'
+            });
+          }
+
+          if (targetSub) {
+            const newNote = store.addNote(targetSub.id, {
+              title: `${noteTitle} (Importado)`,
+              content: noteContent,
+              tags: noteData.tags || ['compartido']
+            });
+
+            if (newNote) {
+              store.setActiveNote(targetSub.id, newNote.id);
+              addToast({ message: `Apunte "${noteTitle}" importado desde ${result.source}`, type: 'success' });
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error importing remote shared content:', err);
+      }
+    };
+
+    handleRemoteContent();
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -86,6 +163,7 @@ export const App = () => {
       {activeModal === 'trash' && <TrashModal />}
       {activeModal === 'linkNote' && <LinkNoteModal />}
       {(activeModal === 'table' || activeModal === 'insertTable') && <TableModal />}
+      {(activeModal === 'export' || activeModal === 'share') && <ExportModal />}
 
       <ToastContainer />
     </div>

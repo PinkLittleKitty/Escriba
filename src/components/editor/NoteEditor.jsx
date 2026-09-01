@@ -306,16 +306,7 @@ export const NoteEditor = () => {
 
   const handleShare = () => {
     if (!currentNote) return;
-    const textContent = contentRef.current?.innerText || currentNote.title;
-    if (navigator.share) {
-      navigator.share({
-        title: currentNote.title,
-        text: textContent
-      }).catch(() => { });
-    } else {
-      navigator.clipboard.writeText(textContent);
-      addToast({ message: 'Contenido del apunte copiado al portapapeles', type: 'success' });
-    }
+    openModal('export', { note: currentNote });
   };
 
   const handleInsertTable = () => {

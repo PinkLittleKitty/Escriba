@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Folder,
   FolderPlus,
@@ -81,6 +81,28 @@ export const Sidebar = () => {
   const [flyoutPosition, setFlyoutPosition] = useState({ top: 0, left: 0 });
   const [showViewPicker, setShowViewPicker] = useState(false);
   const [viewPickerPos, setViewPickerPos] = useState({ top: 0, left: 0 });
+  const viewPickerHoverTimer = useRef(null);
+
+  const handleViewPickerMouseEnter = (e) => {
+    if (viewPickerHoverTimer.current) {
+      clearTimeout(viewPickerHoverTimer.current);
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setViewPickerPos({ top: rect.top, left: rect.right + 4 });
+    setShowViewPicker(true);
+  };
+
+  const handleViewPickerMouseLeave = () => {
+    viewPickerHoverTimer.current = setTimeout(() => {
+      setShowViewPicker(false);
+    }, 220);
+  };
+
+  const handleFlyoutMouseEnter = () => {
+    if (viewPickerHoverTimer.current) {
+      clearTimeout(viewPickerHoverTimer.current);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -556,111 +578,46 @@ export const Sidebar = () => {
           </div>
         </div>
 
-        {sidebarCollapsed ? (
-          <div
-            className={styles.collapsedViewToggleWrapper}
-            onMouseEnter={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setViewPickerPos({ top: rect.top, left: rect.right + 8 });
-              setShowViewPicker(true);
+        <div className={styles.viewToggles}>
+          <button
+            type="button"
+            className={`${styles.viewBtn} ${sidebarView === 'subjects' ? styles.activeView : ''}`}
+            onClick={(e) => {
+              setSidebarView('subjects');
+              e.currentTarget.blur();
             }}
-            onMouseLeave={() => setShowViewPicker(false)}
+            title="Materias"
           >
-            <button
-              type="button"
-              className={styles.collapsedViewActiveBtn}
-              onClick={() => setShowViewPicker(!showViewPicker)}
-              title={
-                sidebarView === 'subjects'
-                  ? 'Materias (pasar el mouse para cambiar)'
-                  : sidebarView === 'recent'
-                    ? 'Recientes (pasar el mouse para cambiar)'
-                    : 'Favoritos (pasar el mouse para cambiar)'
-              }
-            >
-              {sidebarView === 'subjects' && <Folder size={14} />}
-              {sidebarView === 'recent' && <Clock size={14} />}
-              {sidebarView === 'favorites' && <Star size={14} />}
-            </button>
+            <Folder size={14} />
+            <span className={styles.viewBtnLabel}>Materias</span>
+          </button>
 
-            {showViewPicker && (
-              <div
-                className={styles.collapsedViewFlyout}
-                style={{ top: `${viewPickerPos.top}px`, left: `${viewPickerPos.left}px` }}
-                onMouseEnter={() => setShowViewPicker(true)}
-                onMouseLeave={() => setShowViewPicker(false)}
-              >
-                <button
-                  type="button"
-                  className={`${styles.collapsedViewOption} ${sidebarView === 'subjects' ? styles.active : ''}`}
-                  onClick={() => {
-                    setSidebarView('subjects');
-                    setShowViewPicker(false);
-                  }}
-                >
-                  <Folder size={14} color="var(--accent-blue)" />
-                  <span>Materias</span>
-                </button>
+          <button
+            type="button"
+            className={`${styles.viewBtn} ${sidebarView === 'recent' ? styles.activeView : ''}`}
+            onClick={(e) => {
+              setSidebarView('recent');
+              e.currentTarget.blur();
+            }}
+            title="Recientes"
+          >
+            <Clock size={14} />
+            <span className={styles.viewBtnLabel}>Recientes</span>
+          </button>
 
-                <button
-                  type="button"
-                  className={`${styles.collapsedViewOption} ${sidebarView === 'recent' ? styles.active : ''}`}
-                  onClick={() => {
-                    setSidebarView('recent');
-                    setShowViewPicker(false);
-                  }}
-                >
-                  <Clock size={14} color="var(--accent-orange)" />
-                  <span>Recientes</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.collapsedViewOption} ${sidebarView === 'favorites' ? styles.active : ''}`}
-                  onClick={() => {
-                    setSidebarView('favorites');
-                    setShowViewPicker(false);
-                  }}
-                >
-                  <Star size={14} color="var(--accent-yellow)" />
-                  <span>Favoritos</span>
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={styles.viewToggles}>
-            <button
-              type="button"
-              className={`${styles.viewBtn} ${sidebarView === 'subjects' ? styles.activeView : ''}`}
-              onClick={() => setSidebarView('subjects')}
-              title="Ver por materias"
-            >
-              <Folder size={14} />
-              <span className={styles.viewBtnLabel}>Materias</span>
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.viewBtn} ${sidebarView === 'recent' ? styles.activeView : ''}`}
-              onClick={() => setSidebarView('recent')}
-              title="Ver apuntes recientes"
-            >
-              <Clock size={14} />
-              <span className={styles.viewBtnLabel}>Recientes</span>
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.viewBtn} ${sidebarView === 'favorites' ? styles.activeView : ''}`}
-              onClick={() => setSidebarView('favorites')}
-              title="Ver apuntes favoritos"
-            >
-              <Star size={14} />
-              <span className={styles.viewBtnLabel}>Favoritos</span>
-            </button>
-          </div>
-        )}
+          <button
+            type="button"
+            className={`${styles.viewBtn} ${sidebarView === 'favorites' ? styles.activeView : ''}`}
+            onClick={(e) => {
+              setSidebarView('favorites');
+              e.currentTarget.blur();
+            }}
+            title="Favoritos"
+          >
+            <Star size={14} />
+            <span className={styles.viewBtnLabel}>Favoritos</span>
+          </button>
+        </div>
       </div>
 
       <div className={styles.subjectsContainer}>

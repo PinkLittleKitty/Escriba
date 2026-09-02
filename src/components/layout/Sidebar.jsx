@@ -515,6 +515,13 @@ export const Sidebar = () => {
     <aside
       className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''} ${sidebarCollapsed ? styles.collapsed : ''}`}
     >
+      <div
+        className={styles.mobileGrabber}
+        onClick={() => setSidebarOpen(false)}
+        role="button"
+        tabIndex={0}
+        aria-label="Cerrar cajón de materias"
+      />
       <div className={styles.sidebarHeader}>
         <div className={styles.searchRow}>
           <div
@@ -685,7 +692,10 @@ export const Sidebar = () => {
         <button
           type="button"
           className={styles.footerBtn}
-          onClick={() => openModal('trash')}
+          onClick={() => {
+            if (window.innerWidth <= 768) setSidebarOpen(false);
+            openModal('trash');
+          }}
           title="Papelera de reciclaje"
         >
           <Trash2 size={14} />

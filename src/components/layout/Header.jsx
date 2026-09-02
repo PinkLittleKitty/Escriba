@@ -5,7 +5,6 @@ import {
   Calendar as CalendarIcon,
   Settings,
   RefreshCw,
-  Menu,
   FileText,
   Download,
   Upload,
@@ -21,7 +20,6 @@ export const Header = () => {
   const activeView = useNotesStore((state) => state.activeView);
   const setActiveView = useNotesStore((state) => state.setActiveView);
   const openModal = useUIStore((state) => state.openModal);
-  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
   const toggleSidebarCollapse = useUIStore((state) => state.toggleSidebarCollapse);
   const addToast = useUIStore((state) => state.addToast);
@@ -53,15 +51,6 @@ export const Header = () => {
   return (
     <header className={styles.header}>
       <div className={styles.leftSection}>
-        <button
-          type="button"
-          className={styles.mobileMenuBtn}
-          onClick={toggleSidebar}
-          title="Menú lateral"
-        >
-          <Menu size={20} />
-        </button>
-
         <button
           type="button"
           className={styles.sidebarToggleBtn}

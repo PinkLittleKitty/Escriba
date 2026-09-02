@@ -16,17 +16,6 @@
   gap: 0.75rem;
 }
 
-.mobileMenuBtn {
-  display: none;
-  padding: 0.5rem;
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-}
-
-.mobileMenuBtn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
 
 .sidebarToggleBtn {
   display: flex;
@@ -176,11 +165,20 @@
 }
 
 @media (max-width: 768px) {
-  .mobileMenuBtn {
-    display: flex;
+
+  .sidebarToggleBtn {
+    display: none !important;
   }
 
   .navTabs {
     display: none;
+  }
+
+  .syncBtn span {
+    display: none;
+  }
+
+  .syncBtn {
+    padding: 0.35rem 0.45rem;
   }
 }

@@ -1,0 +1,61 @@
+.mobileBottomNav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobileBottomNav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg-secondary);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1200;
+    align-items: center;
+    justify-content: space-around;
+    user-select: none;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .navBtn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    gap: 3px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    height: 100%;
+    padding: 6px 0;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .icon {
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .navBtn.active {
+    color: var(--accent-blue);
+  }
+
+  .navBtn.active .icon {
+    transform: translateY(-2px);
+    color: var(--accent-blue);
+  }
+
+  .navBtn:active {
+    transform: scale(0.92);
+    opacity: 0.8;
+  }
+}

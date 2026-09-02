@@ -417,3 +417,31 @@
   color: var(--text-primary);
   transition: color 0.3s ease;
 }
+
+@media (max-width: 768px) {
+  .modalContent {
+    width: 95%;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: var(--radius-lg);
+  }
+
+  .modalContentLarge {
+    width: 95%;
+    height: auto;
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+
+  .modalHeader {
+    padding: 1rem 1.25rem;
+  }
+
+  .modalBody {
+    padding: 1.25rem;
+  }
+
+  .modalFooter {
+    padding: 0.75rem 1.25rem;
+  }
+}

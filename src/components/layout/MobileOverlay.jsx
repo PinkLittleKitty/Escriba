@@ -12,13 +12,14 @@ export const MobileOverlay = () => {
       onClick={() => setSidebarOpen(false)}
       style={{
         position: 'fixed',
-        top: '56px',
+        top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        backdropFilter: 'blur(2px)',
-        zIndex: 'var(--z-overlay)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(3px)',
+        WebkitBackdropFilter: 'blur(3px)',
+        zIndex: 1400,
         cursor: 'pointer'
       }}
     />

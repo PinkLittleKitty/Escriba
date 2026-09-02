@@ -1,8 +1,8 @@
 {
-  "name": "cuaderno-digital",
+  "name": "escriba",
   "version": "1.0.0",
   "type": "module",
-  "author": "Santiago",
+  "author": "JustNeki",
   "description": "Digital notebook application with cross-device sync",
   "main": "electron.js",
   "scripts": {
@@ -29,7 +29,7 @@
     "vite": "^8.2.2"
   },
   "build": {
-    "appId": "com.santiago.escriba",
+    "appId": "com.justneki.escriba",
     "productName": "Escriba",
     "icon": "icon.png",
     "directories": {

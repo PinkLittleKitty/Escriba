@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Header } from './components/layout/Header.jsx';
 import { Sidebar } from './components/layout/Sidebar.jsx';
 import { MobileOverlay } from './components/layout/MobileOverlay.jsx';
+import { MobileBottomNav } from './components/layout/MobileBottomNav.jsx';
 import { WelcomeView } from './components/views/WelcomeView.jsx';
 import { DashboardView } from './components/views/DashboardView.jsx';
 import { CalendarView } from './components/views/CalendarView.jsx';
@@ -228,6 +229,8 @@ export const App = () => {
         <Sidebar />
         <main className="app-content">{renderCurrentView()}</main>
       </div>
+
+      <MobileBottomNav />
 
       {activeModal === 'subject' && <SubjectModal />}
       {activeModal === 'settings' && <SettingsModal />}

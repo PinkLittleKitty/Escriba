@@ -12,6 +12,7 @@ import { TrashModal } from './components/modals/TrashModal.jsx';
 import { LinkNoteModal } from './components/modals/LinkNoteModal.jsx';
 import { TableModal } from './components/modals/TableModal.jsx';
 import { ExportModal } from './components/modals/ExportModal.jsx';
+import { EventModal } from './components/modals/EventModal.jsx';
 import { ToastContainer } from './components/common/ToastContainer.jsx';
 import { DevConsole } from './components/common/DevConsole.jsx';
 import { loadRemoteSharedContent } from './utils/exportHelpers.js';
@@ -178,6 +179,7 @@ export const App = () => {
       {activeModal === 'linkNote' && <LinkNoteModal />}
       {(activeModal === 'table' || activeModal === 'insertTable') && <TableModal />}
       {(activeModal === 'export' || activeModal === 'share') && <ExportModal />}
+      {activeModal === 'event' && <EventModal />}
 
       <ToastContainer />
       <DevConsole />

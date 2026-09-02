@@ -355,7 +355,7 @@ export const DashboardView = () => {
               <button
                 type="button"
                 className={styles.btnIconSm}
-                onClick={() => setActiveView('calendar')}
+                onClick={() => openModal('event')}
                 title="Agregar Examen"
               >
                 <Plus size={15} />
@@ -374,7 +374,8 @@ export const DashboardView = () => {
                     <div
                       key={exam.id}
                       className={styles.listItem}
-                      onClick={() => setActiveView('calendar')}
+                      onClick={() => openModal('event', { event: exam })}
+                      title="Editar o eliminar examen"
                     >
                       <div className={styles.itemDateMini}>
                         <span className={styles.itemDay}>{dayNum}</span>
@@ -448,7 +449,6 @@ export const DashboardView = () => {
                 onClick={() => openModal('linkNote')}
               >
                 <Network size={16} />
-                <span>Minimapa</span>
               </button>
             </div>
           </div>

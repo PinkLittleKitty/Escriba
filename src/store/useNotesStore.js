@@ -346,6 +346,23 @@ export const useNotesStore = create((set, get) => ({
     return newEvent;
   },
 
+  updateEvent: (eventId, updates) => {
+    set((state) => ({
+      events: state.events.map((evt) => {
+        if (evt.id === eventId) {
+          return {
+            ...evt,
+            ...updates,
+            title: updates.title !== undefined ? (sanitizeText(updates.title) || evt.title) : evt.title,
+            notes: updates.notes !== undefined ? sanitizeText(updates.notes) : evt.notes
+          };
+        }
+        return evt;
+      })
+    }));
+    get()._persist();
+  },
+
   deleteEvent: (eventId) => {
     set((state) => ({
       events: state.events.filter((e) => e.id !== eventId)

@@ -140,9 +140,6 @@ export const renderDashboard = (container, data, handlers) => {
                         <button id="dashNewNote" class="btn btn-primary btn-full">
                             <i class="fas fa-plus"></i> Nuevo Apunte
                         </button>
-                        <button id="dashOpenGraph" class="btn btn-secondary btn-full">
-                            <i class="fas fa-network-wired"></i> Minimapa
-                        </button>
                     </div>
                 </div>
             </div>

@@ -950,7 +950,6 @@ export const modalsHTML = `
     <div id="graphModal" class="modal modal-full">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-network-wired"></i> Minimapa</h3>
                 <div class="header-actions" style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
                     <button class="modal-close" title="Cerrar">&times;</button>
                 </div>

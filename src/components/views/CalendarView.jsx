@@ -9,6 +9,7 @@ import {
   Calendar as CalendarIcon
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
+import { useUIStore } from '../../store/useUIStore.js';
 import styles from './Calendar.module.css';
 
 const MONTH_NAMES = [
@@ -22,17 +23,11 @@ const DAYS_SPANISH = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Vie
 export const CalendarView = () => {
   const subjects = useNotesStore((state) => state.subjects);
   const events = useNotesStore((state) => state.events);
-  const addEvent = useNotesStore((state) => state.addEvent);
   const deleteEvent = useNotesStore((state) => state.deleteEvent);
+  const openModal = useUIStore((state) => state.openModal);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showEventForm, setShowEventForm] = useState(false);
-
-  const [eventTitle, setEventTitle] = useState('');
-  const [eventTime, setEventTime] = useState('');
-  const [eventSubjectId, setEventSubjectId] = useState('');
-  const [eventType, setEventType] = useState('exam');
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -53,24 +48,6 @@ export const CalendarView = () => {
     const today = new Date();
     setCurrentDate(today);
     setSelectedDate(today);
-  };
-
-  const handleCreateEvent = (e) => {
-    e.preventDefault();
-    if (!eventTitle.trim()) return;
-
-    const dateStr = selectedDate.toISOString().split('T')[0];
-    addEvent({
-      title: eventTitle,
-      date: dateStr,
-      time: eventTime,
-      subjectId: eventSubjectId || null,
-      type: eventType
-    });
-
-    setEventTitle('');
-    setEventTime('');
-    setShowEventForm(false);
   };
 
   const calendarCells = [];
@@ -167,19 +144,27 @@ export const CalendarView = () => {
                 onClick={() => setSelectedDate(cell.date)}
               >
                 <span className={styles.dayNumber}>{cell.day}</span>
-                {dayEvents.slice(0, 2).map((ev) => (
-                  <div
-                    key={ev.id}
-                    className={styles.eventPill}
-                    style={{
-                      background:
-                        ev.type === 'exam' ? 'var(--accent-red-bg)' : 'var(--accent-blue-bg)',
-                      color: ev.type === 'exam' ? 'var(--accent-red)' : 'var(--accent-blue)'
-                    }}
-                  >
-                    <span>{ev.title}</span>
-                  </div>
-                ))}
+                {dayEvents.slice(0, 2).map((ev) => {
+                  const evSubject = subjects.find((s) => s.id === ev.subjectId);
+                  return (
+                    <div
+                      key={ev.id}
+                      className={styles.eventPill}
+                      style={{
+                        background: evSubject?.color ? `${evSubject.color}22` : 'var(--accent-blue-bg)',
+                        color: evSubject?.color || 'var(--accent-blue)',
+                        borderLeft: `2px solid ${evSubject?.color || 'var(--accent-blue)'}`
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openModal('event', { event: ev });
+                      }}
+                      title={`${ev.title} (Click para editar)`}
+                    >
+                      <span>{ev.title}</span>
+                    </div>
+                  );
+                })}
                 {dayEvents.length > 2 && (
                   <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                     +{dayEvents.length - 2} más
@@ -242,91 +227,12 @@ export const CalendarView = () => {
               type="button"
               className="btn btn-secondary"
               style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-              onClick={() => setShowEventForm(!showEventForm)}
+              onClick={() => openModal('event', { date: selectedDateStr })}
             >
               <Plus size={13} />
               <span>Nuevo</span>
             </button>
           </div>
-
-          {showEventForm && (
-            <form
-              onSubmit={handleCreateEvent}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem',
-                marginBottom: '1rem',
-                padding: '0.75rem',
-                background: 'var(--bg-card)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-color)'
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Título del evento / examen"
-                value={eventTitle}
-                onChange={(e) => setEventTitle(e.target.value)}
-                style={{
-                  padding: '0.4rem',
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 'var(--radius-sm)'
-                }}
-                required
-                autoFocus
-              />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="time"
-                  value={eventTime}
-                  onChange={(e) => setEventTime(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '0.4rem',
-                    background: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-sm)'
-                  }}
-                />
-                <select
-                  value={eventType}
-                  onChange={(e) => setEventType(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '0.4rem',
-                    background: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-sm)'
-                  }}
-                >
-                  <option value="exam">Examen / Parcial</option>
-                  <option value="assignment">Entrega / TP</option>
-                  <option value="class">Clase extra</option>
-                  <option value="other">Otro</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.25rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
-                  onClick={() => setShowEventForm(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
-                >
-                  Guardar
-                </button>
-              </div>
-            </form>
-          )}
 
           <div className={styles.eventList}>
             {selectedDayEvents.length === 0 ? (
@@ -334,27 +240,54 @@ export const CalendarView = () => {
                 No hay eventos anotados para este día.
               </div>
             ) : (
-              selectedDayEvents.map((ev) => (
-                <div key={ev.id} className={styles.eventCard}>
-                  <div className={styles.eventHeader}>
-                    <span className={styles.eventTitle}>{ev.title}</span>
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      onClick={() => deleteEvent(ev.id)}
-                      title="Eliminar evento"
-                    >
-                      <Trash2 size={13} color="var(--accent-red)" />
-                    </button>
-                  </div>
-                  {ev.time && (
-                    <div className={styles.eventMeta}>
-                      <Clock size={12} />
-                      <span>{ev.time} hs</span>
+              selectedDayEvents.map((ev) => {
+                const evSubject = subjects.find((s) => s.id === ev.subjectId);
+                return (
+                  <div
+                    key={ev.id}
+                    className={styles.eventCard}
+                    style={{
+                      borderLeft: `3px solid ${evSubject?.color || 'var(--accent-blue)'}`,
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => openModal('event', { event: ev })}
+                    title="Click para editar o eliminar"
+                  >
+                    <div className={styles.eventHeader}>
+                      <span className={styles.eventTitle}>{ev.title}</span>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`¿Eliminar "${ev.title}"?`)) {
+                            deleteEvent(ev.id);
+                          }
+                        }}
+                        title="Eliminar evento"
+                      >
+                        <Trash2 size={13} color="var(--accent-red)" />
+                      </button>
                     </div>
-                  )}
-                </div>
-              ))
+                    {evSubject && (
+                      <div style={{ fontSize: '0.75rem', color: evSubject.color, fontWeight: 600, marginTop: '2px' }}>
+                        {evSubject.name}
+                      </div>
+                    )}
+                    {ev.time && (
+                      <div className={styles.eventMeta}>
+                        <Clock size={12} />
+                        <span>{ev.time} hs</span>
+                      </div>
+                    )}
+                    {ev.notes && (
+                      <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {ev.notes}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

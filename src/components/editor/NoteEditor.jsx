@@ -37,6 +37,7 @@ import { UMLBlock } from './UMLBlock.jsx';
 import { MathBlock } from './MathBlock.jsx';
 import { MathToolbar } from './MathToolbar.jsx';
 import { formatDate, calculateReadingStats, debounce } from '../../utils/helpers.js';
+import { handleMarkdownKeyDown } from '../../utils/markdownAutoFormat.js';
 import styles from './NoteEditor.module.css';
 
 const TABLE_PALETTE = [
@@ -860,6 +861,23 @@ export const NoteEditor = () => {
           suppressContentEditableWarning
           onInput={handleContentInput}
           onContextMenu={handleContextMenu}
+          onClick={(e) => {
+            const link = e.target.closest('a[data-note-id], .internal-link[data-note-id]');
+            if (link) {
+              e.preventDefault();
+              const noteId = link.getAttribute('data-note-id');
+              if (noteId) {
+                for (const s of subjects) {
+                  const found = s.notes.find((n) => n.id === noteId);
+                  if (found) {
+                    setActiveNote(s.id, found.id);
+                    addToast({ message: `Abriendo "${found.title}"`, type: 'info' });
+                    break;
+                  }
+                }
+              }
+            }
+          }}
           onFocus={() => {
             window.__lastActiveMathBlockId = null;
           }}
@@ -879,7 +897,7 @@ export const NoteEditor = () => {
                 handleInsertCodeBlock();
               } else if (e.altKey && key === 'u') {
                 e.preventDefault();
-                handleInsertUMLDiagram();
+                handleInsertUML();
               } else if (key === 'l' && !e.altKey && !e.shiftKey) {
                 e.preventDefault();
                 openModal('linkNote');
@@ -931,7 +949,17 @@ export const NoteEditor = () => {
                   }
                 }
               }
+              return;
             }
+
+            const handled = handleMarkdownKeyDown(e, {
+              editorRoot: contentRef.current,
+              onInsertCodeBlock: handleInsertCodeBlock,
+              onNotifyChange: () => {
+                handleContentInput();
+              }
+            });
+            if (handled) return;
           }}
           data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
         />

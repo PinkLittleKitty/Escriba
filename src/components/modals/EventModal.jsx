@@ -124,7 +124,7 @@ export const EventModal = () => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className={styles.modalForm}>
           <div className={styles.modalBody}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Título del Evento o Examen *</label>

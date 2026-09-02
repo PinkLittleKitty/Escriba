@@ -208,3 +208,56 @@ export const highlightAndScrollToMatch = (container, query, durationMs = 2500) =
 
   return true;
 };
+
+export const DAYS_OF_WEEK = [
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+  'Domingo'
+];
+
+export const normalizeScheduleDay = (day) => {
+  if (day === null || day === undefined) return 'Lunes';
+  if (typeof day === 'number') {
+    const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    return dayMap[day % 7] || 'Lunes';
+  }
+  const str = String(day).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/^(dom|domingo|0|7)$/.test(str)) return 'Domingo';
+  if (/^(lun|lunes|1)$/.test(str)) return 'Lunes';
+  if (/^(mar|martes|2)$/.test(str)) return 'Martes';
+  if (/^(mie|miercoles|3)$/.test(str)) return 'Miércoles';
+  if (/^(jue|jueves|4)$/.test(str)) return 'Jueves';
+  if (/^(vie|viernes|5)$/.test(str)) return 'Viernes';
+  if (/^(sab|sabado|6)$/.test(str)) return 'Sábado';
+  return 'Lunes';
+};
+
+export const normalizeTime = (timeStr) => {
+  if (!timeStr || typeof timeStr !== 'string') return '';
+  const clean = timeStr.trim().toLowerCase();
+  const match = clean.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return clean;
+  const hours = match[1].padStart(2, '0');
+  const mins = match[2];
+  return `${hours}:${mins}`;
+};
+
+export const normalizeScheduleItem = (item = {}) => {
+  if (!item || typeof item !== 'object') {
+    return { day: 'Lunes', startTime: '09:00', endTime: '13:00', classroom: '' };
+  }
+  const startTime = normalizeTime(item.startTime || item.time || item.start || '');
+  const endTime = normalizeTime(item.endTime || item.end || '');
+  return {
+    day: normalizeScheduleDay(item.day),
+    startTime,
+    endTime,
+    time: startTime,
+    classroom: String(item.classroom || item.room || '').trim()
+  };
+};
+

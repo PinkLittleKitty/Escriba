@@ -90,6 +90,9 @@ describe('SubjectModal Component', () => {
 
   it('adds and removes schedule rows', () => {
     render(<SubjectModal />);
+    const scheduleTab = screen.getByRole('button', { name: /horarios/i });
+    fireEvent.click(scheduleTab);
+
     const addRowBtn = screen.getByRole('button', { name: /agregar horario/i });
 
     expect(screen.queryByTitle(/quitar/i)).not.toBeInTheDocument();
@@ -107,5 +110,43 @@ describe('SubjectModal Component', () => {
     fireEvent.click(closeBtn);
 
     expect(useUIStore.getState().activeModal).toBe(null);
+  });
+
+  it('selects an icon from the icon library and saves it with the subject', () => {
+    render(<SubjectModal />);
+
+    const nameInput = screen.getByPlaceholderText(/algoritmos y estructuras/i);
+    fireEvent.change(nameInput, { target: { value: 'Bases de Datos' } });
+
+    const dbIconBtn = screen.getByTestId('icon-option-database');
+    fireEvent.click(dbIconBtn);
+
+    const form = screen.getByRole('button', { name: /crear materia/i }).closest('form');
+    fireEvent.submit(form);
+
+    const createdSub = useNotesStore.getState().subjects.find((s) => s.name === 'Bases de Datos');
+    expect(createdSub).toBeDefined();
+    expect(createdSub?.icon).toBe('database');
+  });
+
+  it('navigates between tabs and clicking hero badge switches to icon tab', () => {
+    render(<SubjectModal />);
+
+    const infoTab = screen.getByRole('button', { name: /información/i });
+    const iconTab = screen.getByRole('button', { name: /icono & distintivo/i });
+    const scheduleTab = screen.getByRole('button', { name: /horarios/i });
+
+    expect(infoTab).toHaveClass(/active/);
+
+    fireEvent.click(scheduleTab);
+    expect(scheduleTab).toHaveClass(/active/);
+    expect(screen.getByText(/días y horas de cursada/i)).toBeInTheDocument();
+
+    fireEvent.click(infoTab);
+    expect(infoTab).toHaveClass(/active/);
+
+    const badgeBtn = screen.getByTitle(/click para cambiar icono/i);
+    fireEvent.click(badgeBtn);
+    expect(iconTab).toHaveClass(/active/);
   });
 });

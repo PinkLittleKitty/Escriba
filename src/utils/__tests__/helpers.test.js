@@ -8,7 +8,10 @@ import {
   calculateReadingStats,
   parseLocalDate,
   getSearchSnippet,
-  highlightAndScrollToMatch
+  highlightAndScrollToMatch,
+  normalizeScheduleDay,
+  normalizeTime,
+  normalizeScheduleItem
 } from '../helpers.js';
 
 describe('helpers utility functions', () => {
@@ -152,6 +155,42 @@ describe('helpers utility functions', () => {
 
       document.body.removeChild(container);
       vi.useRealTimers();
+    });
+  });
+
+  describe('schedule and time normalization', () => {
+    it('normalizes day names from various formats', () => {
+      expect(normalizeScheduleDay('lunes')).toBe('Lunes');
+      expect(normalizeScheduleDay('miercoles')).toBe('Miércoles');
+      expect(normalizeScheduleDay('Miércoles')).toBe('Miércoles');
+      expect(normalizeScheduleDay('sabado')).toBe('Sábado');
+      expect(normalizeScheduleDay('domingo')).toBe('Domingo');
+      expect(normalizeScheduleDay(1)).toBe('Lunes');
+      expect(normalizeScheduleDay(0)).toBe('Domingo');
+      expect(normalizeScheduleDay(null)).toBe('Lunes');
+    });
+
+    it('normalizes times to HH:mm 2-digit format', () => {
+      expect(normalizeTime('9:00')).toBe('09:00');
+      expect(normalizeTime('09:30')).toBe('09:30');
+      expect(normalizeTime('18:00:00')).toBe('18:00');
+      expect(normalizeTime('')).toBe('');
+      expect(normalizeTime(null)).toBe('');
+    });
+
+    it('normalizes schedule item objects consistently', () => {
+      const item = {
+        day: 'miercoles',
+        time: '9:00',
+        endTime: '12:00',
+        classroom: ' Aula 302 '
+      };
+      const normalized = normalizeScheduleItem(item);
+      expect(normalized.day).toBe('Miércoles');
+      expect(normalized.startTime).toBe('09:00');
+      expect(normalized.endTime).toBe('12:00');
+      expect(normalized.time).toBe('09:00');
+      expect(normalized.classroom).toBe('Aula 302');
     });
   });
 });

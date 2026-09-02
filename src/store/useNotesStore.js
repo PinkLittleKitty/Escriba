@@ -41,13 +41,14 @@ export const useNotesStore = create((set, get) => ({
     set({ activeSubjectId: subjectId });
   },
 
-  addSubject: ({ name, code = '', professor = '', color = '#3b82f6', schedule = [] }) => {
+  addSubject: ({ name, code = '', professor = '', color = '#3b82f6', icon = null, schedule = [] }) => {
     const newSubject = {
       id: generateId('sub'),
       name: sanitizeText(name) || 'Nueva Materia',
       code: sanitizeText(code),
       professor: sanitizeText(professor),
       color,
+      icon: icon || null,
       schedule,
       archived: false,
       notes: [],

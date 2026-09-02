@@ -20,14 +20,21 @@ import styles from './Dashboard.module.css';
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DAY_INDEX_MAP = {
   domingo: 0,
+  dom: 0,
   lunes: 1,
+  lun: 1,
   martes: 2,
+  mar: 2,
   miércoles: 3,
   miercoles: 3,
+  mie: 3,
   jueves: 4,
+  jue: 4,
   viernes: 5,
+  vie: 5,
   sábado: 6,
-  sabado: 6
+  sabado: 6,
+  sab: 6
 };
 
 function getNextClass(subjects) {
@@ -40,11 +47,11 @@ function getNextClass(subjects) {
   subjects.forEach((s) => {
     if (!s.archived && Array.isArray(s.schedule)) {
       s.schedule.forEach((item) => {
-        let dayIndex = 0;
+        let dayIndex = 1;
         if (typeof item.day === 'number') {
           dayIndex = item.day % 7;
         } else if (typeof item.day === 'string') {
-          const norm = item.day.toLowerCase().trim();
+          const norm = item.day.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           dayIndex = DAY_INDEX_MAP[norm] !== undefined ? DAY_INDEX_MAP[norm] : 1;
         }
 
@@ -59,6 +66,29 @@ function getNextClass(subjects) {
 
         const classTimeInMinutes = hours * 60 + minutes;
 
+        let endMinutes = classTimeInMinutes + 120;
+        if (item.endTime && typeof item.endTime === 'string') {
+          const endParts = item.endTime.split(':');
+          if (endParts.length >= 2) {
+            const eh = parseInt(endParts[0], 10);
+            const em = parseInt(endParts[1], 10);
+            if (!isNaN(eh) && !isNaN(em)) {
+              endMinutes = eh * 60 + em;
+            }
+          }
+        }
+
+        let daysAway = (dayIndex - currentDay + 7) % 7;
+        let isOngoing = false;
+
+        if (daysAway === 0) {
+          if (currentMinutes >= classTimeInMinutes && currentMinutes < endMinutes) {
+            isOngoing = true;
+          } else if (currentMinutes >= endMinutes) {
+            daysAway = 7;
+          }
+        }
+
         allScheduleItems.push({
           subjectId: s.id,
           subjectName: s.name,
@@ -69,7 +99,10 @@ function getNextClass(subjects) {
           dayName: DAY_NAMES[dayIndex],
           startTime: timeStr,
           endTime: item.endTime || '',
-          timeInMinutes: classTimeInMinutes
+          timeInMinutes: classTimeInMinutes,
+          endTimeInMinutes: endMinutes,
+          daysAway,
+          isOngoing
         });
       });
     }
@@ -78,23 +111,21 @@ function getNextClass(subjects) {
   if (allScheduleItems.length === 0) return null;
 
   allScheduleItems.sort((a, b) => {
-    let diffA = (a.day - currentDay + 7) % 7;
-    let diffB = (b.day - currentDay + 7) % 7;
-
-    if (diffA === 0 && a.timeInMinutes < currentMinutes) diffA = 7;
-    if (diffB === 0 && b.timeInMinutes < currentMinutes) diffB = 7;
-
-    if (diffA !== diffB) return diffA - diffB;
+    if (a.isOngoing && !b.isOngoing) return -1;
+    if (!a.isOngoing && b.isOngoing) return 1;
+    if (a.daysAway !== b.daysAway) return a.daysAway - b.daysAway;
     return a.timeInMinutes - b.timeInMinutes;
   });
 
   const next = allScheduleItems[0];
-  const daysDiff = (next.day - currentDay + 7) % 7;
-
+  const isToday = next.daysAway === 0;
   let timeUntil = '';
   let isNow = false;
 
-  if (daysDiff === 0 && next.timeInMinutes >= currentMinutes) {
+  if (next.isOngoing) {
+    isNow = true;
+    timeUntil = '¡Ahora!';
+  } else if (isToday) {
     const diffMin = next.timeInMinutes - currentMinutes;
     if (diffMin <= 15) {
       isNow = true;
@@ -106,15 +137,17 @@ function getNextClass(subjects) {
       const m = diffMin % 60;
       timeUntil = m > 0 ? `${h}h ${m}m` : `${h}h`;
     }
-  } else if (daysDiff === 1) {
+  } else if (next.daysAway === 1) {
     timeUntil = 'Mañana';
+  } else if (next.daysAway === 7) {
+    timeUntil = `El próximo ${next.dayName.toLowerCase()}`;
   } else {
-    timeUntil = `${daysDiff} ${daysDiff === 1 ? 'día' : 'días'}`;
+    timeUntil = `En ${next.daysAway} días`;
   }
 
   return {
     ...next,
-    isToday: daysDiff === 0,
+    isToday,
     isNow,
     timeUntil
   };

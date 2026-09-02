@@ -23,6 +23,8 @@ import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
 import { formatDate, getSearchSnippet } from '../../utils/helpers.js';
+import { SubjectBadge } from '../common/SubjectBadge.jsx';
+import { getSubjectInitials } from '../../utils/subjectIcons.js';
 import styles from './Sidebar.module.css';
 
 export const Sidebar = () => {
@@ -227,15 +229,6 @@ export const Sidebar = () => {
     });
   };
 
-  const getSubjectInitials = (subject) => {
-    if (subject.code) return subject.code.slice(0, 3).toUpperCase();
-    const words = subject.name.trim().split(/\s+/);
-    if (words.length >= 2) {
-      return (words[0][0] + words[1][0]).toUpperCase();
-    }
-    return subject.name.slice(0, 2).toUpperCase();
-  };
-
   const filteredSubjects = subjects
     .map((subject) => {
       const matchesSubject =
@@ -312,7 +305,6 @@ export const Sidebar = () => {
       ? Boolean(expandedSubjects[subject.id]) || Boolean(searchQuery)
       : (expandSubjectsSetting || activeSubjectId === subject.id || Boolean(searchQuery));
     const isActiveSubject = activeSubjectId === subject.id;
-    const initials = getSubjectInitials(subject);
 
     return (
       <div key={subject.id} className={`${styles.subjectGroup} ${isArchived ? styles.archivedGroup : ''}`}>
@@ -327,16 +319,12 @@ export const Sidebar = () => {
             <ChevronRight size={14} />
           </span>
 
-          <div
+          <SubjectBadge
+            subject={subject}
+            isArchived={isArchived}
             className={styles.subjectIconBadge}
-            style={{
-              backgroundColor: isArchived ? 'var(--text-muted)' : (subject.color || 'var(--accent-blue)'),
-              opacity: isArchived ? 0.75 : 1
-            }}
-            title={subject.name}
-          >
-            {initials}
-          </div>
+            size={sidebarCollapsed ? 'lg' : 'md'}
+          />
 
           <div className={styles.subjectInfo}>
             <span className={styles.subjectTitle}>{subject.name}</span>
@@ -757,7 +745,6 @@ export const Sidebar = () => {
       {activeFlyoutSubjectId && (() => {
         const flyoutSub = subjects.find((s) => s.id === activeFlyoutSubjectId);
         if (!flyoutSub) return null;
-        const flyoutInitials = getSubjectInitials(flyoutSub);
 
         return (
           <div
@@ -767,12 +754,11 @@ export const Sidebar = () => {
           >
             <div className={styles.flyoutHeader}>
               <div className={styles.flyoutHeaderLeft}>
-                <div
+                <SubjectBadge
+                  subject={flyoutSub}
                   className={styles.flyoutSubjectBadge}
-                  style={{ backgroundColor: flyoutSub.color || 'var(--accent-blue)' }}
-                >
-                  {flyoutInitials}
-                </div>
+                  size="md"
+                />
                 <h3 className={styles.flyoutTitle}>{flyoutSub.name}</h3>
               </div>
               <button

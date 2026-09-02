@@ -61,4 +61,31 @@ describe('DashboardView Component', () => {
     fireEvent.click(addExamBtn);
     expect(useUIStore.getState().activeModal).toBe('event');
   });
+
+  it('displays next class with correct time and classroom', () => {
+    useNotesStore.setState({
+      subjects: [
+        {
+          id: 'sub-prog',
+          name: 'Programación Avanzada',
+          color: '#3b82f6',
+          archived: false,
+          schedule: [
+            {
+              day: 'Lunes',
+              startTime: '09:00',
+              endTime: '12:00',
+              classroom: 'Lab 4'
+            }
+          ],
+          notes: []
+        }
+      ]
+    });
+
+    render(<DashboardView />);
+    expect(screen.getByText('Programación Avanzada')).toBeInTheDocument();
+    expect(screen.getByText(/09:00/)).toBeInTheDocument();
+    expect(screen.getByText(/Lab 4/)).toBeInTheDocument();
+  });
 });

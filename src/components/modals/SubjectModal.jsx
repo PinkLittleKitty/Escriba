@@ -1,11 +1,29 @@
-import React, { useState } from 'react';
-import { FolderPlus, X, Plus, Trash2, Clock, Archive, ArchiveRestore } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Plus,
+  Trash2,
+  Clock,
+  Archive,
+  ArchiveRestore,
+  Sparkles,
+  Palette,
+  Calendar,
+  Layers,
+  Edit3
+} from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { ColorPicker } from '../common/ColorPicker.jsx';
-import styles from './Modal.module.css';
-
-const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+import { SubjectBadge } from '../common/SubjectBadge.jsx';
+import { IconPicker } from '../common/IconPicker.jsx';
+import { getSubjectInitials } from '../../utils/subjectIcons.js';
+import {
+  DAYS_OF_WEEK,
+  normalizeScheduleDay,
+  normalizeScheduleItem
+} from '../../utils/helpers.js';
+import styles from './SubjectModal.module.css';
 
 export const SubjectModal = () => {
   const modalData = useUIStore((state) => state.modalData);
@@ -19,11 +37,39 @@ export const SubjectModal = () => {
 
   const isEditing = !!modalData?.id;
 
+  const [activeTab, setActiveTab] = useState('general');
   const [name, setName] = useState(modalData?.name || '');
   const [code, setCode] = useState(modalData?.code || '');
   const [professor, setProfessor] = useState(modalData?.professor || '');
   const [color, setColor] = useState(modalData?.color || '#3b82f6');
-  const [schedule, setSchedule] = useState(modalData?.schedule || []);
+  const [icon, setIcon] = useState(modalData?.icon || null);
+  const [schedule, setSchedule] = useState(() => {
+    return Array.isArray(modalData?.schedule)
+      ? modalData.schedule.map(normalizeScheduleItem)
+      : [];
+  });
+
+  useEffect(() => {
+    if (modalData) {
+      setName(modalData.name || '');
+      setCode(modalData.code || '');
+      setProfessor(modalData.professor || '');
+      setColor(modalData.color || '#3b82f6');
+      setIcon(modalData.icon || null);
+      setSchedule(
+        Array.isArray(modalData.schedule)
+          ? modalData.schedule.map(normalizeScheduleItem)
+          : []
+      );
+    } else {
+      setName('');
+      setCode('');
+      setProfessor('');
+      setColor('#3b82f6');
+      setIcon(null);
+      setSchedule([]);
+    }
+  }, [modalData]);
 
   const handleAddScheduleRow = () => {
     setSchedule([
@@ -34,7 +80,9 @@ export const SubjectModal = () => {
 
   const handleUpdateScheduleRow = (index, field, value) => {
     const updated = [...schedule];
-    updated[index] = { ...updated[index], [field]: value };
+    let val = value;
+    if (field === 'day') val = normalizeScheduleDay(value);
+    updated[index] = { ...updated[index], [field]: val };
     setSchedule(updated);
   };
 
@@ -46,11 +94,15 @@ export const SubjectModal = () => {
     e.preventDefault();
     if (!name.trim()) return;
 
+    const cleanSchedule = schedule
+      .map(normalizeScheduleItem)
+      .filter((s) => s.day && (s.startTime || s.classroom));
+
     if (isEditing) {
-      updateSubject(modalData.id, { name, code, professor, color, schedule });
+      updateSubject(modalData.id, { name, code, professor, color, schedule: cleanSchedule, icon });
       addToast({ message: 'Materia actualizada', type: 'success' });
     } else {
-      addSubject({ name, code, professor, color, schedule });
+      addSubject({ name, code, professor, color, schedule: cleanSchedule, icon });
       addToast({ message: 'Materia creada', type: 'success' });
     }
 
@@ -65,23 +117,101 @@ export const SubjectModal = () => {
     }
   };
 
+  const badgeMode = icon ? 'icon' : 'text';
+
   return (
     <div className={styles.overlay} onClick={closeModal}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            <FolderPlus size={20} color="var(--accent-blue)" />
-            <span>{isEditing ? 'Editar Materia' : 'Nueva Materia'}</span>
-          </h3>
-          <button type="button" className={styles.closeBtn} onClick={closeModal} title="Cerrar">
+        <div className={styles.heroHeader}>
+          <div
+            className={styles.heroBackdropGlow}
+            style={{
+              background: `radial-gradient(circle at 12% 40%, ${color}40, transparent 70%)`
+            }}
+          />
+
+          <div className={styles.heroContent}>
+            <button
+              type="button"
+              className={styles.badgeButton}
+              onClick={() => setActiveTab('icon')}
+              title="Click para cambiar icono o insignia"
+            >
+              <SubjectBadge
+                subject={{ name, code, color, icon }}
+                size="lg"
+              />
+              <span className={styles.badgeEditHint} title="Editar icono">
+                <Edit3 size={10} />
+              </span>
+            </button>
+
+            <div className={styles.heroInfo}>
+              <h3 className={styles.heroTitle}>
+                {isEditing ? 'Editar Materia' : 'Nueva Materia'}
+              </h3>
+
+              <div className={styles.heroMeta}>
+                {name.trim() ? <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{name}</span> : null}
+                {code && <span className={styles.heroCodeBadge}>{code.toUpperCase()}</span>}
+                {professor && <span>Prof. {professor}</span>}
+                {schedule.length > 0 && (
+                  <span>• {schedule.length} {schedule.length === 1 ? 'clase' : 'clases'}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={closeModal}
+            title="Cerrar"
+          >
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className={styles.modalBody}>
+        <form onSubmit={handleSubmit} className={styles.modalForm}>
+          <nav className={styles.tabBar} aria-label="Secciones de la materia">
+            <button
+              type="button"
+              className={`${styles.tabItem} ${activeTab === 'general' ? styles.active : ''}`}
+              onClick={() => setActiveTab('general')}
+            >
+              <Sparkles size={14} />
+              <span>Información</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.tabItem} ${activeTab === 'icon' ? styles.active : ''}`}
+              onClick={() => setActiveTab('icon')}
+            >
+              <Palette size={14} />
+              <span>Icono & Distintivo</span>
+              {icon && <span className={styles.tabBadge}>Icono</span>}
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.tabItem} ${activeTab === 'schedule' ? styles.active : ''}`}
+              onClick={() => setActiveTab('schedule')}
+            >
+              <Calendar size={14} />
+              <span>Horarios</span>
+              {schedule.length > 0 && (
+                <span className={styles.tabBadge}>{schedule.length}</span>
+              )}
+            </button>
+          </nav>
+
+          <div
+            className={styles.tabContent}
+            style={{ display: activeTab === 'general' ? 'flex' : 'none' }}
+          >
             <div className={styles.formGroup}>
-              <label className={styles.label}>Nombre de la Materia *</label>
+              <label className={styles.label}>Nombre de la Materia</label>
               <input
                 type="text"
                 className={styles.input}
@@ -89,7 +219,7 @@ export const SubjectModal = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                autoFocus
+                autoFocus={!isEditing}
               />
             </div>
 
@@ -105,7 +235,7 @@ export const SubjectModal = () => {
                 />
               </div>
 
-              <div className={styles.formGroup} style={{ flex: 2 }}>
+              <div className={styles.formGroup} style={{ flex: 1.5 }}>
                 <label className={styles.label}>Profesor/a</label>
                 <input
                   type="text"
@@ -118,61 +248,70 @@ export const SubjectModal = () => {
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.label}>Color identificador</label>
+              <label className={styles.label}>
+                <span>Color identificador</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                  Distintivo en barra lateral y calendario
+                </span>
+              </label>
               <ColorPicker selectedColor={color} onChange={setColor} />
             </div>
+          </div>
 
+          <div
+            className={styles.tabContent}
+            style={{ display: activeTab === 'icon' ? 'flex' : 'none' }}
+          >
             <div className={styles.formGroup}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className={styles.label}>
-                  <Clock size={13} style={{ display: 'inline', marginRight: '4px' }} />
-                  Horarios de Cursada
-                </label>
+              <IconPicker
+                selectedIcon={icon}
+                onChange={setIcon}
+                color={color}
+                allowClear={true}
+                fallbackText={getSubjectInitials({ name, code })}
+              />
+            </div>
+          </div>
+
+          <div
+            className={styles.tabContent}
+            style={{ display: activeTab === 'schedule' ? 'flex' : 'none' }}
+          >
+            <div className={styles.scheduleHeader}>
+              <label className={styles.label} style={{ margin: 0 }}>
+                <span>Días y Horas de Cursada</span>
+              </label>
+
+              {schedule.length > 0 && (
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                  style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}
                   onClick={handleAddScheduleRow}
                 >
                   <Plus size={13} />
                   <span>Agregar Horario</span>
                 </button>
-              </div>
+              )}
+            </div>
 
-              {schedule.length > 0 && (
-                <div className={styles.scheduleList}>
-                  {schedule.map((row, idx) => (
-                    <div key={idx} className={styles.scheduleRow}>
+            {schedule.length > 0 ? (
+              <div className={styles.scheduleList}>
+                {schedule.map((row, idx) => (
+                  <div key={idx} className={styles.scheduleCard}>
+                    <div className={styles.scheduleCardTop}>
                       <select
+                        className={styles.scheduleDaySelect}
                         value={row.day}
                         onChange={(e) => handleUpdateScheduleRow(idx, 'day', e.target.value)}
+                        title="Día de cursada"
                       >
-                        {DAYS.map((d) => (
+                        {DAYS_OF_WEEK.map((d) => (
                           <option key={d} value={d}>
                             {d}
                           </option>
                         ))}
                       </select>
-
-                      <input
-                        type="time"
-                        value={row.startTime}
-                        onChange={(e) => handleUpdateScheduleRow(idx, 'startTime', e.target.value)}
-                      />
-
-                      <input
-                        type="time"
-                        value={row.endTime}
-                        onChange={(e) => handleUpdateScheduleRow(idx, 'endTime', e.target.value)}
-                      />
-
-                      <input
-                        type="text"
-                        placeholder="Aula / Comisión"
-                        value={row.classroom || ''}
-                        style={{ flex: 1 }}
-                        onChange={(e) => handleUpdateScheduleRow(idx, 'classroom', e.target.value)}
-                      />
 
                       <button
                         type="button"
@@ -180,13 +319,61 @@ export const SubjectModal = () => {
                         onClick={() => handleRemoveScheduleRow(idx)}
                         title="Quitar"
                       >
-                        <Trash2 size={13} color="var(--accent-red)" />
+                        <Trash2 size={14} color="var(--accent-red)" />
                       </button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
+                    <div className={styles.scheduleCardBottom}>
+                      <div className={styles.timeRangeGroup}>
+                        <Clock size={13} color="var(--text-muted)" />
+                        <input
+                          type="time"
+                          className={styles.timeInput}
+                          value={row.startTime || ''}
+                          onChange={(e) => handleUpdateScheduleRow(idx, 'startTime', e.target.value)}
+                          title="Hora de inicio"
+                          aria-label="Hora de inicio"
+                        />
+                        <span className={styles.timeSeparator}>a</span>
+                        <input
+                          type="time"
+                          className={styles.timeInput}
+                          value={row.endTime || ''}
+                          onChange={(e) => handleUpdateScheduleRow(idx, 'endTime', e.target.value)}
+                          title="Hora de fin"
+                          aria-label="Hora de fin"
+                        />
+                      </div>
+
+                      <input
+                        type="text"
+                        className={styles.classroomInput}
+                        placeholder="Aula / Comisión (opcional)"
+                        value={row.classroom || ''}
+                        onChange={(e) => handleUpdateScheduleRow(idx, 'classroom', e.target.value)}
+                        title="Aula o comisión"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptySchedule}>
+                <Clock size={28} color="var(--text-muted)" />
+                <p>
+                  No tenés horarios asignados a esta materia. Agregá tus días de cursada para ver recordatorios automáticos en el Inicio y Calendario.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                  onClick={handleAddScheduleRow}
+                >
+                  <Plus size={14} />
+                  <span>Agregar Horario</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className={styles.modalFooter}>
@@ -208,6 +395,7 @@ export const SubjectModal = () => {
                   {modalData.archived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
                   <span>{modalData.archived ? 'Desarchivar' : 'Archivar'}</span>
                 </button>
+
                 <button
                   type="button"
                   className="btn btn-danger-subtle"
@@ -219,6 +407,7 @@ export const SubjectModal = () => {
                 </button>
               </div>
             )}
+
             <button type="button" className="btn btn-secondary" onClick={closeModal}>
               Cancelar
             </button>

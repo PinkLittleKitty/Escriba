@@ -36,6 +36,7 @@ import { EditorToolbar } from './EditorToolbar.jsx';
 import { UMLBlock } from './UMLBlock.jsx';
 import { MathBlock } from './MathBlock.jsx';
 import { MathToolbar } from './MathToolbar.jsx';
+import { SubjectBadge } from '../common/SubjectBadge.jsx';
 import { formatDate, calculateReadingStats, debounce, highlightAndScrollToMatch } from '../../utils/helpers.js';
 import { handleMarkdownKeyDown } from '../../utils/markdownAutoFormat.js';
 import styles from './NoteEditor.module.css';
@@ -796,10 +797,7 @@ export const NoteEditor = () => {
           />
           {currentSubject && (
             <div className={styles.breadcrumb}>
-              <span
-                className={styles.subjectDot}
-                style={{ backgroundColor: currentSubject.color || 'var(--accent-blue)' }}
-              />
+              <SubjectBadge subject={currentSubject} size="sm" />
               <span>{currentSubject.name}</span>
             </div>
           )}

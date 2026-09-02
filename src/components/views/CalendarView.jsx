@@ -114,13 +114,15 @@ export const CalendarView = () => {
             subjectName: sub.name,
             color: sub.color,
             classroom: sch.classroom,
-            startTime: sch.startTime,
-            endTime: sch.endTime
+            startTime: sch.startTime || sch.time || '',
+            endTime: sch.endTime || ''
           });
         }
       });
     }
   });
+
+  selectedDayClasses.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
   return (
     <div className={styles.calendarContainer}>
@@ -227,7 +229,10 @@ export const CalendarView = () => {
                   <div className={styles.eventMeta}>
                     <Clock size={12} />
                     <span>
-                      {c.startTime} - {c.endTime} {c.classroom ? `• Aula ${c.classroom}` : ''}
+                      {c.startTime && c.endTime
+                        ? `${c.startTime} - ${c.endTime}`
+                        : (c.startTime ? `A las ${c.startTime}` : 'Horario a confirmar')}
+                      {c.classroom ? ` • Aula ${c.classroom}` : ''}
                     </span>
                   </div>
                 </div>

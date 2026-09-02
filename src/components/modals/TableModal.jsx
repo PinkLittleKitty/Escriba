@@ -95,7 +95,7 @@ export const TableModal = () => {
           </button>
         </div>
 
-        <form onSubmit={handleInsert}>
+        <form onSubmit={handleInsert} className={styles.modalForm}>
           <div className={styles.modalBody}>
             <div style={{ marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 500 }}>

@@ -153,6 +153,7 @@ export const NoteEditor = () => {
         const parentBlock = container.closest('.code-block-container');
         if (parentBlock) {
           parentBlock.setAttribute('data-code', code);
+          parentBlock.setAttribute('data-lang', lang);
           let printPre = parentBlock.querySelector('.print-code-block');
           if (!printPre) {
             printPre = document.createElement('pre');
@@ -163,6 +164,42 @@ export const NoteEditor = () => {
           }
           const printCodeEl = printPre.querySelector('code') || printPre;
           printCodeEl.textContent = code;
+
+          let langSelect = parentBlock.querySelector('.code-block-lang-select');
+          if (!langSelect) {
+            const actions = parentBlock.querySelector('.code-block-actions');
+            if (actions) {
+              langSelect = document.createElement('select');
+              langSelect.className = 'code-block-lang-select';
+              langSelect.title = 'Seleccionar lenguaje';
+              langSelect.innerHTML = `
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="c_cpp">C / C++</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="json">JSON</option>
+                <option value="sql">SQL</option>
+                <option value="markdown">Markdown</option>
+              `;
+              actions.prepend(langSelect);
+            }
+          }
+
+          if (langSelect) {
+            langSelect.value = lang;
+            langSelect.onchange = (e) => {
+              const newLang = e.target.value;
+              editor.session.setMode(`ace/mode/${newLang}`);
+              container.setAttribute('data-lang', newLang);
+              parentBlock.setAttribute('data-lang', newLang);
+              const note = currentNoteRef.current;
+              if (note) {
+                debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+              }
+            };
+          }
 
           editor.session.on('change', () => {
             const val = editor.getValue();
@@ -542,19 +579,30 @@ export const NoteEditor = () => {
     const aceId = `ace-${Date.now()}`;
     const initialCode = '// Escribí tu código acá...\n';
     const blockHTML = `
-      <div class="code-block-container" contenteditable="false" data-code="${initialCode}">
+      <div class="code-block-container" contenteditable="false" data-code="${initialCode}" data-lang="javascript">
         <div class="code-block-header">
           <span class="code-block-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
             Bloque de Código
           </span>
           <div class="code-block-actions">
+            <select class="code-block-lang-select" title="Seleccionar lenguaje">
+              <option value="javascript" selected>JavaScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="c_cpp">C / C++</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+              <option value="json">JSON</option>
+              <option value="sql">SQL</option>
+              <option value="markdown">Markdown</option>
+            </select>
             <button type="button" class="code-block-delete-btn" title="Eliminar bloque">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           </div>
         </div>
-        <div id="${aceId}" class="inline-ace-editor" data-code="${initialCode}"></div>
+        <div id="${aceId}" class="inline-ace-editor" data-code="${initialCode}" data-lang="javascript"></div>
         <pre class="print-code-block"><code>${initialCode}</code></pre>
       </div>
       <p><br></p>

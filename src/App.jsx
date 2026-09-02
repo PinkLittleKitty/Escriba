@@ -18,6 +18,7 @@ import { UpdateModal } from './components/modals/UpdateModal.jsx';
 import { KnowledgeGraphModal } from './components/modals/KnowledgeGraphModal.jsx';
 import { ToastContainer } from './components/common/ToastContainer.jsx';
 import { DevConsole } from './components/common/DevConsole.jsx';
+import { DesktopDownloadPopup } from './components/common/DesktopDownloadPopup.jsx';
 import { loadRemoteSharedContent } from './utils/exportHelpers.js';
 import { loggerService } from './services/loggerService.js';
 import { updaterService } from './services/updaterService.js';
@@ -243,6 +244,7 @@ export const App = () => {
       {(activeModal === 'graph' || activeModal === 'knowledgeGraph') && <KnowledgeGraphModal />}
 
       <ToastContainer />
+      <DesktopDownloadPopup />
       <DevConsole />
     </div>
   );

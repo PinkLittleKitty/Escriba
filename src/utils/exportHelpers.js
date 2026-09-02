@@ -119,7 +119,91 @@ export const convertHtmlToMarkdown = (html = '', title = '', subjectName = '') =
 };
 
 export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subjectName = '', theme = 'dark') => {
-  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'cyberpunk' || theme === 'matrix';
+  const THEME_PALETTES = {
+    dark: {
+      bgPrimary: '#1a1a1a',
+      bgCard: '#242424',
+      bgSecondary: '#2d2d2d',
+      textPrimary: '#f5f5f5',
+      textSecondary: '#b8b8b8',
+      borderColor: '#333333',
+      accentBlue: '#4361ee'
+    },
+    light: {
+      bgPrimary: '#ffffff',
+      bgCard: '#ffffff',
+      bgSecondary: '#f8f9fa',
+      textPrimary: '#212529',
+      textSecondary: '#495057',
+      borderColor: '#dee2e6',
+      accentBlue: '#4361ee'
+    },
+    sakura: {
+      bgPrimary: '#faf4ed',
+      bgCard: '#f2e9e1',
+      bgSecondary: '#ebdcd0',
+      textPrimary: '#575279',
+      textSecondary: '#797593',
+      borderColor: '#ebdcd0',
+      accentBlue: '#eb6f92'
+    },
+    github: {
+      bgPrimary: '#0d1117',
+      bgCard: '#161b22',
+      bgSecondary: '#21262d',
+      textPrimary: '#e6edf3',
+      textSecondary: '#848d97',
+      borderColor: '#30363d',
+      accentBlue: '#2f81f7'
+    },
+    catppuccin: {
+      bgPrimary: '#1e1e2e',
+      bgCard: '#181825',
+      bgSecondary: '#313244',
+      textPrimary: '#cdd6f4',
+      textSecondary: '#a6adc8',
+      borderColor: '#313244',
+      accentBlue: '#89b4fa'
+    },
+    blue: {
+      bgPrimary: '#0f1419',
+      bgCard: '#1e293b',
+      bgSecondary: '#334155',
+      textPrimary: '#f1f5f9',
+      textSecondary: '#cbd5e1',
+      borderColor: '#334155',
+      accentBlue: '#3b82f6'
+    },
+    matcha: {
+      bgPrimary: '#151e18',
+      bgCard: '#1d2a22',
+      bgSecondary: '#27382d',
+      textPrimary: '#e8f5e9',
+      textSecondary: '#a3cfbb',
+      borderColor: '#27382d',
+      accentBlue: '#52b788'
+    },
+    unq: {
+      bgPrimary: '#0a0a0a',
+      bgCard: '#1f1f1f',
+      bgSecondary: '#262626',
+      textPrimary: '#f5f5f5',
+      textSecondary: '#d1d1d1',
+      borderColor: '#333333',
+      accentBlue: '#8b1538'
+    },
+    sunset: {
+      bgPrimary: '#2d1b1b',
+      bgCard: '#352121',
+      bgSecondary: '#4d3333',
+      textPrimary: '#fff5f5',
+      textSecondary: '#e8d4d4',
+      borderColor: '#3d2626',
+      accentBlue: '#e63946'
+    }
+  };
+
+  const palette = THEME_PALETTES[theme] || THEME_PALETTES.dark;
   const cleanTitle = title || 'Apunte';
   const cleanSubject = subjectName ? `<div class="subject-tag">${subjectName}</div>` : '';
 
@@ -135,14 +219,13 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <style>
     :root {
-      --bg-primary: ${isDark ? '#0f172a' : '#f8fafc'};
-      --bg-card: ${isDark ? '#1e293b' : '#ffffff'};
-      --bg-secondary: ${isDark ? '#1e293b' : '#f1f5f9'};
-      --text-primary: ${isDark ? '#f8fafc' : '#0f172a'};
-      --text-secondary: ${isDark ? '#94a3b8' : '#475569'};
-      --text-muted: ${isDark ? '#64748b' : '#94a3b8'};
-      --border-color: ${isDark ? '#334155' : '#e2e8f0'};
-      --accent-blue: #3b82f6;
+      --bg-primary: ${palette.bgPrimary};
+      --bg-card: ${palette.bgCard};
+      --bg-secondary: ${palette.bgSecondary};
+      --text-primary: ${palette.textPrimary};
+      --text-secondary: ${palette.textSecondary};
+      --border-color: ${palette.borderColor};
+      --accent-blue: ${palette.accentBlue};
     }
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -155,13 +238,13 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
       justify-content: center;
     }
     .container {
-      max-width: 800px;
+      max-width: 850px;
       width: 100%;
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 2.5rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
     h1 { font-size: 2rem; font-weight: 800; margin-top: 0; margin-bottom: 0.5rem; color: var(--text-primary); }
     .subject-tag {
@@ -169,10 +252,18 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
       font-size: 0.8125rem;
       font-weight: 600;
       color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(67, 97, 238, 0.12);
       padding: 0.2rem 0.6rem;
       border-radius: 6px;
       margin-bottom: 1.5rem;
+    }
+    .internal-link {
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-weight: 500;
+      background: rgba(67, 97, 238, 0.12);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
     }
     .editable-table {
       width: 100%;

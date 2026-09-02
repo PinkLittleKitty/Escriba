@@ -80,13 +80,36 @@ export const CalendarView = () => {
 
   const selectedDateStr = selectedDate.toISOString().split('T')[0];
   const selectedDayEvents = events.filter((e) => e.date === selectedDateStr);
-  const selectedDayName = DAYS_SPANISH[selectedDate.getDay()];
+  const selectedDayIndex = selectedDate.getDay();
+
+  const normalizeScheduleDay = (day) => {
+    if (day === null || day === undefined) return -1;
+    if (typeof day === 'number') {
+      if (day >= 1 && day <= 6) return day;
+      if (day === 7 || day === 0) return 0;
+      return day % 7;
+    }
+    const str = String(day)
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    if (/^(dom|domingo|0|7)$/.test(str)) return 0;
+    if (/^(lun|lunes|1)$/.test(str)) return 1;
+    if (/^(mar|martes|2)$/.test(str)) return 2;
+    if (/^(mie|miercoles|3)$/.test(str)) return 3;
+    if (/^(jue|jueves|4)$/.test(str)) return 4;
+    if (/^(vie|viernes|5)$/.test(str)) return 5;
+    if (/^(sab|sabado|6)$/.test(str)) return 6;
+    return -1;
+  };
 
   const selectedDayClasses = [];
-  subjects.forEach((sub) => {
+  subjects.filter((s) => !s.archived).forEach((sub) => {
     if (Array.isArray(sub.schedule)) {
       sub.schedule.forEach((sch) => {
-        if (sch.day === selectedDayName) {
+        if (normalizeScheduleDay(sch.day) === selectedDayIndex) {
           selectedDayClasses.push({
             subjectName: sub.name,
             color: sub.color,

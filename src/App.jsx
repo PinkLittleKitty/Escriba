@@ -14,6 +14,7 @@ import { TableModal } from './components/modals/TableModal.jsx';
 import { ExportModal } from './components/modals/ExportModal.jsx';
 import { EventModal } from './components/modals/EventModal.jsx';
 import { UpdateModal } from './components/modals/UpdateModal.jsx';
+import { KnowledgeGraphModal } from './components/modals/KnowledgeGraphModal.jsx';
 import { ToastContainer } from './components/common/ToastContainer.jsx';
 import { DevConsole } from './components/common/DevConsole.jsx';
 import { loadRemoteSharedContent } from './utils/exportHelpers.js';
@@ -236,6 +237,7 @@ export const App = () => {
       {(activeModal === 'export' || activeModal === 'share') && <ExportModal />}
       {activeModal === 'event' && <EventModal />}
       {activeModal === 'update' && <UpdateModal />}
+      {(activeModal === 'graph' || activeModal === 'knowledgeGraph') && <KnowledgeGraphModal />}
 
       <ToastContainer />
       <DevConsole />

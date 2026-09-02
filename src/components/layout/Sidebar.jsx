@@ -22,7 +22,7 @@ import {
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
-import { formatDate } from '../../utils/helpers.js';
+import { formatDate, getSearchSnippet } from '../../utils/helpers.js';
 import styles from './Sidebar.module.css';
 
 export const Sidebar = () => {
@@ -48,6 +48,7 @@ export const Sidebar = () => {
   const rawSearchQuery = useUIStore((state) => state.searchQuery);
   const searchQuery = rawSearchQuery.toLowerCase().trim();
   const setSearchQuery = useUIStore((state) => state.setSearchQuery);
+  const setSearchHighlightTarget = useUIStore((state) => state.setSearchHighlightTarget);
   const addToast = useUIStore((state) => state.addToast);
   const sidebarView = useUIStore((state) => state.sidebarView);
   const setSidebarView = useUIStore((state) => state.setSidebarView);
@@ -172,9 +173,27 @@ export const Sidebar = () => {
     setActiveNote(subjectId, noteId);
     setExpandedSubjects((prev) => ({ ...prev, [subjectId]: true }));
     setActiveView('editor');
+    if (searchQuery) {
+      setSearchHighlightTarget({ noteId, query: searchQuery, timestamp: Date.now() });
+    }
     if (window.innerWidth <= 768) {
       setSidebarOpen(false);
     }
+  };
+
+  const renderHighlightedTitle = (title, query) => {
+    if (!query) return title || 'Apunte sin título';
+    const text = title || 'Apunte sin título';
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return text;
+
+    return (
+      <>
+        {text.substring(0, idx)}
+        <mark className={styles.searchSnippetMark}>{text.substring(idx, idx + query.length)}</mark>
+        {text.substring(idx + query.length)}
+      </>
+    );
   };
 
   const handleNewNoteForSubject = (subjectId, e) => {
@@ -420,47 +439,60 @@ export const Sidebar = () => {
             ) : (
               subject.notes.map((note) => {
                 const isActiveNote = activeNoteId === note.id;
+                const snippet = searchQuery ? getSearchSnippet(note.content, searchQuery) : null;
                 return (
                   <div
                     key={note.id}
-                    className={`${styles.noteItem} ${isActiveNote ? styles.active : ''}`}
+                    className={`${styles.noteItem} ${isActiveNote ? styles.active : ''} ${snippet ? styles.hasSnippet : ''}`}
                     onClick={() => handleSelectNote(subject.id, note.id)}
                   >
-                    <div className={styles.noteTitleWrapper}>
-                      <FileText size={13} className={styles.noteDocIcon} />
-                      <span className={styles.noteTitleText}>
-                        {note.title || 'Apunte sin título'}
-                      </span>
+                    <div className={styles.noteMainRow}>
+                      <div className={styles.noteTitleWrapper}>
+                        <FileText size={13} className={styles.noteDocIcon} />
+                        <span className={styles.noteTitleText}>
+                          {renderHighlightedTitle(note.title, searchQuery)}
+                        </span>
+                      </div>
+
+                      {note.favorite && (
+                        <Star size={12} className={styles.favoriteStar} fill="currentColor" />
+                      )}
+
+                      <div className={styles.noteActions}>
+                        <button
+                          type="button"
+                          className={styles.noteActionBtn}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            duplicateNote(note.id);
+                          }}
+                          title="Duplicar"
+                        >
+                          <Copy size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.noteActionBtn}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNote(note.id);
+                          }}
+                          title="Eliminar"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
 
-                    {note.favorite && (
-                      <Star size={12} className={styles.favoriteStar} fill="currentColor" />
+                    {snippet && (
+                      <div className={styles.searchSnippet}>
+                        {snippet.prefix}
+                        {snippet.beforeMatch}
+                        <mark className={styles.searchSnippetMark}>{snippet.matchedText}</mark>
+                        {snippet.afterMatch}
+                        {snippet.suffix}
+                      </div>
                     )}
-
-                    <div className={styles.noteActions}>
-                      <button
-                        type="button"
-                        className={styles.noteActionBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          duplicateNote(note.id);
-                        }}
-                        title="Duplicar"
-                      >
-                        <Copy size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.noteActionBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteNote(note.id);
-                        }}
-                        title="Eliminar"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
                   </div>
                 );
               })
@@ -483,10 +515,11 @@ export const Sidebar = () => {
 
     return notes.map((note) => {
       const isActive = activeNoteId === note.id;
+      const snippet = searchQuery ? getSearchSnippet(note.content, searchQuery) : null;
       return (
         <div
           key={note.id}
-          className={`${styles.flatNoteItem} ${isActive ? styles.active : ''}`}
+          className={`${styles.flatNoteItem} ${isActive ? styles.active : ''} ${snippet ? styles.hasSnippet : ''}`}
           onClick={() => handleSelectNote(note.subjectId, note.id)}
           title={`${note.title || 'Apunte sin título'} (${note.subjectName})`}
         >
@@ -495,12 +528,24 @@ export const Sidebar = () => {
             <FileText size={14} className={styles.flatNoteIcon} />
           </div>
           <div className={styles.flatNoteContent}>
-            <span className={styles.flatNoteTitle}>{note.title || 'Apunte sin título'}</span>
+            <span className={styles.flatNoteTitle}>
+              {renderHighlightedTitle(note.title, searchQuery)}
+            </span>
             <div className={styles.flatNoteMeta}>
               <span className={styles.flatNoteSubject}>{note.subjectName}</span>
               <span>•</span>
               <span>{formatDate(note.updatedAt)}</span>
             </div>
+
+            {snippet && (
+              <div className={styles.searchSnippet}>
+                {snippet.prefix}
+                {snippet.beforeMatch}
+                <mark className={styles.searchSnippetMark}>{snippet.matchedText}</mark>
+                {snippet.afterMatch}
+                {snippet.suffix}
+              </div>
+            )}
           </div>
 
           {note.favorite && (

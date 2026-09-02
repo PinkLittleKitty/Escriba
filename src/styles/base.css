@@ -504,3 +504,37 @@ textarea:focus-visible {
   transform: scale(1.2);
   border-color: var(--text-primary);
 }
+
+mark.search-match-temp {
+  display: inline;
+  border-radius: 3px;
+  padding: 1px 4px;
+  background-color: var(--accent-yellow, #fef08a);
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(254, 240, 138, 0.4);
+  animation: searchPulseFade 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes searchPulseFade {
+  0% {
+    background-color: var(--accent-blue, #3b82f6);
+    color: #ffffff;
+    box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  35% {
+    background-color: var(--accent-yellow, #fef08a);
+    color: #0f172a;
+    box-shadow: 0 0 0 4px rgba(254, 240, 138, 0.45);
+  }
+  75% {
+    background-color: rgba(254, 240, 138, 0.4);
+    color: inherit;
+    box-shadow: none;
+  }
+  100% {
+    background-color: transparent;
+    color: inherit;
+    box-shadow: none;
+  }
+}

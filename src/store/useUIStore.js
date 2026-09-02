@@ -8,6 +8,7 @@ export const useUIStore = create((set, get) => ({
   sidebarCollapsed: localStorage.getItem('sidebar_collapsed') === 'true',
   sidebarView: localStorage.getItem('sidebar_view') || 'subjects',
   searchQuery: '',
+  searchHighlightTarget: null,
   toasts: [],
   settingsTab: 'general',
   isConsoleOpen: false,
@@ -46,6 +47,7 @@ export const useUIStore = create((set, get) => ({
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchHighlightTarget: (target) => set({ searchHighlightTarget: target }),
 
   addToast: ({ message, type = 'info', duration = 3500 }) => {
     const id = generateId('toast');

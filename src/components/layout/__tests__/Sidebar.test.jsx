@@ -67,4 +67,36 @@ describe('Sidebar Component', () => {
 
     expect(useUIStore.getState().activeModal).toBe('trash');
   });
+
+  it('displays search snippet and sets searchHighlightTarget when clicking note in search', () => {
+    useNotesStore.setState({
+      subjects: [
+        {
+          id: 'sub-1',
+          name: 'Algoritmos',
+          color: '#3b82f6',
+          notes: [
+            {
+              id: 'note-1',
+              title: 'Grafos y Caminos',
+              content: '<p>Vimos el algoritmo de Dijkstra para caminos mínimos en grafos.</p>'
+            }
+          ]
+        }
+      ]
+    });
+    useUIStore.setState({ searchQuery: 'Dijkstra' });
+
+    render(<Sidebar />);
+
+    expect(screen.getByText(/caminos mínimos/i)).toBeInTheDocument();
+
+    const noteItem = screen.getByText(/Grafos y Caminos/i);
+    fireEvent.click(noteItem);
+
+    const target = useUIStore.getState().searchHighlightTarget;
+    expect(target).not.toBe(null);
+    expect(target.noteId).toBe('note-1');
+    expect(target.query).toBe('dijkstra');
+  });
 });

@@ -89,3 +89,122 @@ export const parseLocalDate = (dateStr) => {
   if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
   return new Date(year, month, day);
 };
+
+export const getSearchSnippet = (htmlContent = '', query = '', maxLength = 80) => {
+  if (!htmlContent || !query || typeof query !== 'string') return null;
+
+  let plainText = '';
+  if (typeof document !== 'undefined') {
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlContent;
+    plainText = (temp.textContent || temp.innerText || '').replace(/\s+/g, ' ').trim();
+  } else {
+    plainText = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  if (!plainText) return null;
+
+  const lowerText = plainText.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
+  if (!lowerQuery) return null;
+
+  const matchIndex = lowerText.indexOf(lowerQuery);
+  if (matchIndex === -1) return null;
+
+  const charsBefore = 25;
+  const start = Math.max(0, matchIndex - charsBefore);
+  const end = Math.min(plainText.length, matchIndex + lowerQuery.length + maxLength);
+
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < plainText.length ? '…' : '';
+
+  const beforeMatch = plainText.substring(start, matchIndex);
+  const matchedText = plainText.substring(matchIndex, matchIndex + lowerQuery.length);
+  const afterMatch = plainText.substring(matchIndex + lowerQuery.length, end);
+
+  return {
+    prefix,
+    beforeMatch,
+    matchedText,
+    afterMatch,
+    suffix
+  };
+};
+
+export const highlightAndScrollToMatch = (container, query, durationMs = 2500) => {
+  if (!container || !query || typeof query !== 'string' || typeof document === 'undefined') {
+    return false;
+  }
+
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery) return false;
+
+  const existingMarks = container.querySelectorAll('mark.search-match-temp');
+  existingMarks.forEach((m) => {
+    if (m.parentNode) {
+      const text = document.createTextNode(m.textContent || '');
+      const parent = m.parentNode;
+      parent.replaceChild(text, m);
+      parent.normalize();
+    }
+  });
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+  let targetNode = null;
+  let matchOffset = -1;
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (
+      node.parentElement &&
+      node.parentElement.closest(
+        '.inline-ace-editor, .math-block-container, .uml-block-container, .math-toolbar'
+      )
+    ) {
+      continue;
+    }
+
+    const idx = (node.textContent || '').toLowerCase().indexOf(cleanQuery);
+    if (idx !== -1) {
+      targetNode = node;
+      matchOffset = idx;
+      break;
+    }
+  }
+
+  if (!targetNode || !targetNode.parentNode) return false;
+
+  const fullText = targetNode.textContent || '';
+  const before = fullText.substring(0, matchOffset);
+  const matched = fullText.substring(matchOffset, matchOffset + cleanQuery.length);
+  const after = fullText.substring(matchOffset + cleanQuery.length);
+
+  const mark = document.createElement('mark');
+  mark.className = 'search-match-temp';
+  mark.textContent = matched;
+
+  const fragment = document.createDocumentFragment();
+  if (before) fragment.appendChild(document.createTextNode(before));
+  fragment.appendChild(mark);
+  if (after) fragment.appendChild(document.createTextNode(after));
+
+  const parent = targetNode.parentNode;
+  parent.replaceChild(fragment, targetNode);
+
+  try {
+    mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (e) {
+    mark.scrollIntoView();
+  }
+
+  setTimeout(() => {
+    if (mark && mark.parentNode) {
+      const restored = document.createTextNode(mark.textContent || '');
+      const p = mark.parentNode;
+      p.replaceChild(restored, mark);
+      p.normalize();
+    }
+  }, durationMs);
+
+  return true;
+};

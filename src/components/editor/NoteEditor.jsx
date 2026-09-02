@@ -36,7 +36,7 @@ import { EditorToolbar } from './EditorToolbar.jsx';
 import { UMLBlock } from './UMLBlock.jsx';
 import { MathBlock } from './MathBlock.jsx';
 import { MathToolbar } from './MathToolbar.jsx';
-import { formatDate, calculateReadingStats, debounce } from '../../utils/helpers.js';
+import { formatDate, calculateReadingStats, debounce, highlightAndScrollToMatch } from '../../utils/helpers.js';
 import { handleMarkdownKeyDown } from '../../utils/markdownAutoFormat.js';
 import styles from './NoteEditor.module.css';
 
@@ -62,6 +62,7 @@ export const NoteEditor = () => {
 
   const addToast = useUIStore((state) => state.addToast);
   const openModal = useUIStore((state) => state.openModal);
+  const searchHighlightTarget = useUIStore((state) => state.searchHighlightTarget);
   const autoSave = useSettingsStore((state) => state.autoSave);
   const theme = useSettingsStore((state) => state.theme);
 
@@ -406,6 +407,19 @@ export const NoteEditor = () => {
       }, 50);
     }
   }, [activeNoteId]);
+
+  useEffect(() => {
+    if (!searchHighlightTarget?.query || !contentRef.current) return;
+    if (searchHighlightTarget.noteId && currentNote?.id !== searchHighlightTarget.noteId) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      highlightAndScrollToMatch(contentRef.current, searchHighlightTarget.query);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [searchHighlightTarget, currentNote?.id]);
 
   useEffect(() => {
     const handleSaveNoteEvent = () => {

@@ -6,7 +6,9 @@ import {
   escapeHtml,
   formatDate,
   calculateReadingStats,
-  parseLocalDate
+  parseLocalDate,
+  getSearchSnippet,
+  highlightAndScrollToMatch
 } from '../helpers.js';
 
 describe('helpers utility functions', () => {
@@ -104,6 +106,52 @@ describe('helpers utility functions', () => {
       expect(parseLocalDate('')).toBe(null);
       expect(parseLocalDate('not-a-date')).toBe(null);
       expect(parseLocalDate(null)).toBe(null);
+    });
+  });
+
+  describe('getSearchSnippet', () => {
+    it('returns null if content or query is empty', () => {
+      expect(getSearchSnippet('', 'query')).toBe(null);
+      expect(getSearchSnippet('<p>Hola</p>', '')).toBe(null);
+      expect(getSearchSnippet(null, 'query')).toBe(null);
+    });
+
+    it('returns null if query does not match', () => {
+      expect(getSearchSnippet('<p>Hola mundo</p>', 'algoritmo')).toBe(null);
+    });
+
+    it('extracts snippet with matched text and context', () => {
+      const content = '<p>En esta clase vimos el algoritmo de Dijkstra para caminos mínimos.</p>';
+      const snippet = getSearchSnippet(content, 'Dijkstra');
+      expect(snippet).not.toBe(null);
+      expect(snippet.matchedText.toLowerCase()).toBe('dijkstra');
+      expect(snippet.beforeMatch).toContain('algoritmo de');
+      expect(snippet.afterMatch).toContain('caminos');
+    });
+  });
+
+  describe('highlightAndScrollToMatch', () => {
+    it('wraps match in mark.search-match-temp and cleans up', () => {
+      vi.useFakeTimers();
+      const container = document.createElement('div');
+      container.innerHTML = '<p>Introducción a grafos y árboles binarios en algoritmos.</p>';
+      document.body.appendChild(container);
+
+      window.HTMLElement.prototype.scrollIntoView = vi.fn();
+
+      const res = highlightAndScrollToMatch(container, 'árboles', 1000);
+      expect(res).toBe(true);
+
+      const mark = container.querySelector('mark.search-match-temp');
+      expect(mark).not.toBe(null);
+      expect(mark.textContent).toBe('árboles');
+
+      vi.advanceTimersByTime(1100);
+      expect(container.querySelector('mark.search-match-temp')).toBe(null);
+      expect(container.textContent).toContain('árboles');
+
+      document.body.removeChild(container);
+      vi.useRealTimers();
     });
   });
 });

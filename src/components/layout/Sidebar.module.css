@@ -957,6 +957,43 @@
   text-align: left;
 }
 
+.noteItem.hasSnippet {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  padding: 0.45rem 0.55rem;
+}
+
+.noteMainRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.searchSnippet {
+  font-size: 0.725rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin-top: 0.15rem;
+  padding-left: 1.25rem;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 0.85;
+}
+
+.searchSnippetMark {
+  background: rgba(254, 240, 138, 0.25);
+  color: var(--accent-yellow, #fef08a);
+  font-weight: 600;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
 .noteItem:hover {
   background: var(--bg-hover);
   color: var(--text-primary);

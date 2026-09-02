@@ -163,14 +163,16 @@ const FONTS = [
 
 const HOTKEYS = [
   { desc: 'Nuevo Apunte', key: 'Ctrl + N' },
-  { desc: 'Guardar cambios', key: 'Ctrl + S' },
-  { desc: 'Buscar apuntes / materias', key: 'Ctrl + F / Ctrl + K' },
-  { desc: 'Insertar bloque de código', key: 'Ctrl + Alt + C' },
-  { desc: 'Modo Matemático (KaTeX)', key: 'Ctrl + M' },
-  { desc: 'Modo Compacto / Sidebar', key: 'Ctrl + \\' },
+  { desc: 'Guardar', key: 'Ctrl + S' },
+  { desc: 'Buscar', key: 'Ctrl + F / Ctrl + K' },
+  { desc: 'Modo Matemático', key: 'Ctrl + M' },
+  { desc: 'Modo Compacto', key: 'Ctrl + \\' },
   { desc: 'Centrar Texto', key: 'Ctrl + T' },
-  { desc: 'Deshacer / Rehacer', key: 'Ctrl + Z / Ctrl + Y' },
-  { desc: 'Consola de depuración (Debug)', key: 'Ctrl + Alt + D' }
+  { desc: 'Deshacer', key: 'Ctrl + Z' },
+  { desc: 'Rehacer', key: 'Ctrl + Y / ⇧Z' },
+  { desc: 'Sangría (Tab)', key: 'Tab' },
+  { desc: 'Quitar sangría', key: 'Shift + Tab' },
+  { desc: 'Consola Dev', key: 'Ctrl + Alt + D' }
 ];
 
 export const SettingsModal = () => {
@@ -211,10 +213,27 @@ export const SettingsModal = () => {
     localStorage.getItem('local_storage_folder_path') || ''
   );
   const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [appVersion, setAppVersion] = useState('nightly');
 
   const openModal = useUIStore((state) => state.openModal);
 
   const fileInputRef = useRef(null);
+
+  React.useEffect(() => {
+    updaterService.getAppVersion().then((info) => {
+      if (info?.version) {
+        setAppVersion(info.version);
+      }
+    });
+  }, []);
+
+  const handleClearAllData = () => {
+    if (window.confirm('¿ATENCIÓN: Estás seguro de borrar todos los apuntes, materias y datos? Esta acción es irreversible.')) {
+      useNotesStore.getState().setAllData({ subjects: [], events: [], deletedItems: [] });
+      addToast({ message: 'Todos los datos han sido borrados', type: 'info' });
+      closeModal();
+    }
+  };
 
   const handleCheckUpdates = async () => {
     setCheckingUpdates(true);
@@ -945,85 +964,56 @@ export const SettingsModal = () => {
             )}
 
             {settingsTab === 'about' && (
-              <>
-                <div className={styles.aboutHeader}>
-                  <div className={styles.aboutLogoBadge}>
-                    <BookOpen size={28} />
+              <div className={styles.settingsAbout}>
+                <div className={styles.aboutLogo}>
+                  <div className={styles.aboutIconBadge}>
+                    <BookOpen size={36} />
                   </div>
-                  <div className={styles.aboutHeaderText}>
-                    <h3>Escriba</h3>
-                    <p>Tu carpeta digital de estudio</p>
-                  </div>
+                  <h2>Escriba</h2>
+                  <p>Tu carpeta digital de estudio</p>
                 </div>
 
-                <div className={styles.aboutMetaList}>
-                  <div className={styles.aboutMetaItem}>
-                    <span>Build</span>
-                    <span>nightly (v1.0.0 React 19)</span>
+                <div className={styles.aboutInfo}>
+                  <div className={styles.aboutItem}>
+                    <span className={styles.aboutLabel}>Build</span>
+                    <span className={styles.aboutValue}>{appVersion}</span>
                   </div>
-                  <div className={styles.aboutMetaItem}>
-                    <span>Desarrollado por</span>
-                    <span>JustNeki</span>
+                  <div className={styles.aboutItem}>
+                    <span className={styles.aboutLabel}>Desarrollado por</span>
+                    <span className={styles.aboutValue}>JustNeki</span>
                   </div>
-                  <div className={styles.aboutMetaItem}>
-                    <span>Código Fuente</span>
+                  <div className={styles.aboutItem}>
+                    <span className={styles.aboutLabel}>Código Fuente</span>
                     <a
                       href="https://github.com/PinkLittleKitty/Escriba"
                       target="_blank"
                       rel="noopener noreferrer"
+                      className={styles.aboutLink}
                     >
                       <span>GitHub</span>
                       <ExternalLink size={12} />
                     </a>
                   </div>
-                </div>
-
-                <div className={styles.settingsSection}>
-                  <div className={styles.sectionHeader}>
-                    <Rocket size={18} />
-                    <span>Actualizaciones</span>
-                  </div>
-                  <div>
+                  <div className={styles.aboutItem}>
+                    <span className={styles.aboutLabel}>Actualizaciones</span>
                     <button
                       type="button"
-                      className="btn btn-primary"
+                      className="btn btn-secondary btn-sm"
                       onClick={handleCheckUpdates}
                       disabled={checkingUpdates}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.25rem 0.65rem' }}
                     >
-                      <RefreshCw size={14} className={checkingUpdates ? styles.spinning : ''} />
-                      <span>{checkingUpdates ? 'Buscando actualizaciones...' : 'Buscar actualizaciones'}</span>
+                      <RefreshCw size={12} className={checkingUpdates ? styles.spinning : ''} />
+                      <span>{checkingUpdates ? 'Buscando...' : 'Buscar actualizaciones'}</span>
                     </button>
                   </div>
                 </div>
 
-                <div className={styles.settingsSection}>
-                  <div className={styles.sectionHeader}>
-                    <Terminal size={18} />
-                    <span>Herramientas de Desarrollador</span>
-                  </div>
-                  <div>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        closeModal();
-                        useUIStore.getState().openConsole();
-                      }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                    >
-                      <Terminal size={15} />
-                      <span>Abrir Consola</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className={styles.settingsSection}>
-                  <div className={styles.sectionHeader}>
-                    <Keyboard size={18} />
+                <div className={styles.hotkeysSection}>
+                  <h4>
+                    <Keyboard size={16} color="var(--accent-blue)" />
                     <span>Atajos de Teclado</span>
-                  </div>
-
+                  </h4>
                   <div className={styles.hotkeysGrid}>
                     {HOTKEYS.map((h, i) => (
                       <div key={i} className={styles.hotkeyItem}>
@@ -1033,7 +1023,31 @@ export const SettingsModal = () => {
                     ))}
                   </div>
                 </div>
-              </>
+
+                <div className={styles.settingsFooterVip}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      closeModal();
+                      useUIStore.getState().openConsole();
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Terminal size={15} />
+                    <span>Abrir Consola</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.btnDangerMinimal}
+                    onClick={handleClearAllData}
+                  >
+                    <Trash2 size={12} />
+                    <span>Borrar Todo el Contenido</span>
+                  </button>
+                </div>
+              </div>
             )}
           </main>
         </div>

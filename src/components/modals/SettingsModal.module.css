@@ -108,6 +108,7 @@
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-lg);
@@ -145,12 +146,14 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  text-align: left;
 }
 
 .settingsSection {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  text-align: left;
 }
 
 .sectionHeader {
@@ -162,6 +165,7 @@
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.65rem;
+  text-align: left;
 }
 
 .sectionHeader svg {
@@ -173,6 +177,7 @@
   color: var(--text-secondary);
   line-height: 1.5;
   margin-top: -0.5rem;
+  text-align: left;
 }
 
 .checkboxRow {
@@ -185,6 +190,7 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
+  text-align: left;
 }
 
 .checkboxRow:hover {
@@ -205,12 +211,14 @@
   color: var(--text-primary);
   font-weight: 500;
   cursor: pointer;
+  text-align: left;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  text-align: left;
 }
 
 .formLabel {
@@ -220,6 +228,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  text-align: left;
 }
 
 .labelValueBadge {
@@ -239,7 +248,16 @@
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.875rem;
+  text-align: left;
+  text-align-last: left;
   transition: all var(--transition-fast);
+}
+
+.select option {
+  text-align: left;
+  text-align-last: left;
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .select:focus,
@@ -541,70 +559,190 @@
   color: var(--text-primary);
 }
 
-.aboutHeader {
+.settingsAbout {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem 0 1.5rem;
+  width: 100%;
 }
 
-.aboutLogoBadge {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-xl);
-  background: var(--accent-blue-bg);
-  color: var(--accent-blue);
+.aboutLogo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.75rem;
+}
+
+.aboutIconBadge {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 1rem;
+  color: var(--accent-blue);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-.aboutHeaderText h3 {
-  font-size: 1.35rem;
-  font-weight: 700;
+.aboutLogo h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 0.25rem;
   color: var(--text-primary);
 }
 
-.aboutHeaderText p {
-  font-size: 0.85rem;
+.aboutLogo p {
   color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0;
 }
 
-.aboutMetaList {
+.aboutInfo {
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 1.15rem 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
+  margin-bottom: 1.75rem;
+  border: 1px solid var(--border-color);
+  text-align: left;
 }
 
-.aboutMetaItem {
+.aboutItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 0.85rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
-.aboutMetaItem span:first-child {
+.aboutItem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.aboutLabel {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.aboutValue {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.aboutLink {
+  color: var(--accent-blue);
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.aboutLink:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.hotkeysSection {
+  width: 100%;
+  max-width: 480px;
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.hotkeysSection h4 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.85rem;
+}
+
+.hotkeysGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.hotkeyItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease;
+}
+
+.hotkeyItem:hover {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.hotkeyDesc {
   color: var(--text-secondary);
 }
 
-.aboutMetaItem span:last-child,
-.aboutMetaItem a {
-  font-weight: 600;
+.hotkeyItem kbd {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
 }
 
-.aboutMetaItem a:hover {
-  color: var(--accent-blue);
+.settingsFooterVip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.25rem;
+}
+
+.btnDangerMinimal {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.btnDangerMinimal:hover {
+  color: var(--accent-red, #ef4444);
+  background: rgba(239, 68, 68, 0.08);
+  opacity: 1;
 }
 
 @keyframes fadeIn {

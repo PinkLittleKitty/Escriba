@@ -60,6 +60,14 @@ textarea {
   color: inherit;
 }
 
+select,
+select option,
+option {
+  text-align: left;
+  text-align-last: left;
+  direction: ltr;
+}
+
 button {
   cursor: pointer;
   border: none;

@@ -10,9 +10,6 @@ export class GitHubService {
     const headers = {
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'Escriba-App-Sync',
-      'Cache-Control': 'no-cache',
-      Pragma: 'no-cache',
       ...options.headers
     };
 

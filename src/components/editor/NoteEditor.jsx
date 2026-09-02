@@ -142,21 +142,33 @@ export const NoteEditor = () => {
         });
 
         editor.setValue(code, -1);
-
-        editor.session.on('change', () => {
-          const val = editor.getValue();
-          container.setAttribute('data-code', val);
-          const note = currentNoteRef.current;
-          if (autoSave !== false && note) {
-            debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
-          }
-        });
-
         container.setAttribute('data-initialized', 'true');
         aceEditorsRef.current.set(container, editor);
 
         const parentBlock = container.closest('.code-block-container');
         if (parentBlock) {
+          parentBlock.setAttribute('data-code', code);
+          let printPre = parentBlock.querySelector('.print-code-block');
+          if (!printPre) {
+            printPre = document.createElement('pre');
+            printPre.className = 'print-code-block';
+            const printCodeEl = document.createElement('code');
+            printPre.appendChild(printCodeEl);
+            parentBlock.appendChild(printPre);
+          }
+          const printCodeEl = printPre.querySelector('code') || printPre;
+          printCodeEl.textContent = code;
+
+          editor.session.on('change', () => {
+            const val = editor.getValue();
+            container.setAttribute('data-code', val);
+            parentBlock.setAttribute('data-code', val);
+            if (printCodeEl) printCodeEl.textContent = val;
+            const note = currentNoteRef.current;
+            if (autoSave !== false && note) {
+              debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+            }
+          });
           const titleEl = parentBlock.querySelector('.code-block-title');
           if (titleEl && (titleEl.querySelector('i') || !titleEl.querySelector('svg'))) {
             const text = titleEl.textContent?.trim() || 'Bloque de Código';
@@ -282,152 +294,183 @@ export const NoteEditor = () => {
     }
   }, [activeNoteId]);
 
-  const handleTitleChange = (e) => {
-    const newTitle = e.target.value;
-    setTitle(newTitle);
-    if (currentNote && autoSave !== false) {
-      debouncedSave(currentNote.id, newTitle, contentRef.current?.innerHTML || '');
-    }
-  };
+  useEffect(() => {
+    const handleBeforePrint = () => {
+        if (!contentRef.current) return;
+        const containers = contentRef.current.querySelectorAll('.code-block-container');
+        containers.forEach((parentBlock) => {
+          const aceEl = parentBlock.querySelector('.inline-ace-editor');
+          const editor = aceEl ? aceEditorsRef.current.get(aceEl) : null;
+          let code = editor ? editor.getValue() : (aceEl?.getAttribute('data-code') || '');
 
-  const handleContentInput = () => {
-    if (!currentNote || !contentRef.current) return;
-    const html = contentRef.current.innerHTML;
-    setStats(calculateReadingStats(html));
-
-    if (autoSave !== false) {
-      debouncedSave(currentNote.id, title, html);
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleShare = () => {
-    if (!currentNote) return;
-    openModal('export', { note: currentNote });
-  };
-
-  const handleInsertTable = () => {
-    openModal('table');
-  };
-
-  const handleContextMenu = (e) => {
-    const cell = e.target.closest('td, th');
-    if (cell && contentRef.current?.contains(cell)) {
-      e.preventDefault();
-      const menuWidth = 250;
-      const menuHeight = 360;
-      const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
-      const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
-      setTableMenu({ x, y, cell });
-    } else {
-      setTableMenu(null);
-    }
-  };
-
-  const executeTableAction = (action) => {
-    if (!tableMenu?.cell) return;
-    const cell = tableMenu.cell;
-    const row = cell.parentElement;
-    const table = row.closest('table');
-    if (!table) return;
-
-    const rowIndex = row.rowIndex;
-    const cellIndex = cell.cellIndex;
-
-    switch (action) {
-      case 'insert-row-above': {
-        const newRow = table.insertRow(rowIndex);
-        const colCount = row.cells.length;
-        for (let i = 0; i < colCount; i++) {
-          const newCell = newRow.insertCell();
-          newCell.contentEditable = 'true';
-          newCell.innerHTML = '<br>';
-        }
-        break;
-      }
-      case 'insert-row-below': {
-        const newRow = table.insertRow(rowIndex + 1);
-        const colCount = row.cells.length;
-        for (let i = 0; i < colCount; i++) {
-          const newCell = newRow.insertCell();
-          newCell.contentEditable = 'true';
-          newCell.innerHTML = '<br>';
-        }
-        break;
-      }
-      case 'insert-col-left': {
-        for (let i = 0; i < table.rows.length; i++) {
-          const r = table.rows[i];
-          const isHeader = r.parentElement?.tagName === 'THEAD' || r.cells[0]?.tagName === 'TH';
-          const newCell = document.createElement(isHeader ? 'th' : 'td');
-          newCell.contentEditable = 'true';
-          newCell.innerHTML = isHeader ? 'Encabezado' : '<br>';
-          r.insertBefore(newCell, r.cells[cellIndex] || null);
-        }
-        break;
-      }
-      case 'insert-col-right': {
-        for (let i = 0; i < table.rows.length; i++) {
-          const r = table.rows[i];
-          const isHeader = r.parentElement?.tagName === 'THEAD' || r.cells[0]?.tagName === 'TH';
-          const newCell = document.createElement(isHeader ? 'th' : 'td');
-          newCell.contentEditable = 'true';
-          newCell.innerHTML = isHeader ? 'Encabezado' : '<br>';
-          r.insertBefore(newCell, r.cells[cellIndex + 1] || null);
-        }
-        break;
-      }
-      case 'delete-row': {
-        table.deleteRow(rowIndex);
-        if (table.rows.length === 0) table.remove();
-        break;
-      }
-      case 'delete-col': {
-        for (let i = table.rows.length - 1; i >= 0; i--) {
-          const r = table.rows[i];
-          if (r.cells[cellIndex]) {
-            r.deleteCell(cellIndex);
+          if (!code && aceEl) {
+            const scroller = aceEl.querySelector('.ace_scroller');
+            code = (scroller ? scroller.innerText : aceEl.innerText || '').replace(/^\s*[0-9]+\s*\n/gm, '').trim();
           }
+
+          let printPre = parentBlock.querySelector('.print-code-block');
+          if (!printPre) {
+            printPre = document.createElement('pre');
+            printPre.className = 'print-code-block';
+            const printCodeEl = document.createElement('code');
+            printPre.appendChild(printCodeEl);
+            parentBlock.appendChild(printPre);
+          }
+          const printCodeEl = printPre.querySelector('code') || printPre;
+          printCodeEl.textContent = code;
+        });
+      };
+
+      window.addEventListener('beforeprint', handleBeforePrint);
+      return () => window.removeEventListener('beforeprint', handleBeforePrint);
+    }, []);
+
+    const handleTitleChange = (e) => {
+      const newTitle = e.target.value;
+      setTitle(newTitle);
+      if (currentNote && autoSave !== false) {
+        debouncedSave(currentNote.id, newTitle, contentRef.current?.innerHTML || '');
+      }
+    };
+
+    const handleContentInput = () => {
+      if (!currentNote || !contentRef.current) return;
+      const html = contentRef.current.innerHTML;
+      setStats(calculateReadingStats(html));
+
+      if (autoSave !== false) {
+        debouncedSave(currentNote.id, title, html);
+      }
+    };
+
+    const handlePrint = () => {
+      window.print();
+    };
+
+    const handleShare = () => {
+      if (!currentNote) return;
+      openModal('export', { note: currentNote });
+    };
+
+    const handleInsertTable = () => {
+      openModal('table');
+    };
+
+    const handleContextMenu = (e) => {
+      const cell = e.target.closest('td, th');
+      if (cell && contentRef.current?.contains(cell)) {
+        e.preventDefault();
+        const menuWidth = 250;
+        const menuHeight = 360;
+        const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
+        const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
+        setTableMenu({ x, y, cell });
+      } else {
+        setTableMenu(null);
+      }
+    };
+
+    const executeTableAction = (action) => {
+      if (!tableMenu?.cell) return;
+      const cell = tableMenu.cell;
+      const row = cell.parentElement;
+      const table = row.closest('table');
+      if (!table) return;
+
+      const rowIndex = row.rowIndex;
+      const cellIndex = cell.cellIndex;
+
+      switch (action) {
+        case 'insert-row-above': {
+          const newRow = table.insertRow(rowIndex);
+          const colCount = row.cells.length;
+          for (let i = 0; i < colCount; i++) {
+            const newCell = newRow.insertCell();
+            newCell.contentEditable = 'true';
+            newCell.innerHTML = '<br>';
+          }
+          break;
         }
-        if (table.rows[0]?.cells.length === 0) table.remove();
-        break;
+        case 'insert-row-below': {
+          const newRow = table.insertRow(rowIndex + 1);
+          const colCount = row.cells.length;
+          for (let i = 0; i < colCount; i++) {
+            const newCell = newRow.insertCell();
+            newCell.contentEditable = 'true';
+            newCell.innerHTML = '<br>';
+          }
+          break;
+        }
+        case 'insert-col-left': {
+          for (let i = 0; i < table.rows.length; i++) {
+            const r = table.rows[i];
+            const isHeader = r.parentElement?.tagName === 'THEAD' || r.cells[0]?.tagName === 'TH';
+            const newCell = document.createElement(isHeader ? 'th' : 'td');
+            newCell.contentEditable = 'true';
+            newCell.innerHTML = isHeader ? 'Encabezado' : '<br>';
+            r.insertBefore(newCell, r.cells[cellIndex] || null);
+          }
+          break;
+        }
+        case 'insert-col-right': {
+          for (let i = 0; i < table.rows.length; i++) {
+            const r = table.rows[i];
+            const isHeader = r.parentElement?.tagName === 'THEAD' || r.cells[0]?.tagName === 'TH';
+            const newCell = document.createElement(isHeader ? 'th' : 'td');
+            newCell.contentEditable = 'true';
+            newCell.innerHTML = isHeader ? 'Encabezado' : '<br>';
+            r.insertBefore(newCell, r.cells[cellIndex + 1] || null);
+          }
+          break;
+        }
+        case 'delete-row': {
+          table.deleteRow(rowIndex);
+          if (table.rows.length === 0) table.remove();
+          break;
+        }
+        case 'delete-col': {
+          for (let i = table.rows.length - 1; i >= 0; i--) {
+            const r = table.rows[i];
+            if (r.cells[cellIndex]) {
+              r.deleteCell(cellIndex);
+            }
+          }
+          if (table.rows[0]?.cells.length === 0) table.remove();
+          break;
+        }
+        case 'delete-table': {
+          table.remove();
+          break;
+        }
+        default:
+          break;
       }
-      case 'delete-table': {
-        table.remove();
-        break;
+
+      setTableMenu(null);
+      const note = currentNoteRef.current;
+      if (note) {
+        debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
       }
-      default:
-        break;
-    }
+    };
 
-    setTableMenu(null);
-    const note = currentNoteRef.current;
-    if (note) {
-      debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
-    }
-  };
+    const executeTableColor = (bgColor, textColor) => {
+      if (!tableMenu?.cell) return;
+      tableMenu.cell.style.backgroundColor = bgColor;
+      if (textColor) {
+        tableMenu.cell.style.color = textColor;
+      }
+      setTableMenu(null);
+      const note = currentNoteRef.current;
+      if (note) {
+        debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+      }
+    };
 
-  const executeTableColor = (bgColor, textColor) => {
-    if (!tableMenu?.cell) return;
-    tableMenu.cell.style.backgroundColor = bgColor;
-    if (textColor) {
-      tableMenu.cell.style.color = textColor;
-    }
-    setTableMenu(null);
-    const note = currentNoteRef.current;
-    if (note) {
-      debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
-    }
-  };
-
-  const handleInsertCodeBlock = () => {
-    const aceId = `ace-${Date.now()}`;
-    const initialCode = '// Escribí tu código acá...\n';
-    const blockHTML = `
-      <div class="code-block-container" contenteditable="false">
+    const handleInsertCodeBlock = () => {
+      const aceId = `ace-${Date.now()}`;
+      const initialCode = '// Escribí tu código acá...\n';
+      const blockHTML = `
+      <div class="code-block-container" contenteditable="false" data-code="${initialCode}">
         <div class="code-block-header">
           <span class="code-block-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
@@ -440,277 +483,278 @@ export const NoteEditor = () => {
           </div>
         </div>
         <div id="${aceId}" class="inline-ace-editor" data-code="${initialCode}"></div>
+        <pre class="print-code-block"><code>${initialCode}</code></pre>
       </div>
       <p><br></p>
     `;
-    document.execCommand('insertHTML', false, blockHTML);
-    setTimeout(() => {
-      initAceEditors();
-      if (currentNote) {
-        debouncedSave(currentNote.id, title, contentRef.current?.innerHTML || '');
-      }
-    }, 50);
-  };
+      document.execCommand('insertHTML', false, blockHTML);
+      setTimeout(() => {
+        initAceEditors();
+        if (currentNote) {
+          debouncedSave(currentNote.id, title, contentRef.current?.innerHTML || '');
+        }
+      }, 50);
+    };
 
-  const handleInsertMath = () => {
-    const mathHTML = `
+    const handleInsertMath = () => {
+      const mathHTML = `
       <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan); margin: 1rem 0; font-family: var(--font-mono); font-size: 0.9rem;">
         $$ f(x) = \\int_{-\\infty}^{\\infty} \\hat{f}(\\xi)\\,e^{2 \\pi i \\xi x}\\,d\\xi $$
       </div>
       <p></p>
     `;
-    document.execCommand('insertHTML', false, mathHTML);
-  };
+      document.execCommand('insertHTML', false, mathHTML);
+    };
 
-  const handleInsertUML = () => {
-    if (!contentRef.current) return;
+    const handleInsertUML = () => {
+      if (!contentRef.current) return;
 
-    const defaultCode = 'graph TD\n  A[Inicio] --> B{¿Es correcto?}\n  B -->|Sí| C[Continuar]\n  B -->|No| D[Revisar]';
+      const defaultCode = 'graph TD\n  A[Inicio] --> B{¿Es correcto?}\n  B -->|Sí| C[Continuar]\n  B -->|No| D[Revisar]';
 
-    const sentinel = document.createElement('div');
-    sentinel.className = 'uml-block-container';
-    sentinel.setAttribute('data-uml-code', defaultCode);
-    sentinel.setAttribute('data-initialized', 'false');
-    sentinel.setAttribute('contenteditable', 'false');
+      const sentinel = document.createElement('div');
+      sentinel.className = 'uml-block-container';
+      sentinel.setAttribute('data-uml-code', defaultCode);
+      sentinel.setAttribute('data-initialized', 'false');
+      sentinel.setAttribute('contenteditable', 'false');
 
-    const spacer = document.createElement('p');
-    spacer.innerHTML = '<br>';
+      const spacer = document.createElement('p');
+      spacer.innerHTML = '<br>';
 
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
-      if (contentRef.current.contains(range.commonAncestorContainer)) {
-        range.collapse(false);
-        range.insertNode(spacer);
-        range.insertNode(sentinel);
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        if (contentRef.current.contains(range.commonAncestorContainer)) {
+          range.collapse(false);
+          range.insertNode(spacer);
+          range.insertNode(sentinel);
+        } else {
+          contentRef.current.appendChild(sentinel);
+          contentRef.current.appendChild(spacer);
+        }
       } else {
         contentRef.current.appendChild(sentinel);
         contentRef.current.appendChild(spacer);
       }
-    } else {
-      contentRef.current.appendChild(sentinel);
-      contentRef.current.appendChild(spacer);
+
+      setTimeout(() => {
+        initUMLBlocks();
+        const note = currentNoteRef.current;
+        if (note) {
+          debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
+        }
+      }, 50);
+    };
+
+    const backlinks = [];
+    if (currentNote && currentNote.title) {
+      const searchTarget = currentNote.title.toLowerCase();
+      subjects.forEach((s) => {
+        s.notes.forEach((n) => {
+          if (n.id !== currentNote.id && n.content && n.content.toLowerCase().includes(searchTarget)) {
+            backlinks.push({ note: n, subject: s });
+          }
+        });
+      });
     }
 
-    setTimeout(() => {
-      initUMLBlocks();
-      const note = currentNoteRef.current;
-      if (note) {
-        debouncedSave(note.id, titleRef.current, contentRef.current?.innerHTML || '');
-      }
-    }, 50);
-  };
+    if (!currentNote) {
+      return (
+        <div className={styles.editorContainer}>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            No hay ningún apunte seleccionado. Elegí uno del panel lateral o creá uno nuevo.
+          </div>
+        </div>
+      );
+    }
 
-  const backlinks = [];
-  if (currentNote && currentNote.title) {
-    const searchTarget = currentNote.title.toLowerCase();
-    subjects.forEach((s) => {
-      s.notes.forEach((n) => {
-        if (n.id !== currentNote.id && n.content && n.content.toLowerCase().includes(searchTarget)) {
-          backlinks.push({ note: n, subject: s });
-        }
-      });
-    });
-  }
-
-  if (!currentNote) {
     return (
       <div className={styles.editorContainer}>
-        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-          No hay ningún apunte seleccionado. Elegí uno del panel lateral o creá uno nuevo.
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.editorContainer}>
-      <div className={styles.noteHeader}>
-        <div className={styles.titleSection}>
-          <input
-            type="text"
-            className={styles.titleInput}
-            value={title}
-            onChange={handleTitleChange}
-            placeholder="Apunte sin título"
-          />
-          {currentSubject && (
-            <div className={styles.breadcrumb}>
-              <span
-                className={styles.subjectDot}
-                style={{ backgroundColor: currentSubject.color || 'var(--accent-blue)' }}
-              />
-              <span>{currentSubject.name}</span>
-            </div>
-          )}
-        </div>
-
-        <div className={styles.metaActions}>
-          <button
-            type="button"
-            className={`btn-icon ${currentNote.favorite ? 'active' : ''}`}
-            onClick={() => toggleFavorite(currentNote.id)}
-            title={currentNote.favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
-          >
-            <Star
-              size={18}
-              fill={currentNote.favorite ? 'var(--accent-yellow)' : 'none'}
-              color={currentNote.favorite ? 'var(--accent-yellow)' : 'currentColor'}
+        <div className={styles.noteHeader}>
+          <div className={styles.titleSection}>
+            <input
+              type="text"
+              className={styles.titleInput}
+              value={title}
+              onChange={handleTitleChange}
+              placeholder="Apunte sin título"
             />
-          </button>
-
-          <button
-            type="button"
-            className="btn-icon"
-            onClick={handlePrint}
-            title="Imprimir / Exportar PDF"
-          >
-            <Printer size={18} />
-          </button>
-
-          <button
-            type="button"
-            className="btn-icon"
-            onClick={handleShare}
-            title="Compartir apunte"
-          >
-            <Share2 size={18} />
-          </button>
-
-          <span className={styles.updatedDate}>
-            {formatDate(currentNote.updatedAt || currentNote.createdAt)}
-          </span>
-
-          <button
-            type="button"
-            className="btn-icon"
-            onClick={() => deleteNote(currentNote.id)}
-            title="Eliminar apunte"
-            style={{ color: 'var(--accent-red)' }}
-          >
-            <Trash2 size={18} />
-          </button>
-        </div>
-      </div>
-
-      <EditorToolbar
-        onInsertCodeBlock={handleInsertCodeBlock}
-        onInsertMath={handleInsertMath}
-        onInsertUML={handleInsertUML}
-        onInsertTable={handleInsertTable}
-      />
-
-      <div className={styles.editorScrollArea}>
-        <div
-          ref={contentRef}
-          className={styles.editorBody}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={handleContentInput}
-          onContextMenu={handleContextMenu}
-          data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
-        />
-      </div>
-
-      {tableMenu && (
-        <div
-          className="table-context-menu"
-          style={{
-            position: 'fixed',
-            left: `${tableMenu.x}px`,
-            top: `${tableMenu.y}px`,
-            zIndex: 10000
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <div className="menu-item" onClick={() => executeTableAction('insert-row-above')}>
-            <ArrowUp size={14} />
-            <span>Insertar fila arriba</span>
-          </div>
-          <div className="menu-item" onClick={() => executeTableAction('insert-row-below')}>
-            <ArrowDown size={14} />
-            <span>Insertar fila abajo</span>
-          </div>
-          <div className="menu-divider" />
-          <div className="menu-item" onClick={() => executeTableAction('insert-col-left')}>
-            <ArrowLeft size={14} />
-            <span>Insertar columna a la izquierda</span>
-          </div>
-          <div className="menu-item" onClick={() => executeTableAction('insert-col-right')}>
-            <ArrowRight size={14} />
-            <span>Insertar columna a la derecha</span>
-          </div>
-          <div className="menu-divider" />
-          <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-row')}>
-            <MinusCircle size={14} />
-            <span>Eliminar fila</span>
-          </div>
-          <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-col')}>
-            <MinusCircle size={14} />
-            <span>Eliminar columna</span>
-          </div>
-          <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-table')}>
-            <Trash2 size={14} />
-            <span>Eliminar tabla</span>
-          </div>
-          <div className="menu-divider" />
-          <div className="menu-color-picker">
-            <span className="color-label">
-              <Paintbrush size={12} />
-              <span>Fondo de celda</span>
-            </span>
-            <div className="color-options-grid">
-              {TABLE_PALETTE.map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  className="color-picker-dot"
-                  style={{ backgroundColor: p.bg }}
-                  title={p.label}
-                  onClick={() => executeTableColor(p.bg, p.text)}
+            {currentSubject && (
+              <div className={styles.breadcrumb}>
+                <span
+                  className={styles.subjectDot}
+                  style={{ backgroundColor: currentSubject.color || 'var(--accent-blue)' }}
                 />
+                <span>{currentSubject.name}</span>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.metaActions}>
+            <button
+              type="button"
+              className={`btn-icon ${currentNote.favorite ? 'active' : ''}`}
+              onClick={() => toggleFavorite(currentNote.id)}
+              title={currentNote.favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
+            >
+              <Star
+                size={18}
+                fill={currentNote.favorite ? 'var(--accent-yellow)' : 'none'}
+                color={currentNote.favorite ? 'var(--accent-yellow)' : 'currentColor'}
+              />
+            </button>
+
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handlePrint}
+              title="Imprimir / Exportar PDF"
+            >
+              <Printer size={18} />
+            </button>
+
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={handleShare}
+              title="Compartir apunte"
+            >
+              <Share2 size={18} />
+            </button>
+
+            <span className={styles.updatedDate}>
+              {formatDate(currentNote.updatedAt || currentNote.createdAt)}
+            </span>
+
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => deleteNote(currentNote.id)}
+              title="Eliminar apunte"
+              style={{ color: 'var(--accent-red)' }}
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
+        </div>
+
+        <EditorToolbar
+          onInsertCodeBlock={handleInsertCodeBlock}
+          onInsertMath={handleInsertMath}
+          onInsertUML={handleInsertUML}
+          onInsertTable={handleInsertTable}
+        />
+
+        <div className={styles.editorScrollArea}>
+          <div
+            ref={contentRef}
+            className={styles.editorBody}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={handleContentInput}
+            onContextMenu={handleContextMenu}
+            data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
+          />
+        </div>
+
+        {tableMenu && (
+          <div
+            className="table-context-menu"
+            style={{
+              position: 'fixed',
+              left: `${tableMenu.x}px`,
+              top: `${tableMenu.y}px`,
+              zIndex: 10000
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="menu-item" onClick={() => executeTableAction('insert-row-above')}>
+              <ArrowUp size={14} />
+              <span>Insertar fila arriba</span>
+            </div>
+            <div className="menu-item" onClick={() => executeTableAction('insert-row-below')}>
+              <ArrowDown size={14} />
+              <span>Insertar fila abajo</span>
+            </div>
+            <div className="menu-divider" />
+            <div className="menu-item" onClick={() => executeTableAction('insert-col-left')}>
+              <ArrowLeft size={14} />
+              <span>Insertar columna a la izquierda</span>
+            </div>
+            <div className="menu-item" onClick={() => executeTableAction('insert-col-right')}>
+              <ArrowRight size={14} />
+              <span>Insertar columna a la derecha</span>
+            </div>
+            <div className="menu-divider" />
+            <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-row')}>
+              <MinusCircle size={14} />
+              <span>Eliminar fila</span>
+            </div>
+            <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-col')}>
+              <MinusCircle size={14} />
+              <span>Eliminar columna</span>
+            </div>
+            <div className="menu-item data-destructive" onClick={() => executeTableAction('delete-table')}>
+              <Trash2 size={14} />
+              <span>Eliminar tabla</span>
+            </div>
+            <div className="menu-divider" />
+            <div className="menu-color-picker">
+              <span className="color-label">
+                <Paintbrush size={12} />
+                <span>Fondo de celda</span>
+              </span>
+              <div className="color-options-grid">
+                {TABLE_PALETTE.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    className="color-picker-dot"
+                    style={{ backgroundColor: p.bg }}
+                    title={p.label}
+                    onClick={() => executeTableColor(p.bg, p.text)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {backlinks.length > 0 && (
+          <div className={styles.backlinksPanel}>
+            <div className={styles.backlinksHeader}>
+              <LinkIcon size={14} color="var(--accent-blue)" />
+              <span>Menciones a este apunte ({backlinks.length})</span>
+            </div>
+            <div className={styles.backlinksList}>
+              {backlinks.map(({ note, subject }) => (
+                <button
+                  key={note.id}
+                  type="button"
+                  className={styles.backlinkTag}
+                  onClick={() => setActiveNote(subject.id, note.id)}
+                >
+                  {subject.name} &rsaquo; {note.title}
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {backlinks.length > 0 && (
-        <div className={styles.backlinksPanel}>
-          <div className={styles.backlinksHeader}>
-            <LinkIcon size={14} color="var(--accent-blue)" />
-            <span>Menciones a este apunte ({backlinks.length})</span>
-          </div>
-          <div className={styles.backlinksList}>
-            {backlinks.map(({ note, subject }) => (
-              <button
-                key={note.id}
-                type="button"
-                className={styles.backlinkTag}
-                onClick={() => setActiveNote(subject.id, note.id)}
-              >
-                {subject.name} &rsaquo; {note.title}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className={styles.editorFooter}>
-        <div className={styles.statsGroup}>
-          <div className={styles.statItem}>
-            <FileText size={13} />
-            <span>{stats.words} palabras</span>
-          </div>
-          <div className={styles.statItem}>
-            <span>{stats.chars} caracteres</span>
-          </div>
-          <div className={styles.statItem}>
-            <Clock size={13} />
-            <span>{stats.readingTime} min lectura</span>
+        <div className={styles.editorFooter}>
+          <div className={styles.statsGroup}>
+            <div className={styles.statItem}>
+              <FileText size={13} />
+              <span>{stats.words} palabras</span>
+            </div>
+            <div className={styles.statItem}>
+              <span>{stats.chars} caracteres</span>
+            </div>
+            <div className={styles.statItem}>
+              <Clock size={13} />
+              <span>{stats.readingTime} min lectura</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };

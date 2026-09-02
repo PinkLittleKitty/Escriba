@@ -17,6 +17,11 @@ body,
   overflow: hidden;
 }
 
+.print-code-block,
+.print-only-code {
+  display: none;
+}
+
 body {
   font-family: var(--font-family);
   font-size: var(--font-size);

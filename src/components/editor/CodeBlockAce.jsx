@@ -26,6 +26,7 @@ export const CodeBlockAce = ({
 
   const [currentLang, setCurrentLang] = useState(language);
   const [copied, setCopied] = useState(false);
+  const [currentCode, setCurrentCode] = useState(code);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -47,6 +48,7 @@ export const CodeBlockAce = ({
 
     editor.on('change', () => {
       const val = editor.getValue();
+      setCurrentCode(val);
       if (onChange) onChange(val);
     });
 
@@ -119,6 +121,10 @@ export const CodeBlockAce = ({
       </div>
 
       <div ref={editorRef} className={styles.aceEditorHost} />
+
+      <pre className="print-only-code">
+        <code>{currentCode}</code>
+      </pre>
     </div>
   );
 };

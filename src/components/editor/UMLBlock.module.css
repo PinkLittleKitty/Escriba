@@ -68,7 +68,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.25));
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.25));
   min-width: 190px;
   padding: 0.25rem;
   display: flex;
@@ -230,4 +230,47 @@
   color: var(--text-muted);
   font-size: 0.8125rem;
   font-style: italic;
+}
+
+.screenWrapper {
+  display: block;
+}
+
+.printWrapper {
+  display: none;
+}
+
+@media print {
+  .umlContainer {
+    margin: 1.5rem auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .screenWrapper {
+    display: none !important;
+  }
+
+  .printWrapper {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0.5rem 0 !important;
+    background: transparent !important;
+  }
+
+  .printWrapper svg {
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 550pt !important;
+    background: #ffffff !important;
+  }
 }

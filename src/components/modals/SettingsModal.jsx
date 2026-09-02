@@ -163,16 +163,22 @@ const FONTS = [
 
 const HOTKEYS = [
   { desc: 'Nuevo Apunte', key: 'Ctrl + N' },
-  { desc: 'Guardar', key: 'Ctrl + S' },
-  { desc: 'Buscar', key: 'Ctrl + F / Ctrl + K' },
-  { desc: 'Modo Matemático', key: 'Ctrl + M' },
-  { desc: 'Modo Compacto', key: 'Ctrl + \\' },
+  { desc: 'Nueva Materia', key: 'Ctrl + Alt + N' },
+  { desc: 'Guardar cambios', key: 'Ctrl + S' },
+  { desc: 'Buscar apuntes / materias', key: 'Ctrl + F / Ctrl + K' },
+  { desc: 'Modo Matemático (KaTeX)', key: 'Ctrl + M' },
+  { desc: 'Insertar Bloque de Código', key: 'Ctrl + Alt + C' },
+  { desc: 'Insertar Diagrama UML', key: 'Ctrl + Alt + U' },
+  { desc: 'Código Inline', key: 'Ctrl + `' },
+  { desc: 'Enlazar Apunte', key: 'Ctrl + L' },
   { desc: 'Centrar Texto', key: 'Ctrl + T' },
-  { desc: 'Deshacer', key: 'Ctrl + Z' },
-  { desc: 'Rehacer', key: 'Ctrl + Y / ⇧Z' },
-  { desc: 'Sangría (Tab)', key: 'Tab' },
-  { desc: 'Quitar sangría', key: 'Shift + Tab' },
-  { desc: 'Consola Dev', key: 'Ctrl + Alt + D' }
+  { desc: 'Negrita / Cursiva / Subrayado', key: 'Ctrl + B / I / U' },
+  { desc: 'Sangría / Reducir Sangría', key: 'Tab / Shift + Tab' },
+  { desc: 'Deshacer / Rehacer', key: 'Ctrl + Z / Ctrl + Y' },
+  { desc: 'Modo Compacto / Sidebar', key: 'Ctrl + \\' },
+  { desc: 'Exportar / Compartir', key: 'Ctrl + Shift + S' },
+  { desc: 'Nuevo Examen / Evento', key: 'Ctrl + Alt + E' },
+  { desc: 'Consola de Desarrollo', key: 'Ctrl + Alt + D' }
 ];
 
 export const SettingsModal = () => {

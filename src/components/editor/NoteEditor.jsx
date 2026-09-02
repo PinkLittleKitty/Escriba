@@ -404,6 +404,21 @@ export const NoteEditor = () => {
   }, [activeNoteId]);
 
   useEffect(() => {
+    const handleSaveNoteEvent = () => {
+      const note = currentNoteRef.current;
+      if (note && contentRef.current) {
+        updateNote(note.id, {
+          title: titleRef.current || 'Apunte sin título',
+          content: contentRef.current.innerHTML || ''
+        });
+      }
+    };
+
+    window.addEventListener('escriba-save-note', handleSaveNoteEvent);
+    return () => window.removeEventListener('escriba-save-note', handleSaveNoteEvent);
+  }, [updateNote]);
+
+  useEffect(() => {
     const handleBeforePrint = () => {
       if (!contentRef.current) return;
       const containers = contentRef.current.querySelectorAll('.code-block-container');
@@ -854,13 +869,68 @@ export const NoteEditor = () => {
             }
           }}
           onKeyDown={(e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
-              e.preventDefault();
-              handleToggleMathToolbar();
+            if (e.ctrlKey || e.metaKey) {
+              const key = e.key.toLowerCase();
+              if (key === 'm') {
+                e.preventDefault();
+                handleToggleMathToolbar();
+              } else if (e.altKey && key === 'c') {
+                e.preventDefault();
+                handleInsertCodeBlock();
+              } else if (e.altKey && key === 'u') {
+                e.preventDefault();
+                handleInsertUMLDiagram();
+              } else if (key === 'l' && !e.altKey && !e.shiftKey) {
+                e.preventDefault();
+                openModal('linkNote');
+              } else if (key === '`') {
+                e.preventDefault();
+                const selection = window.getSelection();
+                if (selection && selection.rangeCount > 0) {
+                  const range = selection.getRangeAt(0);
+                  const selectedText = range.toString();
+                  if (selectedText) {
+                    const codeNode = document.createElement('code');
+                    codeNode.style.cssText =
+                      'background: var(--bg-tertiary); padding: 0.15rem 0.35rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85em; color: var(--accent-blue);';
+                    codeNode.textContent = selectedText;
+                    range.deleteContents();
+                    range.insertNode(codeNode);
+                  }
+                }
+              } else if (key === 't' && !e.altKey && !e.shiftKey) {
+                e.preventDefault();
+                if (document.queryCommandState('justifyCenter')) {
+                  document.execCommand('justifyLeft', false, null);
+                } else {
+                  document.execCommand('justifyCenter', false, null);
+                }
+              }
             }
+
             if (e.key === 'Tab') {
               e.preventDefault();
-              document.execCommand('insertText', false, '    ');
+              const selection = window.getSelection();
+              if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const node = range.commonAncestorContainer;
+                const elem = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+                const isInsideList = elem && elem.closest('li, ul, ol');
+
+                if (isInsideList) {
+                  if (e.shiftKey) {
+                    document.execCommand('outdent', false, null);
+                  } else {
+                    document.execCommand('indent', false, null);
+                  }
+                } else {
+                  if (e.shiftKey) {
+                    document.execCommand('outdent', false, null);
+                  } else {
+                    document.execCommand('insertText', false, '    ');
+                  }
+                }
+              }
             }
           }}
           data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."

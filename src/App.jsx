@@ -119,7 +119,12 @@ export const App = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'k' || e.key.toLowerCase() === 'f')) {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      if (!isCtrl) return;
+
+      const key = e.key.toLowerCase();
+
+      if (key === 'k' || key === 'f') {
         e.preventDefault();
         if (useUIStore.getState().sidebarCollapsed) {
           useUIStore.getState().setSidebarCollapsed(false);
@@ -128,21 +133,61 @@ export const App = () => {
           const searchInput = document.querySelector('input[placeholder*="Buscar"]');
           if (searchInput) searchInput.focus();
         }, 50);
+        return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'n') {
+      if (e.altKey && key === 'n') {
         e.preventDefault();
         openModal('subject');
+        return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'd') {
+      if (!e.altKey && !e.shiftKey && key === 'n') {
+        e.preventDefault();
+        const store = useNotesStore.getState();
+        const activeSubId = store.activeSubjectId || store.subjects.find((s) => !s.archived)?.id;
+        if (activeSubId) {
+          const newNote = store.addNote(activeSubId, { title: 'Nuevo Apunte' });
+          if (newNote) {
+            store.setActiveNote(activeSubId, newNote.id);
+            store.setActiveView('editor');
+            addToast({ message: 'Nuevo apunte creado', type: 'info' });
+          }
+        } else {
+          openModal('subject');
+        }
+        return;
+      }
+
+      if (!e.altKey && !e.shiftKey && key === 's') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('escriba-save-note'));
+        addToast({ message: 'Apunte guardado', type: 'info' });
+        return;
+      }
+
+      if (e.shiftKey && key === 's') {
+        e.preventDefault();
+        openModal('export');
+        return;
+      }
+
+      if (e.altKey && key === 'e') {
+        e.preventDefault();
+        openModal('event');
+        return;
+      }
+
+      if (e.altKey && key === 'd') {
         e.preventDefault();
         useUIStore.getState().toggleConsole();
+        return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+      if (e.key === '\\') {
         e.preventDefault();
         useUIStore.getState().toggleSidebarCollapse();
+        return;
       }
     };
 

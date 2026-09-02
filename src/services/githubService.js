@@ -11,11 +11,14 @@ export class GitHubService {
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'Escriba-App-Sync',
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
       ...options.headers
     };
 
     try {
       const response = await fetch(url, {
+        cache: 'no-store',
         ...options,
         headers,
         signal: controller.signal
@@ -98,8 +101,9 @@ export class GitHubService {
   }
 
   async getFile(token, username, repoName, path) {
+    const t = Date.now();
     const response = await this.fetchWithTimeout(
-      `${this.baseUrl}/repos/${username}/${repoName}/contents/${path}`,
+      `${this.baseUrl}/repos/${username}/${repoName}/contents/${path}?_t=${t}`,
       {},
       token
     );
@@ -150,22 +154,18 @@ export class GitHubService {
         }
 
         return await response.json();
-      } catch (error) {
-        if (attempt === retries) throw error;
+      } catch (err) {
+        if (attempt === retries) throw err;
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       }
     }
   }
 
   async uploadSingleNote(token, username, repoName, note, subjectId) {
-    if (!token || !username || !repoName || !note?.id) return false;
-    await this.ensureRepository(token, username, repoName);
-
     const noteData = {
       ...note,
       subjectId
     };
-
     return await this.updateFile(
       token,
       username,
@@ -177,15 +177,16 @@ export class GitHubService {
   }
 
   async getBranchHead(token, username, repoName, branch = 'main') {
+    const t = Date.now();
     let response = await this.fetchWithTimeout(
-      `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/${branch}`,
+      `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/${branch}?_t=${t}`,
       {},
       token
     );
 
     if (!response.ok && branch === 'main') {
       response = await this.fetchWithTimeout(
-        `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/master`,
+        `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/master?_t=${t}`,
         {},
         token
       );
@@ -208,12 +209,22 @@ export class GitHubService {
   }
 
   async createTree(token, username, repoName, files, baseTreeSha) {
-    const tree = files.map((file) => ({
-      path: file.path,
-      mode: '100644',
-      type: 'blob',
-      content: file.content
-    }));
+    const tree = files.map((file) => {
+      if (file.sha === null) {
+        return {
+          path: file.path,
+          mode: '100644',
+          type: 'blob',
+          sha: null
+        };
+      }
+      return {
+        path: file.path,
+        mode: '100644',
+        type: 'blob',
+        content: file.content
+      };
+    });
 
     const response = await this.fetchWithTimeout(
       `${this.baseUrl}/repos/${username}/${repoName}/git/trees`,
@@ -256,14 +267,14 @@ export class GitHubService {
     return data.sha;
   }
 
-  async updateRef(token, username, repoName, branch, commitSha) {
+  async updateRef(token, username, repoName, branch, commitSha, force = true) {
     const response = await this.fetchWithTimeout(
       `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/${branch}`,
       {
         method: 'PATCH',
         body: JSON.stringify({
           sha: commitSha,
-          force: false
+          force
         })
       },
       token
@@ -297,17 +308,36 @@ export class GitHubService {
     return data;
   }
 
+  normalizeDeletedItems(raw) {
+    if (!raw) return { notes: [], subjects: [] };
+    if (Array.isArray(raw)) {
+      return {
+        notes: raw.filter((d) => d.type === 'note').map((d) => d.item?.id || d.id).filter(Boolean),
+        subjects: raw.filter((d) => d.type === 'subject').map((d) => d.item?.id || d.id).filter(Boolean)
+      };
+    }
+    return {
+      notes: Array.isArray(raw.notes) ? raw.notes : [],
+      subjects: Array.isArray(raw.subjects) ? raw.subjects : []
+    };
+  }
+
   mergeData(local, remote) {
-    const localDeleted = local.deletedItems || { notes: [], subjects: [] };
-    const remoteDeleted = remote.deletedItems || { notes: [], subjects: [] };
+    const localDeleted = this.normalizeDeletedItems(local.deletedItems);
+    const remoteDeleted = this.normalizeDeletedItems(remote.deletedItems);
 
     const mergedDeleted = {
-      notes: [...new Set([...(localDeleted.notes || []), ...(remoteDeleted.notes || [])])],
-      subjects: [...new Set([...(localDeleted.subjects || []), ...(remoteDeleted.subjects || [])])]
+      notes: [...new Set([...localDeleted.notes, ...remoteDeleted.notes])],
+      subjects: [...new Set([...localDeleted.subjects, ...remoteDeleted.subjects])]
     };
 
     const merged = {
-      subjects: [...(remote.subjects || [])].filter((s) => !mergedDeleted.subjects.includes(s.id)),
+      subjects: [...(remote.subjects || [])]
+        .filter((s) => !mergedDeleted.subjects.includes(s.id))
+        .map((s) => ({
+          ...s,
+          notes: Array.isArray(s.notes) ? s.notes.filter((n) => !mergedDeleted.notes.includes(n.id)) : []
+        })),
       events: [...(remote.events || [])],
       settings: { ...(remote.settings || {}), ...(local.settings || {}) },
       deletedItems: mergedDeleted
@@ -350,7 +380,12 @@ export class GitHubService {
           merged.subjects[idx] = { ...remoteSub, notes: mergedNotes };
         }
       } else {
-        merged.subjects.push(localSub);
+        merged.subjects.push({
+          ...localSub,
+          notes: Array.isArray(localSub.notes)
+            ? localSub.notes.filter((n) => !mergedDeleted.notes.includes(n.id))
+            : []
+        });
       }
     });
 
@@ -369,6 +404,31 @@ export class GitHubService {
     });
 
     return merged;
+  }
+
+  async deleteFile(token, username, repoName, path, message = null) {
+    try {
+      const existing = await this.getFile(token, username, repoName, path);
+      if (!existing) return true;
+
+      const body = {
+        message: message || `Delete ${path} - ${new Date().toISOString()}`,
+        sha: existing.sha
+      };
+
+      const response = await this.fetchWithTimeout(
+        `${this.baseUrl}/repos/${username}/${repoName}/contents/${path}`,
+        {
+          method: 'DELETE',
+          body: JSON.stringify(body)
+        },
+        token
+      );
+
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 
   async uploadData(token, username, repoName, data, onProgress = null) {
@@ -406,6 +466,14 @@ export class GitHubService {
       content: JSON.stringify(noteIds, null, 2)
     });
 
+    const deletedNoteIds = data.deletedItems?.notes || [];
+    for (const delId of deletedNoteIds) {
+      files.push({
+        path: `data/notes/${delId}.json`,
+        sha: null
+      });
+    }
+
     const maxRetries = 2;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -427,7 +495,7 @@ export class GitHubService {
         );
 
         if (onProgress) onProgress(95, 'Actualizando rama...');
-        await this.updateRef(token, username, repoName, branch, commitSha);
+        await this.updateRef(token, username, repoName, branch, commitSha, true);
 
         if (onProgress) onProgress(100, 'Sincronización completada');
         return { success: true, count: files.length, noteCount: noteIds.length };
@@ -440,10 +508,14 @@ export class GitHubService {
             if (onProgress) {
               onProgress(
                 Math.floor((i / files.length) * 100),
-                `Subiendo ${f.path} (${i + 1}/${files.length})...`
+                `Actualizando ${f.path} (${i + 1}/${files.length})...`
               );
             }
-            await this.updateFile(token, username, repoName, f.path, f.content);
+            if (f.sha === null) {
+              await this.deleteFile(token, username, repoName, f.path);
+            } else {
+              await this.updateFile(token, username, repoName, f.path, f.content);
+            }
           }
           if (onProgress) onProgress(100, 'Completado');
           return { success: true, count: files.length, noteCount: noteIds.length };

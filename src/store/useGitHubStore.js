@@ -65,17 +65,25 @@ export const useGitHubStore = create((set, get) => ({
     set({ syncStatus: 'syncing', lastError: null });
 
     try {
-      const rawDeleted = useNotesStore.getState().deletedItems;
-      const formattedDeleted = Array.isArray(rawDeleted)
-        ? {
-          notes: rawDeleted.filter((d) => d.type === 'note').map((d) => d.item?.id || d.id).filter(Boolean),
-          subjects: rawDeleted.filter((d) => d.type === 'subject').map((d) => d.item?.id || d.id).filter(Boolean)
-        }
-        : (rawDeleted || { notes: [], subjects: [] });
+      const notesState = useNotesStore.getState();
+      const rawDeleted = notesState.deletedItems;
+      const tombstones = notesState.deletionTombstones || { notes: [], subjects: [] };
+
+      const activeDeletedNotes = Array.isArray(rawDeleted)
+        ? rawDeleted.filter((d) => d.type === 'note').map((d) => d.item?.id || d.id).filter(Boolean)
+        : [];
+      const activeDeletedSubjects = Array.isArray(rawDeleted)
+        ? rawDeleted.filter((d) => d.type === 'subject').map((d) => d.item?.id || d.id).filter(Boolean)
+        : [];
+
+      const formattedDeleted = {
+        notes: [...new Set([...activeDeletedNotes, ...(tombstones.notes || [])])],
+        subjects: [...new Set([...activeDeletedSubjects, ...(tombstones.subjects || [])])]
+      };
 
       const localData = {
-        subjects: useNotesStore.getState().subjects,
-        events: useNotesStore.getState().events,
+        subjects: notesState.subjects,
+        events: notesState.events,
         settings: useSettingsStore.getState(),
         deletedItems: formattedDeleted
       };
@@ -83,10 +91,23 @@ export const useGitHubStore = create((set, get) => ({
       const mergedData = await gitHubService.sync(token, username, repoName, localData);
 
       if (mergedData && Array.isArray(mergedData.subjects)) {
+        const remoteDeletedNotes = Array.isArray(mergedData.deletedItems?.notes)
+          ? mergedData.deletedItems.notes
+          : [];
+        const remoteDeletedSubjects = Array.isArray(mergedData.deletedItems?.subjects)
+          ? mergedData.deletedItems.subjects
+          : [];
+
+        const updatedTombstones = {
+          notes: [...new Set([...formattedDeleted.notes, ...remoteDeletedNotes])],
+          subjects: [...new Set([...formattedDeleted.subjects, ...remoteDeletedSubjects])]
+        };
+
         useNotesStore.getState().setAllData({
           subjects: mergedData.subjects,
           events: mergedData.events || [],
-          deletedItems: Array.isArray(rawDeleted) ? rawDeleted : []
+          deletedItems: Array.isArray(rawDeleted) ? rawDeleted : [],
+          deletionTombstones: updatedTombstones
         });
         if (mergedData.settings) {
           useSettingsStore.getState().updateSettings(mergedData.settings);

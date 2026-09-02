@@ -12,13 +12,19 @@ export const useNotesStore = create((set, get) => ({
   subjects: initialData.subjects || [],
   events: initialData.events || [],
   deletedItems: Array.isArray(initialData.deletedItems) ? initialData.deletedItems : [],
+  deletionTombstones: initialData.deletionTombstones || { notes: [], subjects: [] },
   activeSubjectId: initialSubjectId,
   activeNoteId: null,
   activeView: initialView,
 
   _persist: () => {
-    const { subjects, events, deletedItems } = get();
-    storageService.saveData(subjects, events, Array.isArray(deletedItems) ? deletedItems : []);
+    const { subjects, events, deletedItems, deletionTombstones } = get();
+    storageService.saveData(
+      subjects,
+      events,
+      Array.isArray(deletedItems) ? deletedItems : [],
+      deletionTombstones || { notes: [], subjects: [] }
+    );
   },
 
   setActiveView: (view) => set({ activeView: view }),
@@ -104,9 +110,17 @@ export const useNotesStore = create((set, get) => ({
     let nextView = remainingSubjects.length === 0 ? 'welcome' : state.activeView;
     const currentDeleted = Array.isArray(state.deletedItems) ? state.deletedItems : [];
 
+    const prevTombstones = state.deletionTombstones || { notes: [], subjects: [] };
+    const notesInSub = (subjectToDelete.notes || []).map((n) => n.id);
+    const updatedTombstones = {
+      notes: [...new Set([...(prevTombstones.notes || []), ...notesInSub])],
+      subjects: [...new Set([...(prevTombstones.subjects || []), id])]
+    };
+
     set({
       subjects: remainingSubjects,
       deletedItems: [...currentDeleted, newDeletedItem],
+      deletionTombstones: updatedTombstones,
       activeSubjectId: state.activeSubjectId === id ? nextSubjectId : state.activeSubjectId,
       activeNoteId: state.activeSubjectId === id ? nextNoteId : state.activeNoteId,
       activeView: nextView
@@ -119,6 +133,7 @@ export const useNotesStore = create((set, get) => ({
     const targetSubjectId = subjectId || state.activeSubjectId || state.subjects[0]?.id;
     if (!targetSubjectId) return null;
 
+    const nowIso = new Date().toISOString();
     const newNote = {
       id: generateId('note'),
       title: sanitizeText(initialData.title) || 'Apunte sin título',
@@ -126,45 +141,59 @@ export const useNotesStore = create((set, get) => ({
       subjectId: targetSubjectId,
       favorite: !!initialData.favorite,
       tags: initialData.tags || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: nowIso,
+      updatedAt: nowIso
     };
 
-    set((state) => ({
-      subjects: state.subjects.map((sub) => {
-        if (sub.id === targetSubjectId) {
-          return {
-            ...sub,
-            notes: [newNote, ...sub.notes]
-          };
-        }
-        return sub;
-      }),
-      activeSubjectId: targetSubjectId,
-      activeNoteId: newNote.id,
-      activeView: 'editor'
-    }));
+    set((state) => {
+      const prevTombstones = state.deletionTombstones || { notes: [], subjects: [] };
+      return {
+        subjects: state.subjects.map((sub) => {
+          if (sub.id === targetSubjectId) {
+            return {
+              ...sub,
+              lastModified: nowIso,
+              notes: [newNote, ...sub.notes]
+            };
+          }
+          return sub;
+        }),
+        deletionTombstones: {
+          notes: (prevTombstones.notes || []).filter((nId) => nId !== newNote.id),
+          subjects: prevTombstones.subjects || []
+        },
+        activeSubjectId: targetSubjectId,
+        activeNoteId: newNote.id,
+        activeView: 'editor'
+      };
+    });
     get()._persist();
     return newNote;
   },
 
   updateNote: (noteId, updates) => {
+    const nowIso = new Date().toISOString();
     set((state) => ({
-      subjects: state.subjects.map((sub) => ({
-        ...sub,
-        notes: sub.notes.map((note) => {
-          if (note.id === noteId) {
-            return {
-              ...note,
-              ...updates,
-              title: updates.title !== undefined ? sanitizeText(updates.title) : note.title,
-              content: updates.content !== undefined ? cleanNoteContent(updates.content) : note.content,
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return note;
-        })
-      }))
+      subjects: state.subjects.map((sub) => {
+        const hasNote = (sub.notes || []).some((n) => n.id === noteId);
+        if (!hasNote) return sub;
+        return {
+          ...sub,
+          lastModified: nowIso,
+          notes: sub.notes.map((note) => {
+            if (note.id === noteId) {
+              return {
+                ...note,
+                ...updates,
+                title: updates.title !== undefined ? sanitizeText(updates.title) : note.title,
+                content: updates.content !== undefined ? cleanNoteContent(updates.content) : note.content,
+                updatedAt: nowIso
+              };
+            }
+            return note;
+          })
+        };
+      })
     }));
     get()._persist();
   },
@@ -185,18 +214,25 @@ export const useNotesStore = create((set, get) => ({
 
     if (!noteToDelete) return;
 
+    const nowIso = new Date().toISOString();
     const newDeletedItem = {
       id: generateId('del'),
       type: 'note',
       item: noteToDelete,
       subjectId: parentSubjectId,
-      deletedAt: new Date().toISOString()
+      deletedAt: nowIso
     };
 
-    const newSubjects = state.subjects.map((sub) => ({
-      ...sub,
-      notes: sub.notes.filter((n) => n.id !== noteId)
-    }));
+    const newSubjects = state.subjects.map((sub) => {
+      if (sub.id === parentSubjectId) {
+        return {
+          ...sub,
+          lastModified: nowIso,
+          notes: sub.notes.filter((n) => n.id !== noteId)
+        };
+      }
+      return sub;
+    });
 
     let nextNoteId = null;
     const currentSub = newSubjects.find((s) => s.id === state.activeSubjectId);
@@ -208,10 +244,16 @@ export const useNotesStore = create((set, get) => ({
     }
 
     const currentDeleted = Array.isArray(state.deletedItems) ? state.deletedItems : [];
+    const prevTombstones = state.deletionTombstones || { notes: [], subjects: [] };
+    const updatedTombstones = {
+      notes: [...new Set([...(prevTombstones.notes || []), noteId])],
+      subjects: prevTombstones.subjects || []
+    };
 
     set({
       subjects: newSubjects,
       deletedItems: [...currentDeleted, newDeletedItem],
+      deletionTombstones: updatedTombstones,
       activeNoteId: state.activeNoteId === noteId ? nextNoteId : state.activeNoteId,
       activeView: !nextNoteId && state.activeView === 'editor' ? 'dashboard' : state.activeView
     });
@@ -293,14 +335,23 @@ export const useNotesStore = create((set, get) => ({
     const itemToRestore = currentDeleted.find((d) => d.id === deletedItemId);
     if (!itemToRestore) return;
 
+    const prevTombstones = state.deletionTombstones || { notes: [], subjects: [] };
+
     if (itemToRestore.type === 'subject') {
+      const restoredSubId = itemToRestore.item?.id;
+      const notesInSub = (itemToRestore.item?.notes || []).map((n) => n.id);
       set({
         subjects: [...state.subjects, itemToRestore.item],
-        deletedItems: currentDeleted.filter((d) => d.id !== deletedItemId)
+        deletedItems: currentDeleted.filter((d) => d.id !== deletedItemId),
+        deletionTombstones: {
+          notes: (prevTombstones.notes || []).filter((nId) => !notesInSub.includes(nId)),
+          subjects: (prevTombstones.subjects || []).filter((sId) => sId !== restoredSubId)
+        }
       });
     } else if (itemToRestore.type === 'note') {
       const targetSubId = itemToRestore.subjectId;
       const targetSubExists = state.subjects.some((s) => s.id === targetSubId);
+      const restoredNoteId = itemToRestore.item?.id;
 
       set({
         subjects: targetSubExists
@@ -317,7 +368,11 @@ export const useNotesStore = create((set, get) => ({
               notes: [itemToRestore.item]
             }
           ],
-        deletedItems: currentDeleted.filter((d) => d.id !== deletedItemId)
+        deletedItems: currentDeleted.filter((d) => d.id !== deletedItemId),
+        deletionTombstones: {
+          notes: (prevTombstones.notes || []).filter((nId) => nId !== restoredNoteId),
+          subjects: prevTombstones.subjects || []
+        }
       });
     }
     get()._persist();
@@ -374,7 +429,8 @@ export const useNotesStore = create((set, get) => ({
     set({
       subjects: data.subjects || [],
       events: data.events || [],
-      deletedItems: Array.isArray(data.deletedItems) ? data.deletedItems : []
+      deletedItems: Array.isArray(data.deletedItems) ? data.deletedItems : [],
+      deletionTombstones: data.deletionTombstones || get().deletionTombstones || { notes: [], subjects: [] }
     });
     get()._persist();
   },

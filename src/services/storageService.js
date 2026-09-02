@@ -4,6 +4,7 @@ const STORAGE_KEY = 'cuadernoDigital';
 const EVENTS_KEY = 'cuadernoEvents';
 const SETTINGS_KEY = 'escribaSettings';
 const DELETED_ITEMS_KEY = 'escribaDeletedItems';
+const TOMBSTONES_KEY = 'escribaDeletedTombstones';
 
 export class StorageService {
   constructor() {
@@ -299,10 +300,12 @@ export class StorageService {
       const rawSubjects = localStorage.getItem(STORAGE_KEY);
       const rawEvents = localStorage.getItem(EVENTS_KEY);
       const rawDeletedItems = localStorage.getItem(DELETED_ITEMS_KEY);
+      const rawTombstones = localStorage.getItem(TOMBSTONES_KEY);
 
       let subjects = rawSubjects ? JSON.parse(rawSubjects) : null;
       let events = rawEvents ? JSON.parse(rawEvents) : [];
       let deletedItems = [];
+      let deletionTombstones = { notes: [], subjects: [] };
 
       try {
         if (rawDeletedItems) {
@@ -315,25 +318,47 @@ export class StorageService {
         deletedItems = [];
       }
 
-      if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
-        const defaultData = this.getDefaultData();
-        this.saveData(defaultData.subjects, defaultData.events, defaultData.deletedItems);
-        return defaultData;
+      try {
+        if (rawTombstones) {
+          const parsed = JSON.parse(rawTombstones);
+          if (parsed && typeof parsed === 'object') {
+            deletionTombstones = {
+              notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+              subjects: Array.isArray(parsed.subjects) ? parsed.subjects : []
+            };
+          }
+        }
+      } catch (e) {
+        deletionTombstones = { notes: [], subjects: [] };
       }
 
-      return { subjects, events, deletedItems };
+      if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
+        const defaultData = this.getDefaultData();
+        this.saveData(defaultData.subjects, defaultData.events, defaultData.deletedItems, deletionTombstones);
+        return { ...defaultData, deletionTombstones };
+      }
+
+      return { subjects, events, deletedItems, deletionTombstones };
     } catch (e) {
       console.error('Error loading data from storage:', e);
       return this.getDefaultData();
     }
   }
 
-  saveData(subjects, events = [], deletedItems = []) {
+  saveData(subjects, events = [], deletedItems = [], tombstones = { notes: [], subjects: [] }) {
     try {
       const deletedArray = Array.isArray(deletedItems) ? deletedItems : [];
+      const tombstonesObj = tombstones && typeof tombstones === 'object'
+        ? {
+          notes: Array.isArray(tombstones.notes) ? tombstones.notes : [],
+          subjects: Array.isArray(tombstones.subjects) ? tombstones.subjects : []
+        }
+        : { notes: [], subjects: [] };
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
       localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
       localStorage.setItem(DELETED_ITEMS_KEY, JSON.stringify(deletedArray));
+      localStorage.setItem(TOMBSTONES_KEY, JSON.stringify(tombstonesObj));
 
       if (this.isLocalDiskMode() && this.isElectron()) {
         const rawSettings = localStorage.getItem(SETTINGS_KEY);

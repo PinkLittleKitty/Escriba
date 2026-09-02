@@ -28,8 +28,8 @@ jobs:
           BUILD_LABEL="Build #${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})"
           echo "Setting version to $VERSION and build label to $BUILD_LABEL"
           npm version $VERSION --allow-same-version --no-git-tag-version
-          perl -i -pe "s/id=\"appBuildDisplay\">.*?<\/span>/id=\"appBuildDisplay\">$BUILD_LABEL<\/span>/g" src/js/components/modals-component.js
-          perl -i -pe "s/const CURRENT_BUILD_TIME = new Date\('.*?'\);/const CURRENT_BUILD_TIME = new Date('$BUILD_TIME');/g" src/js/app.js
+          [ -f src/js/components/modals-component.js ] && perl -i -pe "s/id=\"appBuildDisplay\">.*?<\/span>/id=\"appBuildDisplay\">$BUILD_LABEL<\/span>/g" src/js/components/modals-component.js || true
+          [ -f src/js/app.js ] && perl -i -pe "s/const CURRENT_BUILD_TIME = new Date\('.*?'\);/const CURRENT_BUILD_TIME = new Date('$BUILD_TIME');/g" src/js/app.js || true
 
 
       - name: Install Dependencies
@@ -78,8 +78,8 @@ jobs:
           BUILD_LABEL="Build #${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})"
           echo "Setting version to $VERSION and build label to $BUILD_LABEL"
           npm version $VERSION --allow-same-version --no-git-tag-version
-          perl -i -pe "s/id=\"appBuildDisplay\">.*?<\/span>/id=\"appBuildDisplay\">$BUILD_LABEL<\/span>/g" src/js/components/modals-component.js
-          perl -i -pe "s/const CURRENT_BUILD_TIME = new Date\('.*?'\);/const CURRENT_BUILD_TIME = new Date('$BUILD_TIME');/g" src/js/app.js
+          [ -f src/js/components/modals-component.js ] && perl -i -pe "s/id=\"appBuildDisplay\">.*?<\/span>/id=\"appBuildDisplay\">$BUILD_LABEL<\/span>/g" src/js/components/modals-component.js || true
+          [ -f src/js/app.js ] && perl -i -pe "s/const CURRENT_BUILD_TIME = new Date\('.*?'\);/const CURRENT_BUILD_TIME = new Date('$BUILD_TIME');/g" src/js/app.js || true
 
       - name: Setup Java
         uses: actions/setup-java@v4

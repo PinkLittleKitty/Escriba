@@ -507,7 +507,7 @@ export class GitHubService {
           token,
           username,
           repoName,
-          `Sync ${treeFiles.length} files (including ${noteIds.length} notes): ${new Date().toLocaleString('es-AR')}`,
+          `Sync ${treeFiles.length} files: ${new Date().toLocaleString('es-AR')}`,
           newTreeSha,
           headSha
         );

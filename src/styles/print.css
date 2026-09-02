@@ -281,4 +281,32 @@
     max-height: 520pt !important;
     background: #ffffff !important;
   }
+
+  .math-block-container,
+  [class*="mathContainer"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 1.25rem auto !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .math-block-container [class*="screenWrapper"],
+  [class*="mathContainer"] [class*="screenWrapper"] {
+    display: none !important;
+  }
+
+  .math-block-container [class*="printWrapper"],
+  [class*="mathContainer"] [class*="printWrapper"] {
+    display: block !important;
+    text-align: center !important;
+    font-size: 13pt !important;
+    color: #0f172a !important;
+    padding: 8px 0 !important;
+    background: transparent !important;
+  }
 }

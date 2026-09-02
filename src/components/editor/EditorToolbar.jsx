@@ -28,7 +28,14 @@ import { ColorPicker } from '../common/ColorPicker.jsx';
 import { useUIStore } from '../../store/useUIStore.js';
 import styles from './EditorToolbar.module.css';
 
-export const EditorToolbar = ({ onInsertCodeBlock, onInsertMath, onInsertUML, onInsertTable }) => {
+export const EditorToolbar = ({
+  onInsertCodeBlock,
+  onInsertMath,
+  onInsertUML,
+  onInsertTable,
+  isMathToolbarOpen,
+  onToggleMathToolbar
+}) => {
   const openModal = useUIStore((state) => state.openModal);
 
   const [showFontMenu, setShowFontMenu] = useState(false);
@@ -311,9 +318,9 @@ export const EditorToolbar = ({ onInsertCodeBlock, onInsertMath, onInsertUML, on
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
-          onClick={onInsertMath}
-          title="Fórmula matemática (LaTeX)"
+          className={`${styles.toolbarBtn} ${isMathToolbarOpen ? styles.active : ''}`}
+          onClick={onToggleMathToolbar || onInsertMath}
+          title="Barra de símbolos matemáticos y LaTeX (Ctrl+M)"
         >
           <Sigma size={15} />
         </button>

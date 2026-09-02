@@ -447,10 +447,10 @@ export const DashboardView = () => {
                 type="button"
                 className={`btn btn-secondary ${styles.btnFull}`}
                 onClick={() => openModal('knowledgeGraph')}
-                title="Ver Grafo de Conocimiento"
+                title="Ver Minimapa de Red"
               >
                 <Network size={16} />
-                <span>Grafo de Red</span>
+                <span>Minimapa</span>
               </button>
             </div>
           </div>

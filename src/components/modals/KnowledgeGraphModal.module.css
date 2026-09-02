@@ -1,8 +1,8 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,31 +13,33 @@
 .modalContent {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg, 12px);
-  width: 92vw;
-  max-width: 1100px;
-  height: 85vh;
+  border-radius: var(--radius-lg, 14px);
+  width: 95vw;
+  max-width: 1280px;
+  height: 88vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-color);
   position: relative;
 }
 
 .modalHeader {
-  padding: 1rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--bg-secondary);
   gap: 1rem;
+  flex-wrap: wrap;
+  z-index: 20;
 }
 
 .titleArea {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 .modalTitle {
@@ -50,20 +52,38 @@
   gap: 0.5rem;
 }
 
+.statsBadge {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  font-weight: 500;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .searchBar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md, 8px);
-  padding: 0.35rem 0.75rem;
-  width: 260px;
+  padding: 0.35rem 0.65rem;
+  width: 200px;
   transition: all 0.2s ease;
 }
 
 .searchBar:focus-within {
   border-color: var(--accent-blue);
+  width: 230px;
   box-shadow: 0 0 0 2px var(--accent-focus, rgba(67, 97, 238, 0.2));
 }
 
@@ -72,23 +92,43 @@
   border: none;
   outline: none;
   color: var(--text-primary);
-  font-size: 0.85rem;
+  font-size: 0.825rem;
   width: 100%;
 }
 
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.selectFilter {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.825rem;
+  outline: none;
+  cursor: pointer;
 }
 
-.statsBadge {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.selectFilter:focus {
+  border-color: var(--accent-blue);
+}
+
+.toggleBtn {
   background: var(--bg-tertiary);
-  padding: 0.25rem 0.6rem;
-  border-radius: 20px;
   border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggleBtnActive {
+  background: var(--accent-blue-bg, rgba(67, 97, 238, 0.15));
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
 }
 
 .graphBody {
@@ -98,6 +138,8 @@
   background: var(--bg-primary);
   cursor: grab;
   user-select: none;
+  background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 .graphBody:active {
@@ -116,12 +158,12 @@
   right: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md, 8px);
   padding: 0.35rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   z-index: 10;
 }
 
@@ -148,29 +190,89 @@
   position: absolute;
   bottom: 1.25rem;
   left: 1.25rem;
-  background: rgba(var(--bg-card-rgb, 30, 41, 59), 0.85);
-  backdrop-filter: blur(6px);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md, 8px);
-  padding: 0.6rem 0.85rem;
+  padding: 0.65rem 0.9rem;
   font-size: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   color: var(--text-secondary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   z-index: 10;
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .legendDot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+}
+
+.nodeCard {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 10px);
+  padding: 0.85rem 1rem;
+  max-width: 280px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  z-index: 15;
+  animation: slideDown 0.15s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.nodeCardTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.nodeCardSub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nodeCardStats {
+  font-size: 0.725rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.2rem;
+}
+
+.nodeCardBtn {
+  margin-top: 0.3rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.775rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.nodeCardBtn:hover {
+  opacity: 0.9;
 }
 
 .closeBtn {
@@ -196,8 +298,21 @@
     opacity: 0;
     transform: scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

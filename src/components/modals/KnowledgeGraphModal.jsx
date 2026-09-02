@@ -6,6 +6,14 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  Maximize2,
+  Play,
+  Pause,
+  Layers,
+  Filter,
+  Eye,
+  EyeOff,
+  ExternalLink,
   BookOpen,
   FileText
 } from 'lucide-react';
@@ -21,7 +29,14 @@ export const KnowledgeGraphModal = () => {
 
   const containerRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('all');
+  const [showLabels, setShowLabels] = useState(true);
+  const [showHubs, setShowHubs] = useState(true);
+  const [hideOrphans, setHideOrphans] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(true);
   const [hoveredNode, setHoveredNode] = useState(null);
+  const [selectedNode, setSelectedNode] = useState(null);
+
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
   const [nodes, setNodes] = useState([]);
   const [links, setLinks] = useState([]);
@@ -34,8 +49,10 @@ export const KnowledgeGraphModal = () => {
   const linksRef = useRef([]);
 
   useEffect(() => {
-    const width = containerRef.current?.clientWidth || 800;
-    const height = containerRef.current?.clientHeight || 600;
+    const width = containerRef.current?.clientWidth || 900;
+    const height = containerRef.current?.clientHeight || 650;
+    const cx = width / 2;
+    const cy = height / 2;
 
     const activeSubjects = subjects.filter((s) => !s.archived);
     const newNodes = [];
@@ -43,8 +60,6 @@ export const KnowledgeGraphModal = () => {
     const noteMap = new Map();
     const subjectMap = new Map();
 
-    const cx = width / 2;
-    const cy = height / 2;
     const hubRadius = Math.min(width, height) * 0.28;
 
     activeSubjects.forEach((sub, sIdx) => {
@@ -55,34 +70,41 @@ export const KnowledgeGraphModal = () => {
         type: 'subject',
         title: sub.name,
         color: sub.color || '#4361ee',
-        radius: 20,
+        radius: 22,
         x: cx + Math.cos(angle) * hubRadius + (Math.random() - 0.5) * 20,
         y: cy + Math.sin(angle) * hubRadius + (Math.random() - 0.5) * 20,
         vx: 0,
         vy: 0,
         fx: null,
-        fy: null
+        fy: null,
+        degree: 0
       };
       newNodes.push(sNode);
       subjectMap.set(sub.id, sNode);
 
       (sub.notes || []).forEach((note, nIdx) => {
         const noteAngle = angle + (Math.random() - 0.5) * 0.8;
-        const noteDist = hubRadius + 50 + Math.random() * 60;
+        const noteDist = hubRadius + 60 + Math.random() * 70;
         const nNode = {
           id: `note-${note.id}`,
           rawId: note.id,
           subjectId: sub.id,
+          subjectName: sub.name,
           type: 'note',
           title: note.title || 'Sin título',
           color: sub.color || '#4361ee',
+          tags: note.tags || [],
+          contentLength: (note.content || '').length,
           radius: 12,
           x: cx + Math.cos(noteAngle) * noteDist,
           y: cy + Math.sin(noteAngle) * noteDist,
           vx: 0,
           vy: 0,
           fx: null,
-          fy: null
+          fy: null,
+          degree: 0,
+          inboundLinks: 0,
+          outboundLinks: 0
         };
         newNodes.push(nNode);
         noteMap.set(note.id, nNode);
@@ -92,6 +114,8 @@ export const KnowledgeGraphModal = () => {
           target: nNode.id,
           type: 'hierarchy'
         });
+        sNode.degree++;
+        nNode.degree++;
       });
     });
 
@@ -104,11 +128,16 @@ export const KnowledgeGraphModal = () => {
         for (const m of idMatches) {
           const targetId = m[1];
           if (targetId && targetId !== note.id && noteMap.has(targetId)) {
+            const targetNode = noteMap.get(targetId);
             newLinks.push({
               source: sourceNode.id,
               target: `note-${targetId}`,
               type: 'reference'
             });
+            sourceNode.degree++;
+            sourceNode.outboundLinks++;
+            targetNode.degree++;
+            targetNode.inboundLinks++;
           }
         }
 
@@ -123,12 +152,22 @@ export const KnowledgeGraphModal = () => {
                   target: nNode.id,
                   type: 'reference'
                 });
+                sourceNode.degree++;
+                sourceNode.outboundLinks++;
+                nNode.degree++;
+                nNode.inboundLinks++;
                 break;
               }
             }
           }
         }
       });
+    });
+
+    newNodes.forEach((n) => {
+      if (n.type === 'note') {
+        n.radius = Math.min(24, Math.max(10, 10 + n.degree * 2.2));
+      }
     });
 
     nodesRef.current = newNodes;
@@ -138,6 +177,8 @@ export const KnowledgeGraphModal = () => {
   }, [subjects]);
 
   useEffect(() => {
+    if (!isSimulating) return;
+
     let iteration = 0;
     const maxIterations = 350;
 
@@ -146,12 +187,12 @@ export const KnowledgeGraphModal = () => {
       const currentLinks = linksRef.current;
       if (!currentNodes.length) return;
 
-      const kRepulsion = 1200;
-      const kSpring = 0.04;
+      const kRepulsion = 1400;
+      const kSpring = 0.045;
       const damping = 0.88;
       const centerGravity = 0.015;
-      const width = containerRef.current?.clientWidth || 800;
-      const height = containerRef.current?.clientHeight || 600;
+      const width = containerRef.current?.clientWidth || 900;
+      const height = containerRef.current?.clientHeight || 650;
       const cx = width / 2;
       const cy = height / 2;
 
@@ -161,7 +202,8 @@ export const KnowledgeGraphModal = () => {
           const n2 = currentNodes[j];
           const dx = n2.x - n1.x;
           const dy = n2.y - n1.y;
-          const distSq = dx * dx + dy * dy + 100;
+          const minSafeDist = n1.radius + n2.radius + 15;
+          const distSq = Math.max(minSafeDist * minSafeDist, dx * dx + dy * dy);
           const dist = Math.sqrt(distSq);
           const force = kRepulsion / distSq;
           const fx = (dx / dist) * force;
@@ -187,7 +229,7 @@ export const KnowledgeGraphModal = () => {
         const dx = tgt.x - src.x;
         const dy = tgt.y - src.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const targetDist = link.type === 'reference' ? 70 : 100;
+        const targetDist = link.type === 'reference' ? 75 : 110;
         const force = (dist - targetDist) * kSpring;
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
@@ -232,10 +274,33 @@ export const KnowledgeGraphModal = () => {
     return () => {
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
     };
-  }, []);
+  }, [isSimulating]);
+
+  const visibleNodes = useMemo(() => {
+    return nodes.filter((n) => {
+      if (n.type === 'subject' && !showHubs) return false;
+      if (selectedSubjectFilter !== 'all') {
+        if (n.type === 'subject' && n.rawId !== selectedSubjectFilter) return false;
+        if (n.type === 'note' && n.subjectId !== selectedSubjectFilter) return false;
+      }
+      if (hideOrphans && n.type === 'note' && n.inboundLinks === 0 && n.outboundLinks === 0) {
+        return false;
+      }
+      return true;
+    });
+  }, [nodes, showHubs, selectedSubjectFilter, hideOrphans]);
+
+  const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((n) => n.id)), [visibleNodes]);
+
+  const visibleLinks = useMemo(() => {
+    return links.filter((l) => visibleNodeIds.has(l.source) && visibleNodeIds.has(l.target));
+  }, [links, visibleNodeIds]);
+
+  const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
   const handleNodeClick = (node, e) => {
     e.stopPropagation();
+    setSelectedNode(node);
     if (node.type === 'note') {
       setActiveNote(node.subjectId, node.rawId);
       addToast({ message: `Abriendo apunte "${node.title}"`, type: 'info' });
@@ -255,6 +320,7 @@ export const KnowledgeGraphModal = () => {
     draggedNode.current = node;
     node.fx = node.x;
     node.fy = node.y;
+    setIsSimulating(true);
   };
 
   const handleMouseDownCanvas = (e) => {
@@ -299,8 +365,8 @@ export const KnowledgeGraphModal = () => {
 
   const handleWheel = (e) => {
     e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newK = Math.max(0.3, Math.min(3, transform.k * zoomFactor));
+    const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
+    const newK = Math.max(0.25, Math.min(3.5, transform.k * zoomFactor));
 
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -316,7 +382,31 @@ export const KnowledgeGraphModal = () => {
     setTransform({ x: 0, y: 0, k: 1 });
   };
 
-  const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+  const fitToScreen = () => {
+    if (!visibleNodes.length || !containerRef.current) return;
+    const width = containerRef.current.clientWidth;
+    const height = containerRef.current.clientHeight;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    visibleNodes.forEach((n) => {
+      minX = Math.min(minX, n.x - n.radius);
+      maxX = Math.max(maxX, n.x + n.radius);
+      minY = Math.min(minY, n.y - n.radius);
+      maxY = Math.max(maxY, n.y + n.radius);
+    });
+
+    const graphWidth = maxX - minX + 100;
+    const graphHeight = maxY - minY + 100;
+    const scale = Math.min(width / graphWidth, height / graphHeight, 1.5);
+    const midX = (minX + maxX) / 2;
+    const midY = (minY + maxY) / 2;
+
+    setTransform({
+      x: width / 2 - midX * scale,
+      y: height / 2 - midY * scale,
+      k: scale
+    });
+  };
 
   const matchesSearch = (title) => {
     if (!searchTerm.trim()) return true;
@@ -326,12 +416,14 @@ export const KnowledgeGraphModal = () => {
   const isConnectedToHovered = (nodeId) => {
     if (!hoveredNode) return true;
     if (nodeId === hoveredNode.id) return true;
-    return links.some(
+    return visibleLinks.some(
       (l) =>
         (l.source === hoveredNode.id && l.target === nodeId) ||
         (l.target === hoveredNode.id && l.source === nodeId)
     );
   };
+
+  const activeSubjectsList = subjects.filter((s) => !s.archived);
 
   return (
     <div className={styles.overlay} onClick={closeModal}>
@@ -340,15 +432,49 @@ export const KnowledgeGraphModal = () => {
           <div className={styles.titleArea}>
             <h3 className={styles.modalTitle}>
               <Network size={20} color="var(--accent-blue)" />
-              <span>Grafo de Conocimiento</span>
+              <span>Minimapa</span>
             </h3>
             <span className={styles.statsBadge}>
-              {nodes.filter((n) => n.type === 'note').length} apuntes ·{' '}
-              {nodes.filter((n) => n.type === 'subject').length} materias
+              {visibleNodes.filter((n) => n.type === 'note').length} apuntes ·{' '}
+              {visibleLinks.filter((l) => l.type === 'reference').length} enlaces internos
             </span>
           </div>
 
           <div className={styles.headerActions}>
+            <select
+              className={styles.selectFilter}
+              value={selectedSubjectFilter}
+              onChange={(e) => setSelectedSubjectFilter(e.target.value)}
+              title="Filtrar por materia"
+            >
+              <option value="all">Todas las materias</option>
+              {activeSubjectsList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${showLabels ? styles.toggleBtnActive : ''}`}
+              onClick={() => setShowLabels(!showLabels)}
+              title="Mostrar u ocultar títulos"
+            >
+              {showLabels ? <Eye size={14} /> : <EyeOff size={14} />}
+              <span>Etiquetas</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${showHubs ? styles.toggleBtnActive : ''}`}
+              onClick={() => setShowHubs(!showHubs)}
+              title="Mostrar u ocultar materias centrales"
+            >
+              <Layers size={14} />
+              <span>Materias</span>
+            </button>
+
             <div className={styles.searchBar}>
               <Search size={14} color="var(--text-muted)" />
               <input
@@ -361,7 +487,7 @@ export const KnowledgeGraphModal = () => {
               {searchTerm && (
                 <button
                   type="button"
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
                   onClick={() => setSearchTerm('')}
                 >
                   <X size={12} />
@@ -390,16 +516,16 @@ export const KnowledgeGraphModal = () => {
                 id="arrowhead-ref"
                 markerWidth="8"
                 markerHeight="6"
-                refX="18"
+                refX="16"
                 refY="3"
                 orient="auto"
               >
-                <polygon points="0 0, 8 3, 0 6" fill="var(--accent-blue)" opacity="0.8" />
+                <polygon points="0 0, 8 3, 0 6" fill="var(--accent-blue)" opacity="0.9" />
               </marker>
             </defs>
 
             <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
-              {links.map((link, idx) => {
+              {visibleLinks.map((link, idx) => {
                 const src = nodeMap.get(link.source);
                 const tgt = nodeMap.get(link.target);
                 if (!src || !tgt) return null;
@@ -418,23 +544,23 @@ export const KnowledgeGraphModal = () => {
                     y1={src.y}
                     x2={tgt.x}
                     y2={tgt.y}
-                    stroke={isRef ? 'var(--accent-blue)' : 'var(--border-light, #444)'}
-                    strokeWidth={isRef ? 1.8 : 1}
-                    strokeDasharray={isRef ? '3,3' : 'none'}
-                    strokeOpacity={isDimmed ? 0.1 : isRef ? 0.85 : 0.35}
+                    stroke={isRef ? 'var(--accent-blue)' : 'var(--border-color)'}
+                    strokeWidth={isRef ? 2 : 1}
+                    strokeDasharray={isRef ? '4,4' : 'none'}
+                    strokeOpacity={isDimmed ? 0.08 : isRef ? 0.9 : 0.3}
                     markerEnd={isRef ? 'url(#arrowhead-ref)' : undefined}
                     style={{ transition: 'stroke-opacity 0.2s ease' }}
                   />
                 );
               })}
 
-              {nodes.map((node) => {
+              {visibleNodes.map((node) => {
                 const isMatching = matchesSearch(node.title);
                 const isConnected = isConnectedToHovered(node.id);
                 const isHovered = hoveredNode?.id === node.id;
                 const isHub = node.type === 'subject';
 
-                const opacity = (!isMatching || !isConnected) && !isHovered ? 0.2 : 1;
+                const opacity = (!isMatching || !isConnected) && !isHovered ? 0.15 : 1;
 
                 return (
                   <g
@@ -448,13 +574,13 @@ export const KnowledgeGraphModal = () => {
                     onClick={(e) => handleNodeClick(node, e)}
                   >
                     <circle
-                      r={node.radius + (isHovered ? 3 : 0)}
+                      r={node.radius + (isHovered ? 4 : 0)}
                       fill={isHub ? node.color : 'var(--bg-card)'}
                       stroke={node.color}
-                      strokeWidth={isHub ? 3 : 2}
+                      strokeWidth={isHub ? 3.5 : isHovered ? 2.5 : 2}
                       style={{
                         filter: isHovered || (searchTerm && isMatching)
-                          ? `drop-shadow(0 0 8px ${node.color})`
+                          ? `drop-shadow(0 0 10px ${node.color})`
                           : 'none',
                         transition: 'all 0.15s ease'
                       }}
@@ -466,34 +592,72 @@ export const KnowledgeGraphModal = () => {
                         fill="none"
                         stroke="#ffffff"
                         strokeWidth={1.5}
-                        opacity={0.4}
+                        opacity={0.5}
                       />
                     )}
 
-                    <text
-                      dy={node.radius + 14}
-                      textAnchor="middle"
-                      fill={isHovered ? 'var(--text-primary)' : 'var(--text-secondary)'}
-                      fontSize={isHub ? '12px' : '10.5px'}
-                      fontWeight={isHub ? '700' : '500'}
-                      style={{
-                        pointerEvents: 'none',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                      }}
-                    >
-                      {node.title.length > 22 ? `${node.title.slice(0, 20)}...` : node.title}
-                    </text>
+                    {showLabels && (
+                      <text
+                        dy={node.radius + 14}
+                        textAnchor="middle"
+                        fill={isHovered ? 'var(--text-primary)' : 'var(--text-secondary)'}
+                        fontSize={isHub ? '12px' : '10.5px'}
+                        fontWeight={isHub ? '700' : '500'}
+                        style={{
+                          pointerEvents: 'none',
+                          textShadow: '0 2px 4px rgba(0,0,0,0.85)'
+                        }}
+                      >
+                        {node.title.length > 24 ? `${node.title.slice(0, 22)}...` : node.title}
+                      </text>
+                    )}
                   </g>
                 );
               })}
             </g>
           </svg>
 
+          {hoveredNode && (
+            <div className={styles.nodeCard}>
+              <div className={styles.nodeCardSub}>
+                {hoveredNode.type === 'subject' ? (
+                  <>
+                    <BookOpen size={13} color={hoveredNode.color} />
+                    <span>Materia</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={13} color={hoveredNode.color} />
+                    <span>{hoveredNode.subjectName}</span>
+                  </>
+                )}
+              </div>
+              <h4 className={styles.nodeCardTitle}>{hoveredNode.title}</h4>
+              <div className={styles.nodeCardStats}>
+                {hoveredNode.type === 'note' ? (
+                  <span>
+                    {hoveredNode.inboundLinks + hoveredNode.outboundLinks} conexiones (
+                    {hoveredNode.inboundLinks} entrantes, {hoveredNode.outboundLinks} salientes)
+                  </span>
+                ) : (
+                  <span>{hoveredNode.degree} apuntes asociados</span>
+                )}
+              </div>
+              <button
+                type="button"
+                className={styles.nodeCardBtn}
+                onClick={(e) => handleNodeClick(hoveredNode, e)}
+              >
+                Abrir en el editor
+              </button>
+            </div>
+          )}
+
           <div className={styles.controlsPanel}>
             <button
               type="button"
               className={styles.controlBtn}
-              onClick={() => setTransform((t) => ({ ...t, k: Math.min(3, t.k * 1.2) }))}
+              onClick={() => setTransform((t) => ({ ...t, k: Math.min(3.5, t.k * 1.2) }))}
               title="Acercar (+)"
             >
               <ZoomIn size={16} />
@@ -501,7 +665,7 @@ export const KnowledgeGraphModal = () => {
             <button
               type="button"
               className={styles.controlBtn}
-              onClick={() => setTransform((t) => ({ ...t, k: Math.max(0.3, t.k * 0.8) }))}
+              onClick={() => setTransform((t) => ({ ...t, k: Math.max(0.25, t.k * 0.8) }))}
               title="Alejar (-)"
             >
               <ZoomOut size={16} />
@@ -509,10 +673,26 @@ export const KnowledgeGraphModal = () => {
             <button
               type="button"
               className={styles.controlBtn}
+              onClick={fitToScreen}
+              title="Ajustar a la pantalla"
+            >
+              <Maximize2 size={15} />
+            </button>
+            <button
+              type="button"
+              className={styles.controlBtn}
               onClick={resetView}
-              title="Centrar vista"
+              title="Restablecer vista"
             >
               <RotateCcw size={15} />
+            </button>
+            <button
+              type="button"
+              className={styles.controlBtn}
+              onClick={() => setIsSimulating(!isSimulating)}
+              title={isSimulating ? 'Pausar física' : 'Reanudar física'}
+            >
+              {isSimulating ? <Pause size={15} /> : <Play size={15} />}
             </button>
           </div>
 

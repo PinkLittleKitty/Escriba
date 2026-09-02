@@ -13,6 +13,10 @@ const defaultSettings = {
 };
 
 const loaded = storageService.loadSettings();
+if (loaded) {
+  if (loaded.theme === 'github') loaded.theme = 'dark';
+  if (loaded.theme === 'pastel') loaded.theme = 'peluche';
+}
 const initialSettings = { ...defaultSettings, ...loaded };
 
 if (typeof document !== 'undefined') {

@@ -23,6 +23,14 @@ describe('useSettingsStore', () => {
     useSettingsStore.getState().setTheme('sakura');
     expect(useSettingsStore.getState().theme).toBe('sakura');
     expect(document.documentElement.getAttribute('data-theme')).toBe('sakura');
+
+    useSettingsStore.getState().setTheme('peluche');
+    expect(useSettingsStore.getState().theme).toBe('peluche');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('peluche');
+
+    useSettingsStore.getState().setTheme('sunset');
+    expect(useSettingsStore.getState().theme).toBe('sunset');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('sunset');
   });
 
   it('updates font size and sets CSS variable', () => {

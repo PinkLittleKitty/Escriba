@@ -147,14 +147,14 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
       borderColor: '#ebdcd0',
       accentBlue: '#eb6f92'
     },
-    github: {
-      bgPrimary: '#0d1117',
-      bgCard: '#161b22',
-      bgSecondary: '#21262d',
-      textPrimary: '#e6edf3',
-      textSecondary: '#848d97',
-      borderColor: '#30363d',
-      accentBlue: '#2f81f7'
+    peluche: {
+      bgPrimary: '#f5effe',
+      bgCard: '#ffffff',
+      bgSecondary: '#ebdcfb',
+      textPrimary: '#350e4a',
+      textSecondary: '#5c2a7a',
+      borderColor: '#d6bdf5',
+      accentBlue: '#8a4fcf'
     },
     catppuccin: {
       bgPrimary: '#1e1e2e',
@@ -193,18 +193,18 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
       accentBlue: '#8b1538'
     },
     sunset: {
-      bgPrimary: '#2d1b1b',
-      bgCard: '#352121',
-      bgSecondary: '#4d3333',
-      textPrimary: '#fff5f5',
-      textSecondary: '#e8d4d4',
-      borderColor: '#3d2626',
-      accentBlue: '#e63946'
+      bgPrimary: '#22150e',
+      bgCard: '#281911',
+      bgSecondary: '#3a251a',
+      textPrimary: '#fff7ed',
+      textSecondary: '#fed7aa',
+      borderColor: '#42291c',
+      accentBlue: '#f97316'
     }
   };
 
   const palette = THEME_PALETTES[theme] || THEME_PALETTES.dark;
-  const isDark = theme !== 'light';
+  const isDark = theme !== 'light' && theme !== 'sakura' && theme !== 'peluche';
   const cleanTitle = title || 'Apunte';
   const cleanSubject = subjectName ? `<div class="subject-tag">${subjectName}</div>` : '';
 

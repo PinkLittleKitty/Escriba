@@ -75,17 +75,17 @@ const THEMES = [
     lineSub: '#9893a5'
   },
   {
-    id: 'github',
-    name: 'GitHub',
-    bg: '#0d1117',
-    previewBg: '#0d1117',
-    headerBg: '#161b22',
-    sidebarBg: '#161b22',
-    item1: '#2f81f7',
-    item2: '#3fb950',
-    contentBg: '#0d1117',
-    lineMain: '#e6edf3',
-    lineSub: '#6e7681'
+    id: 'peluche',
+    name: 'Peluche de Compañía',
+    bg: '#f5effe',
+    previewBg: '#ffffff',
+    headerBg: '#ebdcfb',
+    sidebarBg: '#dfc8f7',
+    item1: '#8a4fcf',
+    item2: '#c79af5',
+    contentBg: '#f5effe',
+    lineMain: '#350e4a',
+    lineSub: '#5c2a7a'
   },
   {
     id: 'catppuccin',
@@ -142,15 +142,15 @@ const THEMES = [
   {
     id: 'sunset',
     name: 'Atardecer',
-    bg: '#2d1b1b',
-    previewBg: '#1c0f13',
-    headerBg: '#2b171d',
-    sidebarBg: '#231218',
-    item1: '#ff758f',
-    item2: '#e63946',
-    contentBg: '#1c0f13',
-    lineMain: '#fff5f5',
-    lineSub: '#c4a8a8'
+    bg: '#22150e',
+    previewBg: '#22150e',
+    headerBg: '#2c1b12',
+    sidebarBg: '#2c1b12',
+    item1: '#f97316',
+    item2: '#ff8a3d',
+    contentBg: '#281911',
+    lineMain: '#fff7ed',
+    lineSub: '#fed7aa'
   }
 ];
 

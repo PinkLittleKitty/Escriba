@@ -175,35 +175,36 @@
 }
 
 [data-theme="sunset"] {
-  --bg-primary: #2d1b1b;
-  --bg-secondary: #3d2626;
-  --bg-tertiary: #4d3333;
-  --bg-card: #352121;
-  --bg-hover: #452a2a;
-  --text-primary: #fff5f5;
-  --text-secondary: #e8d4d4;
-  --text-muted: #c4a8a8;
-  --accent-blue: #e63946;
-  --accent-purple: #e63946;
-  --accent-green: #51cf66;
-  --accent-orange: #ff922b;
-  --accent-red: #e63946;
-  --accent-cyan: #74c0fc;
-  --accent-yellow: #ffd43b;
-  --accent-focus: rgba(230, 57, 70, 0.1);
-  --accent-blue-bg: rgba(230, 57, 70, 0.1);
-  --accent-green-bg: rgba(81, 207, 102, 0.1);
-  --accent-red-bg: rgba(230, 57, 70, 0.1);
-  --accent-orange-bg: rgba(255, 146, 43, 0.1);
-  --accent-purple-bg: rgba(230, 57, 70, 0.1);
-  --accent-shadow: rgba(0, 0, 0, 0.3);
+  --bg-primary: #22150e;
+  --bg-secondary: #2c1b12;
+  --bg-tertiary: #3a251a;
+  --bg-card: #281911;
+  --bg-hover: #3d271b;
+  --text-primary: #fff7ed;
+  --text-secondary: #fed7aa;
+  --text-muted: #c29b7f;
+  --accent-blue: #f97316;
+  --accent-blue-rgb: 249, 115, 22;
+  --accent-purple: #f43f5e;
+  --accent-green: #10b981;
+  --accent-orange: #ff8a3d;
+  --accent-red: #ef4444;
+  --accent-cyan: #38bdf8;
+  --accent-yellow: #fbbf24;
+  --accent-focus: rgba(249, 115, 22, 0.15);
+  --accent-blue-bg: rgba(249, 115, 22, 0.15);
+  --accent-green-bg: rgba(16, 185, 129, 0.15);
+  --accent-red-bg: rgba(239, 68, 68, 0.15);
+  --accent-orange-bg: rgba(255, 138, 61, 0.18);
+  --accent-purple-bg: rgba(244, 63, 94, 0.15);
+  --accent-shadow: rgba(0, 0, 0, 0.4);
   --text-on-accent: #ffffff;
-  --border-color: #3d2626;
-  --border-light: #4d3333;
+  --border-color: #42291c;
+  --border-light: #573625;
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
-  --highlight-bg: rgba(255, 146, 43, 0.3);
-  --highlight-text: #000000;
+  --highlight-bg: rgba(249, 115, 22, 0.35);
+  --highlight-text: #ffffff;
   --highlight-border: #f97316;
 }
 
@@ -241,38 +242,38 @@
   --highlight-border: #eb6f92;
 }
 
-[data-theme="github"] {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #21262d;
-  --bg-card: #161b22;
-  --bg-hover: #30363d;
-  --text-primary: #e6edf3;
-  --text-secondary: #848d97;
-  --text-muted: #6e7681;
-  --accent-blue: #2f81f7;
-  --accent-blue-rgb: 47, 129, 247;
-  --accent-purple: #a5d6ff;
-  --accent-green: #3fb950;
-  --accent-orange: #d29922;
-  --accent-red: #f85149;
-  --accent-cyan: #56d4dd;
-  --accent-yellow: #e3b341;
-  --accent-focus: rgba(47, 129, 247, 0.15);
-  --accent-blue-bg: rgba(47, 129, 247, 0.15);
-  --accent-green-bg: rgba(63, 185, 80, 0.15);
-  --accent-red-bg: rgba(248, 81, 73, 0.15);
-  --accent-orange-bg: rgba(210, 153, 34, 0.15);
-  --accent-purple-bg: rgba(165, 214, 255, 0.15);
-  --accent-shadow: rgba(0, 0, 0, 0.4);
+[data-theme="peluche"] {
+  --bg-primary: #f5effe;
+  --bg-secondary: #ebdcfb;
+  --bg-tertiary: #dfc8f7;
+  --bg-card: #ffffff;
+  --bg-hover: #d8bef5;
+  --text-primary: #350e4a;
+  --text-secondary: #5c2a7a;
+  --text-muted: #8759a5;
+  --accent-blue: #8a4fcf;
+  --accent-blue-rgb: 138, 79, 207;
+  --accent-purple: #c79af5;
+  --accent-green: #2d6a4f;
+  --accent-orange: #f59e0b;
+  --accent-red: #ec4899;
+  --accent-cyan: #7c8cf8;
+  --accent-yellow: #facc15;
+  --accent-focus: rgba(138, 79, 207, 0.16);
+  --accent-blue-bg: rgba(138, 79, 207, 0.14);
+  --accent-green-bg: rgba(45, 106, 79, 0.14);
+  --accent-red-bg: rgba(236, 72, 153, 0.14);
+  --accent-orange-bg: rgba(245, 158, 11, 0.14);
+  --accent-purple-bg: rgba(199, 154, 245, 0.22);
+  --accent-shadow: rgba(138, 79, 207, 0.18);
   --text-on-accent: #ffffff;
-  --border-color: #30363d;
-  --border-light: #484f58;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 15px 30px rgba(0, 0, 0, 0.6);
-  --highlight-bg: rgba(47, 129, 247, 0.3);
-  --highlight-text: #ffffff;
-  --highlight-border: #2f81f7;
+  --border-color: #d6bdf5;
+  --border-light: #c5a4f0;
+  --shadow: 0 4px 14px rgba(138, 79, 207, 0.09);
+  --shadow-lg: 0 10px 25px rgba(138, 79, 207, 0.14);
+  --highlight-bg: rgba(199, 154, 245, 0.38);
+  --highlight-text: #350e4a;
+  --highlight-border: #a168dd;
 }
 
 [data-theme="catppuccin"] {

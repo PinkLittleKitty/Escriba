@@ -78,7 +78,7 @@ class LoggerService {
         '• help / ?           : Muestra esta guía de ayuda',
         '• clear / clear()    : Limpia todos los registros de la consola',
         '• stats / stats()    : Muestra estadísticas de materias, apuntes y configuración',
-        '• theme("name")      : Cambia el tema (dark, light, sakura, github, catppuccin, blue, matcha, unq, sunset)',
+        '• theme("name")      : Cambia el tema',
         '',
         '• notesStore         : Estado de notas (notesStore.subjects, notesStore.activeNoteId, etc.)',
         '• settingsStore      : Configuración (theme, fontSize, fontFamily, autoSave, etc.)',

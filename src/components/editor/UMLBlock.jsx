@@ -121,7 +121,7 @@ export const UMLBlock = ({
       setIsRendering(true);
       setRenderError(null);
 
-      const isLightTheme = theme === 'light' || theme === 'sepia' || theme === 'sakura';
+      const isLightTheme = theme === 'light' || theme === 'sepia' || theme === 'sakura' || theme === 'peluche';
 
       mermaid.initialize({
         startOnLoad: false,

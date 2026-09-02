@@ -204,6 +204,7 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
   };
 
   const palette = THEME_PALETTES[theme] || THEME_PALETTES.dark;
+  const isDark = theme !== 'light';
   const cleanTitle = title || 'Apunte';
   const cleanSubject = subjectName ? `<div class="subject-tag">${subjectName}</div>` : '';
 

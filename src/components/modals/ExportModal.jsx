@@ -232,7 +232,7 @@ export const ExportModal = () => {
             <Share2 size={18} color="var(--accent-blue)" />
             <span>Compartir {isSubjectMode ? 'Materia' : 'Apunte'}</span>
           </h3>
-          <button type="button" className={styles.closeBtn} onClick={closeModal}>
+          <button type="button" className={styles.closeBtn} onClick={closeModal} title="Cerrar" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>

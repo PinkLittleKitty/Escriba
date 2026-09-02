@@ -7,7 +7,9 @@
   "main": "electron.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vitest run && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview",
     "electron:start": "npm run build && electron .",
     "electron:dev": "electron .",
@@ -22,11 +24,15 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.6.1",
     "@capacitor/core": "^8.3.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
     "@vitejs/plugin-react": "^6.1.1",
     "electron": "^41.1.0",
     "electron-builder": "^26.8.1",
+    "jsdom": "^29.1.1",
     "nodemon": "^3.0.1",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   },
   "build": {
     "appId": "com.justneki.escriba",

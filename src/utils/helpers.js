@@ -29,14 +29,19 @@ export const formatDate = (dateString) => {
   if (isNaN(date.getTime())) return '';
   const now = new Date();
   const diffTime = Math.abs(now - date);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 1) {
+  const isSameDay =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  if (isSameDay || diffDays === 0) {
     return 'Hoy';
-  } else if (diffDays === 2) {
+  } else if (diffDays === 1) {
     return 'Ayer';
   } else if (diffDays <= 7) {
-    return `Hace ${diffDays - 1} día${diffDays - 1 !== 1 ? 's' : ''}`;
+    return `Hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
   } else {
     return date.toLocaleDateString('es-AR', {
       day: 'numeric',

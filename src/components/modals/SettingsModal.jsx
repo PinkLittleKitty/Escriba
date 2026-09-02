@@ -22,7 +22,8 @@ import {
   Keyboard,
   ShieldCheck,
   Check,
-  Terminal
+  Terminal,
+  Rocket
 } from 'lucide-react';
 import { GitHubIcon } from '../common/Icons.jsx';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
@@ -30,6 +31,7 @@ import { useGitHubStore } from '../../store/useGitHubStore.js';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { storageService } from '../../services/storageService.js';
+import { updaterService } from '../../services/updaterService.js';
 import styles from './SettingsModal.module.css';
 
 const THEMES = [
@@ -208,8 +210,30 @@ export const SettingsModal = () => {
   const [localFolder, setLocalFolder] = useState(
     localStorage.getItem('local_storage_folder_path') || ''
   );
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+
+  const openModal = useUIStore((state) => state.openModal);
 
   const fileInputRef = useRef(null);
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdates(true);
+    try {
+      const res = await updaterService.checkForUpdates();
+      if (res.hasUpdate && res.release) {
+        closeModal();
+        openModal('update', { release: res.release });
+      } else if (res.error) {
+        addToast({ message: `No se pudo verificar actualizaciones: ${res.error}`, type: 'error' });
+      } else {
+        addToast({ message: '¡Escriba está actualizado a la versión más reciente!', type: 'success' });
+      }
+    } catch (e) {
+      addToast({ message: 'Error al buscar actualizaciones', type: 'error' });
+    } finally {
+      setCheckingUpdates(false);
+    }
+  };
 
   const totalSubjects = subjects.length;
   const allNotes = subjects.flatMap((s) => s.notes || []);
@@ -951,6 +975,25 @@ export const SettingsModal = () => {
                       <span>GitHub</span>
                       <ExternalLink size={12} />
                     </a>
+                  </div>
+                </div>
+
+                <div className={styles.settingsSection}>
+                  <div className={styles.sectionHeader}>
+                    <Rocket size={18} />
+                    <span>Actualizaciones</span>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleCheckUpdates}
+                      disabled={checkingUpdates}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <RefreshCw size={14} className={checkingUpdates ? styles.spinning : ''} />
+                      <span>{checkingUpdates ? 'Buscando actualizaciones...' : 'Buscar actualizaciones'}</span>
+                    </button>
                   </div>
                 </div>
 

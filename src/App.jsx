@@ -13,10 +13,12 @@ import { LinkNoteModal } from './components/modals/LinkNoteModal.jsx';
 import { TableModal } from './components/modals/TableModal.jsx';
 import { ExportModal } from './components/modals/ExportModal.jsx';
 import { EventModal } from './components/modals/EventModal.jsx';
+import { UpdateModal } from './components/modals/UpdateModal.jsx';
 import { ToastContainer } from './components/common/ToastContainer.jsx';
 import { DevConsole } from './components/common/DevConsole.jsx';
 import { loadRemoteSharedContent } from './utils/exportHelpers.js';
 import { loggerService } from './services/loggerService.js';
+import { updaterService } from './services/updaterService.js';
 
 import { useNotesStore } from './store/useNotesStore.js';
 import { useUIStore } from './store/useUIStore.js';
@@ -144,6 +146,14 @@ export const App = () => {
       }
     };
 
+    if (typeof window !== 'undefined' && window.require) {
+      updaterService.checkForUpdates().then((res) => {
+        if (res.hasUpdate && res.release) {
+          openModal('update', { release: res.release });
+        }
+      }).catch(() => { });
+    }
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
@@ -180,6 +190,7 @@ export const App = () => {
       {(activeModal === 'table' || activeModal === 'insertTable') && <TableModal />}
       {(activeModal === 'export' || activeModal === 'share') && <ExportModal />}
       {activeModal === 'event' && <EventModal />}
+      {activeModal === 'update' && <UpdateModal />}
 
       <ToastContainer />
       <DevConsole />

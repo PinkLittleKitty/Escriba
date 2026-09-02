@@ -144,8 +144,10 @@ export const NoteEditor = () => {
           tabSize: 4,
           useSoftTabs: true,
           highlightActiveLine: true,
-          wrap: true
+          wrap: true,
+          useWorker: false
         });
+        editor.session.setUseWorker(false);
 
         editor.setValue(code, -1);
         container.setAttribute('data-initialized', 'true');
@@ -193,6 +195,7 @@ export const NoteEditor = () => {
             langSelect.onchange = (e) => {
               const newLang = e.target.value;
               editor.session.setMode(`ace/mode/${newLang}`);
+              editor.session.setUseWorker(false);
               container.setAttribute('data-lang', newLang);
               parentBlock.setAttribute('data-lang', newLang);
               const note = currentNoteRef.current;

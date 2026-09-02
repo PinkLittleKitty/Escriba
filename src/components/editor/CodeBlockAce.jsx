@@ -41,8 +41,10 @@ export const CodeBlockAce = ({
       tabSize: 2,
       useSoftTabs: true,
       highlightActiveLine: false,
-      wrap: true
+      wrap: true,
+      useWorker: false
     });
+    editor.session.setUseWorker(false);
 
     editor.setValue(code, -1);
 
@@ -71,6 +73,7 @@ export const CodeBlockAce = ({
     setCurrentLang(newLang);
     if (aceInstance.current) {
       aceInstance.current.session.setMode(`ace/mode/${newLang}`);
+      aceInstance.current.session.setUseWorker(false);
     }
   };
 

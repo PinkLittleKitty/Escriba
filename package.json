@@ -4,7 +4,7 @@
   "type": "module",
   "author": "JustNeki",
   "description": "Digital notebook application with cross-device sync",
-  "main": "electron.js",
+  "main": "electron.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vitest run && vite build",
@@ -41,8 +41,14 @@
     "productName": "Escriba",
     "icon": "icon.png",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
+    "files": [
+      "dist/**/*",
+      "electron.cjs",
+      "icon.png",
+      "package.json"
+    ],
     "win": {
       "target": [
         "nsis",

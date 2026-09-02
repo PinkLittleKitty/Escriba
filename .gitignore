@@ -6,3 +6,4 @@ android/app/build/
 android/build/
 android/local.properties
 android/capacitor-cordova-android-plugins/
+/release/

@@ -28,8 +28,7 @@ jobs:
           BUILD_LABEL="Build #${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})"
           echo "Setting version to $VERSION and build label to $BUILD_LABEL"
           npm version $VERSION --allow-same-version --no-git-tag-version
-          [ -f src/js/components/modals-component.js ] && perl -i -pe "s/id=\"appBuildDisplay\">.*?<\/span>/id=\"appBuildDisplay\">$BUILD_LABEL<\/span>/g" src/js/components/modals-component.js || true
-          [ -f src/js/app.js ] && perl -i -pe "s/const CURRENT_BUILD_TIME = new Date\('.*?'\);/const CURRENT_BUILD_TIME = new Date('$BUILD_TIME');/g" src/js/app.js || true
+          [ -f src/services/updaterService.js ] && perl -i -pe "s/const APP_BUILD_TIMESTAMP = new Date\('.*?'\)\.getTime\(\);/const APP_BUILD_TIMESTAMP = new Date('$BUILD_TIME').getTime();/g" src/services/updaterService.js || true
 
 
       - name: Install Dependencies
@@ -43,21 +42,21 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Escriba-Windows
-          path: dist/*.exe
+          path: release/*.exe
 
       - name: Upload Artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: Escriba-Linux
-          path: dist/*.AppImage
+          path: release/*.AppImage
 
       - name: Upload Artifacts (macOS)
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: Escriba-macOS
-          path: dist/*.dmg
+          path: release/*.dmg
 
   android-build:
     runs-on: ubuntu-latest
@@ -78,8 +77,7 @@ jobs:
           BUILD_LABEL="Build #${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})"
           echo "Setting version to $VERSION and build label to $BUILD_LABEL"
           npm version $VERSION --allow-same-version --no-git-tag-version
-          [ -f src/js/components/modals-component.js ] && perl -i -pe "s/id=\"appBuildDisplay\">.*?<\/span>/id=\"appBuildDisplay\">$BUILD_LABEL<\/span>/g" src/js/components/modals-component.js || true
-          [ -f src/js/app.js ] && perl -i -pe "s/const CURRENT_BUILD_TIME = new Date\('.*?'\);/const CURRENT_BUILD_TIME = new Date('$BUILD_TIME');/g" src/js/app.js || true
+          [ -f src/services/updaterService.js ] && perl -i -pe "s/const APP_BUILD_TIMESTAMP = new Date\('.*?'\)\.getTime\(\);/const APP_BUILD_TIMESTAMP = new Date('$BUILD_TIME').getTime();/g" src/services/updaterService.js || true
 
       - name: Setup Java
         uses: actions/setup-java@v4

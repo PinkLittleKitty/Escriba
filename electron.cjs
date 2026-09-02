@@ -2,6 +2,10 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('no-sandbox');
+}
+
 function createWindow() {
     const win = new BrowserWindow({
         width: 1200,

@@ -119,7 +119,7 @@ export const Header = () => {
                 }`}
               onClick={() => sync()}
               disabled={syncStatus === 'syncing'}
-              title="Sincronización bidireccional con GitHub"
+              title="Sincronización con GitHub"
             >
               <RefreshCw size={14} className={syncStatus === 'syncing' ? styles.spin : ''} />
               <span>
@@ -136,7 +136,7 @@ export const Header = () => {
               className={`btn-icon ${styles.syncIconBtn}`}
               onClick={handleForcePull}
               disabled={syncStatus === 'syncing'}
-              title="Pull: Descargar y reemplazar datos desde GitHub (forzado)"
+              title="Pull"
             >
               <Download size={15} />
             </button>
@@ -146,7 +146,7 @@ export const Header = () => {
               className={`btn-icon ${styles.syncIconBtn}`}
               onClick={handleForcePush}
               disabled={syncStatus === 'syncing'}
-              title="Push: Subir y reemplazar datos en GitHub (forzado)"
+              title="Push"
             >
               <Upload size={15} />
             </button>

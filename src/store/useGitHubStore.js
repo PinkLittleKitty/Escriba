@@ -186,5 +186,17 @@ export const useGitHubStore = create((set, get) => ({
       set({ syncStatus: 'error', lastError: err.message });
       return { success: false, error: err.message };
     }
+  },
+
+  uploadSingleNote: async (note, subjectId) => {
+    const { token, username, repoName, isAuthenticated } = get();
+    if (!isAuthenticated || !token || !note) return false;
+    try {
+      await gitHubService.uploadSingleNote(token, username, repoName, note, subjectId);
+      return true;
+    } catch (err) {
+      console.error('Error uploading single note to GitHub:', err);
+      return false;
+    }
   }
 }));

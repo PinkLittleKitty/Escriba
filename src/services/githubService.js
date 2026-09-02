@@ -93,6 +93,7 @@ export class GitHubService {
       if (!createRes.ok) {
         throw new Error(`No se pudo crear el repositorio en GitHub (${createRes.status})`);
       }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
     }
   }
 
@@ -113,32 +114,162 @@ export class GitHubService {
     };
   }
 
-  async updateFile(token, username, repoName, path, content, message, sha = null) {
-    const body = {
-      message,
-      content: this.encodeContent(content)
+  async updateFile(token, username, repoName, path, content, message, sha = null, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        let fileSha = sha;
+        if (!fileSha) {
+          const existing = await this.getFile(token, username, repoName, path);
+          if (existing) fileSha = existing.sha;
+        }
+
+        const body = {
+          message: message || `Sync ${path} - ${new Date().toISOString()}`,
+          content: this.encodeContent(content)
+        };
+        if (fileSha) body.sha = fileSha;
+
+        const response = await this.fetchWithTimeout(
+          `${this.baseUrl}/repos/${username}/${repoName}/contents/${path}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify(body)
+          },
+          token
+        );
+
+        if (response.status === 409) {
+          if (attempt < retries) {
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+            continue;
+          }
+        }
+
+        if (!response.ok) {
+          throw new Error(`Error guardando ${path} en GitHub: ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        if (attempt === retries) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+  }
+
+  async uploadSingleNote(token, username, repoName, note, subjectId) {
+    if (!token || !username || !repoName || !note?.id) return false;
+    await this.ensureRepository(token, username, repoName);
+
+    const noteData = {
+      ...note,
+      subjectId
     };
 
-    if (sha) {
-      body.sha = sha;
-    } else {
-      const existing = await this.getFile(token, username, repoName, path);
-      if (existing) body.sha = existing.sha;
+    return await this.updateFile(
+      token,
+      username,
+      repoName,
+      `data/notes/${note.id}.json`,
+      JSON.stringify(noteData, null, 2),
+      `Update note ${note.title || note.id} (${new Date().toLocaleString('es-AR')})`
+    );
+  }
+
+  async getBranchHead(token, username, repoName, branch = 'main') {
+    let response = await this.fetchWithTimeout(
+      `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/${branch}`,
+      {},
+      token
+    );
+
+    if (!response.ok && branch === 'main') {
+      response = await this.fetchWithTimeout(
+        `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/master`,
+        {},
+        token
+      );
     }
 
+    if (!response.ok) throw new Error(`Error al obtener head de la rama: ${response.status}`);
+    const data = await response.json();
+    return { sha: data.object.sha, branch: response.url.includes('/master') ? 'master' : 'main' };
+  }
+
+  async getTreeSha(token, username, repoName, commitSha) {
     const response = await this.fetchWithTimeout(
-      `${this.baseUrl}/repos/${username}/${repoName}/contents/${path}`,
+      `${this.baseUrl}/repos/${username}/${repoName}/git/commits/${commitSha}`,
+      {},
+      token
+    );
+    if (!response.ok) throw new Error(`Error al obtener tree sha: ${response.status}`);
+    const data = await response.json();
+    return data.tree.sha;
+  }
+
+  async createTree(token, username, repoName, files, baseTreeSha) {
+    const tree = files.map((file) => ({
+      path: file.path,
+      mode: '100644',
+      type: 'blob',
+      content: file.content
+    }));
+
+    const response = await this.fetchWithTimeout(
+      `${this.baseUrl}/repos/${username}/${repoName}/git/trees`,
       {
-        method: 'PUT',
-        body: JSON.stringify(body)
+        method: 'POST',
+        body: JSON.stringify({
+          base_tree: baseTreeSha,
+          tree
+        })
+      },
+      token,
+      30000
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`Error al crear árbol de archivos: ${response.status} - ${err.message || ''}`);
+    }
+
+    const data = await response.json();
+    return data.sha;
+  }
+
+  async createCommit(token, username, repoName, message, treeSha, parentSha) {
+    const response = await this.fetchWithTimeout(
+      `${this.baseUrl}/repos/${username}/${repoName}/git/commits`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          message,
+          tree: treeSha,
+          parents: parentSha ? [parentSha] : []
+        })
       },
       token
     );
 
-    if (!response.ok) {
-      throw new Error(`Error guardando ${path} en GitHub: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Error al crear commit: ${response.status}`);
+    const data = await response.json();
+    return data.sha;
+  }
 
+  async updateRef(token, username, repoName, branch, commitSha) {
+    const response = await this.fetchWithTimeout(
+      `${this.baseUrl}/repos/${username}/${repoName}/git/refs/heads/${branch}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          sha: commitSha,
+          force: false
+        })
+      },
+      token
+    );
+
+    if (!response.ok) throw new Error(`Error al actualizar referencia ${branch}: ${response.status}`);
     return await response.json();
   }
 
@@ -240,7 +371,7 @@ export class GitHubService {
     return merged;
   }
 
-  async uploadData(token, username, repoName, data) {
+  async uploadData(token, username, repoName, data, onProgress = null) {
     await this.ensureRepository(token, username, repoName);
 
     const files = [
@@ -253,23 +384,81 @@ export class GitHubService {
       }
     ];
 
-    for (const file of files) {
-      await this.updateFile(
-        token,
-        username,
-        repoName,
-        file.path,
-        file.content,
-        `Sync ${file.path}: ${new Date().toLocaleString('es-AR')}`
-      );
+    const noteIds = [];
+    for (const subject of data.subjects || []) {
+      if (Array.isArray(subject.notes)) {
+        for (const note of subject.notes) {
+          noteIds.push(note.id);
+          const noteData = {
+            ...note,
+            subjectId: subject.id
+          };
+          files.push({
+            path: `data/notes/${note.id}.json`,
+            content: JSON.stringify(noteData, null, 2)
+          });
+        }
+      }
+    }
+
+    files.push({
+      path: 'data/notes-index.json',
+      content: JSON.stringify(noteIds, null, 2)
+    });
+
+    const maxRetries = 2;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        if (onProgress) onProgress(15, 'Verificando rama de GitHub...');
+        const { sha: headSha, branch } = await this.getBranchHead(token, username, repoName);
+        const baseTreeSha = await this.getTreeSha(token, username, repoName, headSha);
+
+        if (onProgress) onProgress(45, 'Generando árbol con apuntes individuales...');
+        const newTreeSha = await this.createTree(token, username, repoName, files, baseTreeSha);
+
+        if (onProgress) onProgress(80, 'Creando commit atómico...');
+        const commitSha = await this.createCommit(
+          token,
+          username,
+          repoName,
+          `Sync ${files.length} files (including ${noteIds.length} notes): ${new Date().toLocaleString('es-AR')}`,
+          newTreeSha,
+          headSha
+        );
+
+        if (onProgress) onProgress(95, 'Actualizando rama...');
+        await this.updateRef(token, username, repoName, branch, commitSha);
+
+        if (onProgress) onProgress(100, 'Sincronización completada');
+        return { success: true, count: files.length, noteCount: noteIds.length };
+      } catch (err) {
+        console.warn(`Git Tree upload attempt ${attempt} failed:`, err.message);
+        if (attempt === maxRetries) {
+          console.warn('Falling back to sequential file update...');
+          for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            if (onProgress) {
+              onProgress(
+                Math.floor((i / files.length) * 100),
+                `Subiendo ${f.path} (${i + 1}/${files.length})...`
+              );
+            }
+            await this.updateFile(token, username, repoName, f.path, f.content);
+          }
+          if (onProgress) onProgress(100, 'Completado');
+          return { success: true, count: files.length, noteCount: noteIds.length };
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
     }
   }
 
-  async sync(token, username, repoName, localData) {
+  async sync(token, username, repoName, localData, onProgress = null) {
     await this.ensureRepository(token, username, repoName);
+    if (onProgress) onProgress(10, 'Descargando datos remotos de GitHub...');
     const remoteData = await this.getRemoteData(token, username, repoName);
     const mergedData = this.mergeData(localData, remoteData);
-    await this.uploadData(token, username, repoName, mergedData);
+    await this.uploadData(token, username, repoName, mergedData, onProgress);
     return mergedData;
   }
 }

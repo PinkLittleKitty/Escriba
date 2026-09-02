@@ -1,4 +1,4 @@
-export const handleMarkdownKeyDown = (e, { editorRoot, onInsertCodeBlock, onNotifyChange }) => {
+export const handleMarkdownKeyDown = (e, { editorRoot, onInsertCodeBlock, onOpenLinkModal, onNotifyChange }) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return false;
 
   const sel = window.getSelection();
@@ -9,6 +9,23 @@ export const handleMarkdownKeyDown = (e, { editorRoot, onInsertCodeBlock, onNoti
 
   const node = range.startContainer;
   const offset = range.startOffset;
+
+  if (e.key === '[') {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const textBefore = node.textContent.substring(0, offset);
+      if (textBefore.endsWith('[')) {
+        e.preventDefault();
+        const deleteRange = document.createRange();
+        deleteRange.setStart(node, offset - 1);
+        deleteRange.setEnd(node, offset);
+        deleteRange.deleteContents();
+        if (typeof onOpenLinkModal === 'function') {
+          onOpenLinkModal();
+        }
+        return true;
+      }
+    }
+  }
 
   if (e.key === ' ' || e.key === 'Spacebar') {
     if (node.nodeType !== Node.TEXT_NODE) return false;

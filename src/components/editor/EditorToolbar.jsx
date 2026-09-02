@@ -91,6 +91,17 @@ export const EditorToolbar = ({
     }
   };
 
+  const handleOpenLinkModal = () => {
+    const sel = window.getSelection();
+    let selectedText = '';
+    let savedRange = null;
+    if (sel && sel.rangeCount > 0) {
+      savedRange = sel.getRangeAt(0).cloneRange();
+      selectedText = sel.toString().trim();
+    }
+    openModal('linkNote', { selectedText, savedRange });
+  };
+
   return (
     <div className={styles.toolbar}>
       <div className={styles.toolbarGroup}>
@@ -274,7 +285,7 @@ export const EditorToolbar = ({
         <button
           type="button"
           className={styles.toolbarBtn}
-          onClick={() => openModal('linkNote')}
+          onClick={handleOpenLinkModal}
           title="Enlazar otro apunte"
         >
           <LinkIcon size={15} />

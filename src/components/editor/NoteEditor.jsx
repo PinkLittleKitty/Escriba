@@ -747,7 +747,7 @@ export const NoteEditor = () => {
   const backlinks = [];
   if (currentNote && currentNote.title) {
     const searchTarget = currentNote.title.toLowerCase();
-    subjects.forEach((s) => {
+    subjects.filter((s) => !s.archived).forEach((s) => {
       s.notes.forEach((n) => {
         if (n.id !== currentNote.id && n.content && n.content.toLowerCase().includes(searchTarget)) {
           backlinks.push({ note: n, subject: s });
@@ -862,19 +862,43 @@ export const NoteEditor = () => {
           onInput={handleContentInput}
           onContextMenu={handleContextMenu}
           onClick={(e) => {
-            const link = e.target.closest('a[data-note-id], .internal-link[data-note-id]');
+            const link = e.target.closest('a[data-note-id], .internal-link, a[href^="#note-"]');
             if (link) {
               e.preventDefault();
-              const noteId = link.getAttribute('data-note-id');
+              e.stopPropagation();
+              const noteId = link.getAttribute('data-note-id') || link.getAttribute('href')?.replace('#note-', '');
+              const linkText = link.textContent?.trim().replace(/^\[\[|\]\]$/g, '');
+
+              let targetNote = null;
+              let targetSubject = null;
+
               if (noteId) {
                 for (const s of subjects) {
                   const found = s.notes.find((n) => n.id === noteId);
                   if (found) {
-                    setActiveNote(s.id, found.id);
-                    addToast({ message: `Abriendo "${found.title}"`, type: 'info' });
+                    targetNote = found;
+                    targetSubject = s;
                     break;
                   }
                 }
+              }
+
+              if (!targetNote && linkText) {
+                for (const s of subjects) {
+                  const found = s.notes.find((n) => n.title.toLowerCase() === linkText.toLowerCase());
+                  if (found) {
+                    targetNote = found;
+                    targetSubject = s;
+                    break;
+                  }
+                }
+              }
+
+              if (targetNote && targetSubject) {
+                setActiveNote(targetSubject.id, targetNote.id);
+                addToast({ message: `Abriendo "${targetNote.title}"`, type: 'info' });
+              } else {
+                addToast({ message: 'No se encontró el apunte enlazado', type: 'warning' });
               }
             }
           }}
@@ -900,7 +924,14 @@ export const NoteEditor = () => {
                 handleInsertUML();
               } else if (key === 'l' && !e.altKey && !e.shiftKey) {
                 e.preventDefault();
-                openModal('linkNote');
+                const sel = window.getSelection();
+                let selectedText = '';
+                let savedRange = null;
+                if (sel && sel.rangeCount > 0) {
+                  savedRange = sel.getRangeAt(0).cloneRange();
+                  selectedText = sel.toString().trim();
+                }
+                openModal('linkNote', { selectedText, savedRange });
               } else if (key === '`') {
                 e.preventDefault();
                 const selection = window.getSelection();
@@ -955,6 +986,16 @@ export const NoteEditor = () => {
             const handled = handleMarkdownKeyDown(e, {
               editorRoot: contentRef.current,
               onInsertCodeBlock: handleInsertCodeBlock,
+              onOpenLinkModal: () => {
+                const sel = window.getSelection();
+                let selectedText = '';
+                let savedRange = null;
+                if (sel && sel.rangeCount > 0) {
+                  savedRange = sel.getRangeAt(0).cloneRange();
+                  selectedText = sel.toString().trim();
+                }
+                openModal('linkNote', { selectedText, savedRange });
+              },
               onNotifyChange: () => {
                 handleContentInput();
               }

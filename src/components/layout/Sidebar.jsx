@@ -642,7 +642,7 @@ export const Sidebar = () => {
 
       <div className={styles.subjectsContainer}>
         {sidebarView === 'subjects' && (
-          activeSubjects.length === 0 && (!showArchived || archivedSubjects.length === 0) ? (
+          activeSubjects.length === 0 && totalArchivedCount === 0 ? (
             <div className={styles.emptyState}>
               {searchQuery ? 'No se encontraron resultados' : 'No tenés materias creadas todavía.'}
             </div>
@@ -650,21 +650,37 @@ export const Sidebar = () => {
             <>
               {activeSubjects.map((subject) => renderSubjectFolder(subject, false))}
 
-              {showArchived && (
-                <div className={styles.archivedSection}>
-                  <div className={styles.archivedSectionHeader}>
-                    <Archive size={13} />
-                    <span>Materias Archivadas ({totalArchivedCount})</span>
+              <div className={styles.archivedSection}>
+                <button
+                  type="button"
+                  className={`${styles.archivedToggleBtn} ${showArchived ? styles.active : ''}`}
+                  onClick={() => setShowArchived(!showArchived)}
+                  aria-expanded={showArchived}
+                  title={showArchived ? 'Ocultar materias archivadas' : 'Ver materias archivadas'}
+                >
+                  <div className={styles.archivedToggleLeft}>
+                    <ChevronDown
+                      size={14}
+                      className={`${styles.archivedChevron} ${showArchived ? styles.chevronExpanded : ''}`}
+                    />
+                    <Archive size={14} />
+                    <span>Archivadas</span>
                   </div>
-                  {archivedSubjects.length === 0 ? (
-                    <div className={styles.emptyNoteItem}>
-                      <span>No hay materias archivadas coincidentes</span>
-                    </div>
-                  ) : (
-                    archivedSubjects.map((subject) => renderSubjectFolder(subject, true))
-                  )}
-                </div>
-              )}
+                  <span className={styles.archivedCountBadge}>{totalArchivedCount}</span>
+                </button>
+
+                {showArchived && (
+                  <div className={styles.archivedList}>
+                    {archivedSubjects.length === 0 ? (
+                      <div className={styles.emptyNoteItem}>
+                        <span>No hay materias archivadas coincidentes</span>
+                      </div>
+                    ) : (
+                      archivedSubjects.map((subject) => renderSubjectFolder(subject, true))
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )
         )}
@@ -679,16 +695,6 @@ export const Sidebar = () => {
       </div>
 
       <div className={styles.sidebarFooter}>
-        <button
-          type="button"
-          className={`${styles.footerBtn} ${showArchived ? styles.active : ''}`}
-          onClick={() => setShowArchived(!showArchived)}
-          title={showArchived ? 'Ocultar materias archivadas' : 'Ver materias archivadas'}
-        >
-          <Archive size={14} />
-          <span>Archivadas ({totalArchivedCount})</span>
-        </button>
-
         <button
           type="button"
           className={styles.footerBtn}

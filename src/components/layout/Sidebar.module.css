@@ -1069,10 +1069,65 @@
 
 .archivedSection {
   margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+.archivedToggleBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.6rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.archivedToggleBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+
+.archivedToggleBtn.active {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.archivedToggleLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.archivedChevron {
+  transition: transform var(--transition-fast);
+  color: var(--text-muted);
+}
+
+.archivedChevron.chevronExpanded {
+  transform: rotate(180deg);
+}
+
+.archivedCountBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
 }
 
 .archivedSectionHeader {

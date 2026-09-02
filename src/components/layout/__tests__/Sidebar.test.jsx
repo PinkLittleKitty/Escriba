@@ -54,7 +54,7 @@ describe('Sidebar Component', () => {
     expect(screen.getByText('Arquitectura de Software')).toBeInTheDocument();
   });
 
-  it('displays footer with Papelera and Archivadas buttons', () => {
+  it('displays footer with Papelera button and archived subjects dropdown', () => {
     render(<Sidebar />);
     expect(screen.getByTitle(/papelera de reciclaje/i)).toBeInTheDocument();
     expect(screen.getByTitle(/ver materias archivadas/i)).toBeInTheDocument();

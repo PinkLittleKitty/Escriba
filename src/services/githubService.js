@@ -3,7 +3,7 @@ export class GitHubService {
     this.baseUrl = 'https://api.github.com';
   }
 
-  async fetchWithTimeout(url, options = {}, token, timeout = 15000) {
+  async fetchWithTimeout(url, options = {}, token, timeout = 30000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
 
@@ -203,6 +203,21 @@ export class GitHubService {
     if (!response.ok) throw new Error(`Error al obtener tree sha: ${response.status}`);
     const data = await response.json();
     return data.tree.sha;
+  }
+
+  async getTreeFiles(token, username, repoName, treeSha) {
+    try {
+      const response = await this.fetchWithTimeout(
+        `${this.baseUrl}/repos/${username}/${repoName}/git/trees/${treeSha}?recursive=1`,
+        {},
+        token
+      );
+      if (!response.ok) return new Set();
+      const data = await response.json();
+      return new Set((data.tree || []).map((item) => item.path));
+    } catch {
+      return new Set();
+    }
   }
 
   async createTree(token, username, repoName, files, baseTreeSha) {
@@ -463,13 +478,7 @@ export class GitHubService {
       content: JSON.stringify(noteIds, null, 2)
     });
 
-    const deletedNoteIds = data.deletedItems?.notes || [];
-    for (const delId of deletedNoteIds) {
-      files.push({
-        path: `data/notes/${delId}.json`,
-        sha: null
-      });
-    }
+    const currentNoteFilePaths = new Set(noteIds.map((id) => `data/notes/${id}.json`));
 
     const maxRetries = 2;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -478,15 +487,27 @@ export class GitHubService {
         const { sha: headSha, branch } = await this.getBranchHead(token, username, repoName);
         const baseTreeSha = await this.getTreeSha(token, username, repoName, headSha);
 
+        const existingPaths = await this.getTreeFiles(token, username, repoName, baseTreeSha);
+        const treeFiles = [...files];
+
+        for (const existingPath of existingPaths) {
+          if (existingPath.startsWith('data/notes/') && !currentNoteFilePaths.has(existingPath)) {
+            treeFiles.push({
+              path: existingPath,
+              sha: null
+            });
+          }
+        }
+
         if (onProgress) onProgress(45, 'Generando árbol con apuntes individuales...');
-        const newTreeSha = await this.createTree(token, username, repoName, files, baseTreeSha);
+        const newTreeSha = await this.createTree(token, username, repoName, treeFiles, baseTreeSha);
 
         if (onProgress) onProgress(80, 'Creando commit atómico...');
         const commitSha = await this.createCommit(
           token,
           username,
           repoName,
-          `Sync ${files.length} files (including ${noteIds.length} notes): ${new Date().toLocaleString('es-AR')}`,
+          `Sync ${treeFiles.length} files (including ${noteIds.length} notes): ${new Date().toLocaleString('es-AR')}`,
           newTreeSha,
           headSha
         );
@@ -495,7 +516,7 @@ export class GitHubService {
         await this.updateRef(token, username, repoName, branch, commitSha, true);
 
         if (onProgress) onProgress(100, 'Sincronización completada');
-        return { success: true, count: files.length, noteCount: noteIds.length };
+        return { success: true, count: treeFiles.length, noteCount: noteIds.length };
       } catch (err) {
         console.warn(`Git Tree upload attempt ${attempt} failed:`, err.message);
         if (attempt === maxRetries) {
@@ -508,11 +529,7 @@ export class GitHubService {
                 `Actualizando ${f.path} (${i + 1}/${files.length})...`
               );
             }
-            if (f.sha === null) {
-              await this.deleteFile(token, username, repoName, f.path);
-            } else {
-              await this.updateFile(token, username, repoName, f.path, f.content);
-            }
+            await this.updateFile(token, username, repoName, f.path, f.content);
           }
           if (onProgress) onProgress(100, 'Completado');
           return { success: true, count: files.length, noteCount: noteIds.length };

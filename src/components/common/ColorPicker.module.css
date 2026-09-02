@@ -32,6 +32,21 @@
   height: 22px;
 }
 
+.clearOption {
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-color);
+  color: var(--text-muted);
+}
+
+.clearOption:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.clearIcon {
+  color: var(--text-muted);
+}
+
 .colorCheck {
   color: #ffffff;
   font-size: 0.75rem;
@@ -52,10 +67,15 @@
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  border: 2px dashed var(--border-light);
+  border: 2px dashed var(--border-light, var(--border-color));
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.customInputWrapper.small {
+  width: 22px;
+  height: 22px;
 }
 
 .customInputWrapper input[type="color"] {

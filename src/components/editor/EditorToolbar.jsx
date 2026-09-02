@@ -22,9 +22,10 @@ import {
   Code,
   Terminal,
   Sigma,
-  GitGraph
+  GitGraph,
+  ChevronDown
 } from 'lucide-react';
-import { ColorPicker } from '../common/ColorPicker.jsx';
+import { ColorPicker, HIGHLIGHT_PRESETS } from '../common/ColorPicker.jsx';
 import { useUIStore } from '../../store/useUIStore.js';
 import styles from './EditorToolbar.module.css';
 
@@ -40,9 +41,15 @@ export const EditorToolbar = ({
 
   const [showFontMenu, setShowFontMenu] = useState(false);
   const [showColorMenu, setShowColorMenu] = useState(false);
+  const [showHighlightMenu, setShowHighlightMenu] = useState(false);
+  const [highlightColor, setHighlightColor] = useState(() => {
+    return localStorage.getItem('escriba_highlight_color') || 'var(--highlight-bg, #fef08a)';
+  });
 
   const fontMenuRef = useRef(null);
   const colorMenuRef = useRef(null);
+  const highlightMenuRef = useRef(null);
+  const savedSelectionRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -52,12 +59,31 @@ export const EditorToolbar = ({
       if (colorMenuRef.current && !colorMenuRef.current.contains(e.target)) {
         setShowColorMenu(false);
       }
+      if (highlightMenuRef.current && !highlightMenuRef.current.contains(e.target)) {
+        setShowHighlightMenu(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelectionRef.current) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+  };
+
   const exec = (command, value = null) => {
+    restoreSelection();
     document.execCommand(command, false, value);
   };
 
@@ -71,8 +97,20 @@ export const EditorToolbar = ({
     setShowColorMenu(false);
   };
 
-  const handleHighlight = () => {
-    exec('hiliteColor', 'var(--highlight-bg, #fef08a)');
+  const applyHighlight = (color) => {
+    restoreSelection();
+    exec('hiliteColor', color);
+  };
+
+  const handleSelectHighlightColor = (color) => {
+    setHighlightColor(color);
+    localStorage.setItem('escriba_highlight_color', color);
+    applyHighlight(color);
+    setShowHighlightMenu(false);
+  };
+
+  const handleQuickHighlight = () => {
+    exec('hiliteColor', highlightColor);
   };
 
   const handleInlineCode = () => {
@@ -137,14 +175,52 @@ export const EditorToolbar = ({
         >
           <Strikethrough size={15} />
         </button>
-        <button
-          type="button"
-          className={styles.toolbarBtn}
-          onClick={handleHighlight}
-          title="Resaltar"
-        >
-          <Highlighter size={15} />
-        </button>
+        <div className={styles.dropdownWrapper} ref={highlightMenuRef}>
+          <div className={styles.splitBtnWrapper}>
+            <button
+              type="button"
+              className={styles.splitBtnMain}
+              onClick={handleQuickHighlight}
+              onMouseDown={(e) => e.preventDefault()}
+              title="Resaltar texto"
+            >
+              <Highlighter size={14} />
+              <span
+                className={styles.highlightColorBar}
+                style={{ background: highlightColor }}
+              />
+            </button>
+            <button
+              type="button"
+              className={styles.splitBtnArrow}
+              onClick={() => {
+                saveSelection();
+                setShowHighlightMenu(!showHighlightMenu);
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              title="Elegir color de resaltado"
+            >
+              <ChevronDown size={11} />
+            </button>
+          </div>
+
+          {showHighlightMenu && (
+            <div
+              className={styles.dropdownMenu}
+              style={{ minWidth: '175px' }}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <ColorPicker
+                presets={HIGHLIGHT_PRESETS}
+                selectedColor={highlightColor}
+                onChange={handleSelectHighlightColor}
+                size="small"
+                allowClear
+                clearTitle="Sin color de resaltado"
+              />
+            </div>
+          )}
+        </div>
         <button
           type="button"
           className={styles.toolbarBtn}
@@ -161,14 +237,18 @@ export const EditorToolbar = ({
         <div className={styles.dropdownWrapper} ref={fontMenuRef}>
           <button
             type="button"
-            className={styles.toolbarBtn}
-            onClick={() => setShowFontMenu(!showFontMenu)}
+            className={`${styles.toolbarBtn} ${showFontMenu ? styles.active : ''}`}
+            onClick={() => {
+              saveSelection();
+              setShowFontMenu(!showFontMenu);
+            }}
+            onMouseDown={(e) => e.preventDefault()}
             title="Tamaño de letra"
           >
             <Type size={15} />
           </button>
           {showFontMenu && (
-            <div className={styles.dropdownMenu}>
+            <div className={styles.dropdownMenu} onMouseDown={(e) => e.preventDefault()}>
               <button type="button" className={styles.dropdownOption} onClick={() => handleFontSize('2')}>
                 Chico
               </button>
@@ -191,14 +271,22 @@ export const EditorToolbar = ({
         <div className={styles.dropdownWrapper} ref={colorMenuRef}>
           <button
             type="button"
-            className={styles.toolbarBtn}
-            onClick={() => setShowColorMenu(!showColorMenu)}
+            className={`${styles.toolbarBtn} ${showColorMenu ? styles.active : ''}`}
+            onClick={() => {
+              saveSelection();
+              setShowColorMenu(!showColorMenu);
+            }}
+            onMouseDown={(e) => e.preventDefault()}
             title="Color de texto"
           >
             <Palette size={15} />
           </button>
           {showColorMenu && (
-            <div className={styles.dropdownMenu} style={{ minWidth: '180px' }}>
+            <div
+              className={styles.dropdownMenu}
+              style={{ minWidth: '180px' }}
+              onMouseDown={(e) => e.preventDefault()}
+            >
               <ColorPicker onChange={handleTextColor} size="small" />
             </div>
           )}

@@ -108,4 +108,64 @@ describe('EditorToolbar Component', () => {
 
     expect(useUIStore.getState().activeModal).toBe('linkNote');
   });
+
+  it('triggers quick highlight with active highlight color', () => {
+    render(
+      <EditorToolbar
+        onInsertCodeBlock={vi.fn()}
+        onInsertMath={vi.fn()}
+        onInsertUML={vi.fn()}
+        onInsertTable={vi.fn()}
+        isMathToolbarOpen={false}
+        onToggleMathToolbar={vi.fn()}
+      />
+    );
+
+    const highlightBtn = screen.getByTitle(/resaltar texto/i);
+    fireEvent.click(highlightBtn);
+    expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, expect.any(String));
+  });
+
+  it('opens highlight color menu and selects a custom preset color', () => {
+    render(
+      <EditorToolbar
+        onInsertCodeBlock={vi.fn()}
+        onInsertMath={vi.fn()}
+        onInsertUML={vi.fn()}
+        onInsertTable={vi.fn()}
+        isMathToolbarOpen={false}
+        onToggleMathToolbar={vi.fn()}
+      />
+    );
+
+    const arrowBtn = screen.getByTitle(/elegir color de resaltado/i);
+    fireEvent.click(arrowBtn);
+
+    const greenSwatch = screen.getByTitle('Verde');
+    expect(greenSwatch).toBeInTheDocument();
+
+    fireEvent.click(greenSwatch);
+    expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, '#bbf7d0');
+  });
+
+  it('clears highlight when Sin color is clicked', () => {
+    render(
+      <EditorToolbar
+        onInsertCodeBlock={vi.fn()}
+        onInsertMath={vi.fn()}
+        onInsertUML={vi.fn()}
+        onInsertTable={vi.fn()}
+        isMathToolbarOpen={false}
+        onToggleMathToolbar={vi.fn()}
+      />
+    );
+
+    const arrowBtn = screen.getByTitle(/elegir color de resaltado/i);
+    fireEvent.click(arrowBtn);
+
+    const clearBtn = screen.getByTitle(/sin color de resaltado/i);
+    fireEvent.click(clearBtn);
+
+    expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, 'transparent');
+  });
 });

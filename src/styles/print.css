@@ -1,0 +1,312 @@
+@page {
+  margin: 1.5cm 1.5cm;
+  size: auto;
+}
+
+@media print {
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header,
+  nav,
+  aside,
+  button,
+  .no-print,
+  .mobile-overlay,
+  [class*="sidebar"],
+  [class*="Sidebar"],
+  [class*="toolbar"],
+  [class*="Toolbar"],
+  [class*="editorToolbar"],
+  [class*="editorFooter"],
+  [class*="backlinksPanel"],
+  [class*="metaActions"],
+  [class*="overlay"],
+  [class*="Modal"],
+  [class*="modal"],
+  [class*="toast"],
+  [class*="Toast"],
+  [class*="flyout"],
+  [class*="contextMenu"],
+  [class*="dropdown"],
+  [class*="Dropdown"] {
+    display: none !important;
+  }
+
+  #root,
+  .app-container,
+  .app-main,
+  .app-content,
+  main,
+  [class*="app-container"],
+  [class*="app-main"],
+  [class*="app-content"],
+  [class*="appContainer"],
+  [class*="appMain"],
+  [class*="appContent"],
+  [class*="editorContainer"],
+  [class*="editorScrollArea"],
+  [class*="editorBody"],
+  .note-content {
+    display: block !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    flex: none !important;
+  }
+
+  [class*="noteHeader"] {
+    display: block !important;
+    border-bottom: 2px solid #334155 !important;
+    padding: 0 0 1rem 0 !important;
+    margin-bottom: 1.5rem !important;
+    background: transparent !important;
+  }
+
+  [class*="titleInput"] {
+    font-size: 24pt !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 0 0.5rem 0 !important;
+    width: 100% !important;
+    display: block !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  }
+
+  [class*="breadcrumb"] {
+    font-size: 11pt !important;
+    color: #475569 !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  [class*="editorBody"],
+  .note-content {
+    font-size: 11.5pt !important;
+    line-height: 1.65 !important;
+    color: #0f172a !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: #0f172a !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  p,
+  ul,
+  ol,
+  blockquote {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 1.25rem 0 !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 12px !important;
+    font-size: 10.5pt !important;
+    color: #0f172a !important;
+  }
+
+  table th {
+    background: #f1f5f9 !important;
+    font-weight: 700 !important;
+  }
+
+  .code-block-container,
+  [class*="codeBlockContainer"] {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 1.25rem 0 !important;
+    padding: 0 !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .code-block-header,
+  [class*="codeBlockHeader"] {
+    display: flex !important;
+    align-items: center !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-top-left-radius: 6px !important;
+    border-top-right-radius: 6px !important;
+    padding: 5px 12px !important;
+    margin: 0 !important;
+  }
+
+  .code-block-title,
+  [class*="headerLeft"] {
+    font-size: 8pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #64748b !important;
+    font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+  }
+
+  .code-block-actions,
+  .code-block-delete-btn,
+  [class*="headerRight"],
+  .inline-ace-editor,
+  [class*="aceEditorHost"],
+  .ace_editor {
+    display: none !important;
+  }
+
+  .print-code-block,
+  .print-only-code {
+    display: block !important;
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-top: none !important;
+    border-bottom-left-radius: 6px !important;
+    border-bottom-right-radius: 6px !important;
+    padding: 10px 14px !important;
+    margin: 0 !important;
+    font-family: 'JetBrains Mono', Consolas, Monaco, monospace !important;
+    font-size: 9.5pt !important;
+    line-height: 1.55 !important;
+    color: #0f172a !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+    box-shadow: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  .print-code-block code,
+  .print-only-code code {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    font-family: 'JetBrains Mono', Consolas, Monaco, monospace !important;
+    font-size: 9.5pt !important;
+    line-height: 1.55 !important;
+    color: #0f172a !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .uml-block-container,
+  [class*="umlContainer"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 1.5rem auto !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .uml-block-container [class*="screenWrapper"],
+  [class*="umlContainer"] [class*="screenWrapper"] {
+    display: none !important;
+  }
+
+  .uml-block-container [class*="printWrapper"],
+  [class*="umlContainer"] [class*="printWrapper"] {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    background: transparent !important;
+  }
+
+  .uml-block-container [class*="printWrapper"] svg,
+  [class*="umlContainer"] [class*="printWrapper"] svg {
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 520pt !important;
+    background: #ffffff !important;
+  }
+
+  .math-block-container,
+  [class*="mathContainer"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 1.25rem auto !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .math-block-container [class*="screenWrapper"],
+  [class*="mathContainer"] [class*="screenWrapper"] {
+    display: none !important;
+  }
+
+  .math-block-container [class*="printWrapper"],
+  [class*="mathContainer"] [class*="printWrapper"] {
+    display: block !important;
+    text-align: center !important;
+    font-size: 13pt !important;
+    color: #0f172a !important;
+    padding: 8px 0 !important;
+    background: transparent !important;
+  }
+}

@@ -16,7 +16,14 @@ function createWindow() {
 
     win.maximize();
 
-    win.loadFile('index.html');
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    if (process.env.VITE_DEV_SERVER_URL) {
+        win.loadURL(process.env.VITE_DEV_SERVER_URL);
+    } else if (fs.existsSync(indexPath)) {
+        win.loadFile(indexPath);
+    } else {
+        win.loadFile('index.html');
+    }
 
     win.setMenu(null);
 }

@@ -29,7 +29,7 @@ export class LocalFileManager {
 
     getDefaultPath() {
         if (!this.isAvailable()) {
-            return 'Dispositivo Local (Navegador Web)';
+            return 'Dispositivo Local (Navegador)';
         }
 
         const os = this.nodeOs;

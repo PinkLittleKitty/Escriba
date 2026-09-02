@@ -47,7 +47,7 @@ export class StorageService {
 
   getDefaultPath() {
     if (!this.isElectron()) {
-      return 'Dispositivo Local (Navegador Web)';
+      return 'Dispositivo Local (Navegador)';
     }
 
     const os = this.nodeOs;
@@ -217,6 +217,26 @@ export class StorageService {
       const deletedPath = this.nodePath.join(targetDir, 'deleted-items.json');
       if (this.nodeFs.existsSync(deletedPath)) {
         deletedItems = JSON.parse(this.nodeFs.readFileSync(deletedPath, 'utf8'));
+      }
+
+      const notesDir = this.nodePath.join(targetDir, 'notes');
+      if (this.nodeFs.existsSync(notesDir) && Array.isArray(subjects)) {
+        for (const subject of subjects) {
+          if (Array.isArray(subject.notes)) {
+            subject.notes = subject.notes.map((note) => {
+              const noteFile = this.nodePath.join(notesDir, `${note.id}.json`);
+              if (this.nodeFs.existsSync(noteFile)) {
+                try {
+                  const fullNote = JSON.parse(this.nodeFs.readFileSync(noteFile, 'utf8'));
+                  return { ...note, ...fullNote };
+                } catch {
+                  return note;
+                }
+              }
+              return note;
+            });
+          }
+        }
       }
 
       return { subjects, events, settings, deletedItems };

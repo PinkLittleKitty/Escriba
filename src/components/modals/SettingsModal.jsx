@@ -244,6 +244,26 @@ export const SettingsModal = () => {
     await storageService.openLocalFolder(localFolder);
   };
 
+  const handleSyncToDiskNow = () => {
+    const res = useNotesStore.getState().syncToDisk();
+    if (res.success) {
+      addToast({ message: `Datos guardados en disco con éxito (${res.path})`, type: 'success' });
+    } else {
+      addToast({ message: 'No se pudo guardar en disco (se requiere la app de escritorio)', type: 'error' });
+    }
+  };
+
+  const handleReloadFromDiskNow = () => {
+    if (window.confirm('¿Recargar datos desde el disco? Los cambios no guardados en memoria se actualizarán con los archivos del disco.')) {
+      const res = useNotesStore.getState().reloadFromDisk();
+      if (res.success) {
+        addToast({ message: `Se cargaron ${res.count} materia(s) desde el disco local`, type: 'success' });
+      } else {
+        addToast({ message: res.error, type: 'error' });
+      }
+    }
+  };
+
   const handleResetFolder = () => {
     localStorage.removeItem('local_storage_folder_path');
     setLocalFolder('');
@@ -700,49 +720,89 @@ export const SettingsModal = () => {
                   <div className={styles.settingsSection}>
                     <div className={styles.sectionHeader}>
                       <FolderOpen size={18} />
-                      <span>Configuración de Carpeta Local</span>
+                      <span>Carpeta Local</span>
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label className={styles.formLabel}>Carpeta donde se guardan tus apuntes:</label>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                        <label className={styles.formLabel}>Ubicación:</label>
+                        <span
+                          style={{
+                            fontSize: '0.725rem',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            fontWeight: 700,
+                            background: storageService.isElectron() ? 'rgba(56, 189, 248, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                            color: storageService.isElectron() ? 'var(--accent-blue)' : 'var(--text-muted)'
+                          }}
+                        >
+                          {storageService.isElectron() ? 'Electron' : 'Navegador'}
+                        </span>
+                      </div>
                       <div className={styles.pathDisplayBox}>
-                        <code>{localFolder || (storageService.isElectron() ? 'Carpeta predeterminada (%appdata% / ~/.config/Escriba)' : 'Almacenamiento Local del Navegador (localStorage)')}</code>
+                        <code>{storageService.getActivePath()}</code>
                       </div>
                     </div>
 
                     <div className={styles.buttonGroup}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={handleSelectFolder}
-                        title="Seleccionar otra carpeta"
-                      >
-                        <FolderPlus size={14} />
-                        <span>Seleccionar Carpeta...</span>
-                      </button>
+                      {storageService.isElectron() && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={handleSelectFolder}
+                          title="Seleccionar otra carpeta"
+                        >
+                          <FolderPlus size={14} />
+                          <span>Seleccionar Carpeta...</span>
+                        </button>
+                      )}
 
-                      {localFolder && (
-                        <>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={handleOpenFolder}
-                            title="Abrir carpeta en el explorador de archivos"
-                          >
-                            <ExternalLink size={14} />
-                            <span>Abrir Carpeta</span>
-                          </button>
+                      {storageService.isElectron() && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={handleOpenFolder}
+                          title="Abrir carpeta en el explorador de archivos"
+                        >
+                          <ExternalLink size={14} />
+                          <span>Abrir Carpeta</span>
+                        </button>
+                      )}
 
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={handleResetFolder}
-                            title="Restablecer a carpeta predeterminada"
-                          >
-                            <Undo2 size={14} />
-                            <span>Restablecer</span>
-                          </button>
-                        </>
+                      {storageService.isElectron() && (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={handleSyncToDiskNow}
+                          title="Guardar materias y notas en el disco"
+                        >
+                          <HardDrive size={14} />
+                          <span>Guardar en Disco</span>
+                        </button>
+                      )}
+
+                      {storageService.isElectron() && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={handleReloadFromDiskNow}
+                          title="Recargar datos desde los archivos del disco"
+                        >
+                          <RefreshCw size={14} />
+                          <span>Recargar de Disco</span>
+                        </button>
+                      )}
+
+                      {localFolder && storageService.isElectron() && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={handleResetFolder}
+                          title="Restablecer a carpeta predeterminada"
+                        >
+                          <Undo2 size={14} />
+                          <span>Restablecer</span>
+                        </button>
                       )}
                     </div>
                   </div>

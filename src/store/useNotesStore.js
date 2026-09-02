@@ -406,5 +406,33 @@ export const useNotesStore = create((set, get) => ({
     }));
     get()._persist();
     return removedCount;
+  },
+
+  reloadFromDisk: () => {
+    const diskData = storageService.loadFromDisk();
+    if (diskData && Array.isArray(diskData.subjects)) {
+      set({
+        subjects: diskData.subjects,
+        events: Array.isArray(diskData.events) ? diskData.events : [],
+        deletedItems: Array.isArray(diskData.deletedItems) ? diskData.deletedItems : [],
+        activeSubjectId: diskData.subjects[0]?.id || null,
+        activeNoteId: diskData.subjects[0]?.notes[0]?.id || null
+      });
+      return { success: true, count: diskData.subjects.length };
+    }
+    return { success: false, error: 'No se encontraron datos en el disco local o la carpeta está vacía' };
+  },
+
+  syncToDisk: () => {
+    const { subjects, events, deletedItems } = get();
+    const rawSettings = localStorage.getItem('escribaSettings');
+    const settings = rawSettings ? JSON.parse(rawSettings) : {};
+    const success = storageService.saveToDisk({
+      subjects,
+      events,
+      settings,
+      deletedItems
+    });
+    return { success, path: storageService.getActivePath() };
   }
 }));

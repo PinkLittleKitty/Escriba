@@ -21,7 +21,8 @@ import {
   FileText,
   Keyboard,
   ShieldCheck,
-  Check
+  Check,
+  Terminal
 } from 'lucide-react';
 import { GitHubIcon } from '../common/Icons.jsx';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
@@ -166,7 +167,8 @@ const HOTKEYS = [
   { desc: 'Modo Matemático (KaTeX)', key: 'Ctrl + M' },
   { desc: 'Modo Compacto / Sidebar', key: 'Ctrl + \\' },
   { desc: 'Centrar Texto', key: 'Ctrl + T' },
-  { desc: 'Deshacer / Rehacer', key: 'Ctrl + Z / Ctrl + Y' }
+  { desc: 'Deshacer / Rehacer', key: 'Ctrl + Z / Ctrl + Y' },
+  { desc: 'Consola de depuración (Debug)', key: 'Ctrl + Alt + D' }
 ];
 
 export const SettingsModal = () => {
@@ -889,6 +891,27 @@ export const SettingsModal = () => {
                       <span>GitHub</span>
                       <ExternalLink size={12} />
                     </a>
+                  </div>
+                </div>
+
+                <div className={styles.settingsSection}>
+                  <div className={styles.sectionHeader}>
+                    <Terminal size={18} />
+                    <span>Herramientas de Desarrollador</span>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        closeModal();
+                        useUIStore.getState().openConsole();
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <Terminal size={15} />
+                      <span>Abrir Consola</span>
+                    </button>
                   </div>
                 </div>
 

@@ -10,6 +10,11 @@ export const useUIStore = create((set, get) => ({
   searchQuery: '',
   toasts: [],
   settingsTab: 'general',
+  isConsoleOpen: false,
+
+  toggleConsole: () => set((state) => ({ isConsoleOpen: !state.isConsoleOpen })),
+  openConsole: () => set({ isConsoleOpen: true }),
+  closeConsole: () => set({ isConsoleOpen: false }),
 
   setSidebarView: (view) => {
     localStorage.setItem('sidebar_view', view);

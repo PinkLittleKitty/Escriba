@@ -13,7 +13,9 @@ import { LinkNoteModal } from './components/modals/LinkNoteModal.jsx';
 import { TableModal } from './components/modals/TableModal.jsx';
 import { ExportModal } from './components/modals/ExportModal.jsx';
 import { ToastContainer } from './components/common/ToastContainer.jsx';
+import { DevConsole } from './components/common/DevConsole.jsx';
 import { loadRemoteSharedContent } from './utils/exportHelpers.js';
+import { loggerService } from './services/loggerService.js';
 
 import { useNotesStore } from './store/useNotesStore.js';
 import { useUIStore } from './store/useUIStore.js';
@@ -30,6 +32,13 @@ export const App = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme || 'dark');
   }, [theme]);
+
+  useEffect(() => {
+    loggerService.init();
+    window.__notesStore = useNotesStore.getState();
+    window.__settingsStore = useSettingsStore.getState();
+    window.__uiStore = useUIStore.getState();
+  }, []);
 
   useEffect(() => {
     const handleRemoteContent = async () => {
@@ -123,6 +132,11 @@ export const App = () => {
         openModal('subject');
       }
 
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        useUIStore.getState().toggleConsole();
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
         e.preventDefault();
         useUIStore.getState().toggleSidebarCollapse();
@@ -166,6 +180,7 @@ export const App = () => {
       {(activeModal === 'export' || activeModal === 'share') && <ExportModal />}
 
       <ToastContainer />
+      <DevConsole />
     </div>
   );
 };

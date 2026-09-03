@@ -42,6 +42,7 @@ export const useNotesStore = create((set, get) => ({
   },
 
   addSubject: ({ name, code = '', professor = '', color = '#3b82f6', icon = null, schedule = [] }) => {
+    const nowIso = new Date().toISOString();
     const newSubject = {
       id: generateId('sub'),
       name: sanitizeText(name) || 'Nueva Materia',
@@ -52,7 +53,9 @@ export const useNotesStore = create((set, get) => ({
       schedule,
       archived: false,
       notes: [],
-      createdAt: new Date().toISOString()
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      lastModified: nowIso
     };
 
     set((state) => {
@@ -64,6 +67,7 @@ export const useNotesStore = create((set, get) => ({
   },
 
   updateSubject: (id, updates) => {
+    const nowIso = new Date().toISOString();
     set((state) => ({
       subjects: state.subjects.map((sub) => {
         if (sub.id === id) {
@@ -72,7 +76,10 @@ export const useNotesStore = create((set, get) => ({
             ...updates,
             name: updates.name ? sanitizeText(updates.name) : sub.name,
             code: updates.code !== undefined ? sanitizeText(updates.code) : sub.code,
-            professor: updates.professor !== undefined ? sanitizeText(updates.professor) : sub.professor
+            professor: updates.professor !== undefined ? sanitizeText(updates.professor) : sub.professor,
+            icon: updates.icon !== undefined ? updates.icon : (sub.icon || null),
+            updatedAt: nowIso,
+            lastModified: nowIso
           };
         }
         return sub;
@@ -82,10 +89,16 @@ export const useNotesStore = create((set, get) => ({
   },
 
   toggleArchiveSubject: (id) => {
+    const nowIso = new Date().toISOString();
     set((state) => ({
       subjects: state.subjects.map((sub) => {
         if (sub.id === id) {
-          return { ...sub, archived: !sub.archived };
+          return {
+            ...sub,
+            archived: !sub.archived,
+            updatedAt: nowIso,
+            lastModified: nowIso
+          };
         }
         return sub;
       })

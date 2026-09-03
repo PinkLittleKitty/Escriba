@@ -383,13 +383,42 @@ export class GitHubService {
           }
         });
 
-        const localSubUpdate = new Date(localSub.lastModified || localSub.createdAt || 0);
-        const remoteSubUpdate = new Date(remoteSub.lastModified || remoteSub.createdAt || 0);
+        const localSubTime = new Date(
+          localSub.updatedAt || localSub.lastModified || localSub.createdAt || 0
+        ).getTime();
+        const remoteSubTime = new Date(
+          remoteSub.updatedAt || remoteSub.lastModified || remoteSub.createdAt || 0
+        ).getTime();
 
-        if (localSubUpdate > remoteSubUpdate) {
-          merged.subjects[idx] = { ...localSub, notes: mergedNotes };
+        if (localSubTime > remoteSubTime) {
+          merged.subjects[idx] = {
+            ...remoteSub,
+            ...localSub,
+            icon: localSub.icon !== undefined ? localSub.icon : (remoteSub.icon || null),
+            notes: mergedNotes,
+            updatedAt: localSub.updatedAt || localSub.lastModified || new Date().toISOString(),
+            lastModified: localSub.lastModified || localSub.updatedAt || new Date().toISOString()
+          };
+        } else if (remoteSubTime > localSubTime) {
+          merged.subjects[idx] = {
+            ...localSub,
+            ...remoteSub,
+            icon: remoteSub.icon !== undefined ? remoteSub.icon : (localSub.icon || null),
+            notes: mergedNotes,
+            updatedAt: remoteSub.updatedAt || remoteSub.lastModified || new Date().toISOString(),
+            lastModified: remoteSub.lastModified || remoteSub.updatedAt || new Date().toISOString()
+          };
         } else {
-          merged.subjects[idx] = { ...remoteSub, notes: mergedNotes };
+          const resolvedIcon =
+            localSub.icon !== undefined && localSub.icon !== null
+              ? localSub.icon
+              : (remoteSub.icon !== undefined ? remoteSub.icon : null);
+          merged.subjects[idx] = {
+            ...remoteSub,
+            ...localSub,
+            icon: resolvedIcon,
+            notes: mergedNotes
+          };
         }
       } else {
         merged.subjects.push({

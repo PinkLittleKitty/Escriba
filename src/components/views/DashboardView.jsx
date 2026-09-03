@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
+import { SubjectBadge } from '../common/SubjectBadge.jsx';
 import { formatDate, parseLocalDate } from '../../utils/helpers.js';
 import styles from './Dashboard.module.css';
 
@@ -292,8 +293,13 @@ export const DashboardView = () => {
                         setActiveSubject(nextClass.subjectId);
                         setActiveView('editor');
                       }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                     >
-                      {nextClass.subjectName}
+                      {(() => {
+                        const targetSub = subjects.find((s) => s.id === nextClass.subjectId);
+                        return targetSub ? <SubjectBadge subject={targetSub} size="sm" /> : null;
+                      })()}
+                      <span>{nextClass.subjectName}</span>
                     </div>
                   </div>
                   <div className={styles.heroFooter}>
@@ -360,7 +366,10 @@ export const DashboardView = () => {
                         style={{ backgroundColor: note.subject.color || 'var(--accent-blue)' }}
                       />
                       <div className={styles.noteCardBody}>
-                        <span className={styles.noteCardSubject}>{note.subject.name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                          <SubjectBadge subject={note.subject} size="sm" />
+                          <span className={styles.noteCardSubject}>{note.subject.name}</span>
+                        </div>
                         <h3 className={styles.noteCardTitle}>{note.title || 'Apunte sin título'}</h3>
                         <p className={styles.noteCardSnippet}>
                           {snippet || 'Sin contenido adicional...'}

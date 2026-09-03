@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
+import { SubjectBadge } from '../common/SubjectBadge.jsx';
 import styles from './Calendar.module.css';
 
 const MONTH_NAMES = [
@@ -111,6 +112,7 @@ export const CalendarView = () => {
       sub.schedule.forEach((sch) => {
         if (normalizeScheduleDay(sch.day) === selectedDayIndex) {
           selectedDayClasses.push({
+            subject: sub,
             subjectName: sub.name,
             color: sub.color,
             classroom: sch.classroom,
@@ -225,7 +227,10 @@ export const CalendarView = () => {
                   className={styles.eventCard}
                   style={{ borderLeft: `3px solid ${c.color || 'var(--accent-blue)'}` }}
                 >
-                  <span className={styles.eventTitle}>{c.subjectName}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.2rem' }}>
+                    {c.subject && <SubjectBadge subject={c.subject} size="sm" />}
+                    <span className={styles.eventTitle}>{c.subjectName}</span>
+                  </div>
                   <div className={styles.eventMeta}>
                     <Clock size={12} />
                     <span>
@@ -282,7 +287,10 @@ export const CalendarView = () => {
                     title="Click para editar o eliminar"
                   >
                     <div className={styles.eventHeader}>
-                      <span className={styles.eventTitle}>{ev.title}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        {evSubject && <SubjectBadge subject={evSubject} size="sm" />}
+                        <span className={styles.eventTitle}>{ev.title}</span>
+                      </div>
                       <button
                         type="button"
                         className="btn-icon"

@@ -28,19 +28,26 @@ describe('useNotesStore', () => {
       expect(subject.color).toBe('#ff0055');
       expect(subject.notes).toEqual([]);
       expect(subject.archived).toBe(false);
+      expect(subject.updatedAt).toBeDefined();
+      expect(subject.lastModified).toBeDefined();
 
       const state = useNotesStore.getState();
       expect(state.subjects.length).toBe(1);
       expect(state.activeSubjectId).toBe(subject.id);
     });
 
-    it('updates subject details', () => {
-      const sub = useNotesStore.getState().addSubject({ name: 'Física' });
-      useNotesStore.getState().updateSubject(sub.id, { name: 'Física Cuántica', color: '#10b981' });
+    it('updates subject details and icon with fresh timestamps', () => {
+      const sub = useNotesStore.getState().addSubject({ name: 'Física', icon: 'atom' });
+      expect(sub.icon).toBe('atom');
+
+      useNotesStore.getState().updateSubject(sub.id, { name: 'Física Cuántica', color: '#10b981', icon: 'zap' });
 
       const updated = useNotesStore.getState().subjects.find((s) => s.id === sub.id);
       expect(updated.name).toBe('Física Cuántica');
       expect(updated.color).toBe('#10b981');
+      expect(updated.icon).toBe('zap');
+      expect(updated.updatedAt).toBeDefined();
+      expect(updated.lastModified).toBeDefined();
     });
 
     it('archives and unarchives subject', () => {

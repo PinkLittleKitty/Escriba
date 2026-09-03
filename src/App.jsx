@@ -68,6 +68,7 @@ export const App = () => {
             code: subData.code || '',
             professor: subData.professor || '',
             color: subData.color || '#3b82f6',
+            icon: subData.icon || null,
             schedule: subData.schedule || []
           });
 

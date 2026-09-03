@@ -95,6 +95,136 @@ describe('GitHub Sync and Deletion Logic', () => {
       expect(merged.subjects[0].notes.length).toBe(1);
       expect(merged.subjects[0].notes[0].id).toBe('note-keep');
     });
+
+    it('preserves local subject icon when remote subject lacks icon', () => {
+      const local = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Matemática',
+            icon: 'calculator',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const remote = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Matemática',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const merged = gitHubService.mergeData(local, remote);
+      expect(merged.subjects.length).toBe(1);
+      expect(merged.subjects[0].icon).toBe('calculator');
+    });
+
+    it('preserves remote subject icon when local subject lacks icon', () => {
+      const local = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Física',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const remote = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Física',
+            icon: 'atom',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const merged = gitHubService.mergeData(local, remote);
+      expect(merged.subjects.length).toBe(1);
+      expect(merged.subjects[0].icon).toBe('atom');
+    });
+
+    it('syncs updated icon when local subject is updated more recently', () => {
+      const local = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Programación',
+            icon: 'terminal',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            updatedAt: '2026-09-02T12:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const remote = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Programación',
+            icon: 'code',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            updatedAt: '2026-09-01T11:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const merged = gitHubService.mergeData(local, remote);
+      expect(merged.subjects.length).toBe(1);
+      expect(merged.subjects[0].icon).toBe('terminal');
+    });
+
+    it('syncs updated icon when remote subject is updated more recently', () => {
+      const local = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Bases de Datos',
+            icon: 'server',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            updatedAt: '2026-09-01T11:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const remote = {
+        subjects: [
+          {
+            id: 'sub-1',
+            name: 'Bases de Datos',
+            icon: 'database',
+            createdAt: '2026-09-01T10:00:00.000Z',
+            updatedAt: '2026-09-02T15:00:00.000Z',
+            notes: []
+          }
+        ],
+        deletedItems: { notes: [], subjects: [] }
+      };
+
+      const merged = gitHubService.mergeData(local, remote);
+      expect(merged.subjects.length).toBe(1);
+      expect(merged.subjects[0].icon).toBe('database');
+    });
   });
 
   describe('useNotesStore deletion tombstones', () => {

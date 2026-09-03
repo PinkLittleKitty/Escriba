@@ -383,6 +383,7 @@ export const generateShareUrl = async (noteOrSubject, options = {}) => {
       code: subject.code || '',
       professor: subject.professor || '',
       color: subject.color || '#3b82f6',
+      icon: subject.icon || null,
       schedule: subject.schedule || [],
       notes: (subject.notes || []).map((n) => ({
         title: n.title,

@@ -243,37 +243,38 @@
 }
 
 [data-theme="peluche"] {
-  --bg-primary: #f5effe;
-  --bg-secondary: #ebdcfb;
-  --bg-tertiary: #dfc8f7;
+  --bg-primary: #f8f4fa;
+  --bg-secondary: #eee6f3;
+  --bg-tertiary: #e4d8ec;
   --bg-card: #ffffff;
-  --bg-hover: #d8bef5;
-  --text-primary: #350e4a;
-  --text-secondary: #5c2a7a;
-  --text-muted: #8759a5;
-  --accent-blue: #8a4fcf;
-  --accent-blue-rgb: 138, 79, 207;
-  --accent-purple: #c79af5;
-  --accent-green: #2d6a4f;
-  --accent-orange: #f59e0b;
-  --accent-red: #ec4899;
-  --accent-cyan: #7c8cf8;
-  --accent-yellow: #facc15;
-  --accent-focus: rgba(138, 79, 207, 0.16);
-  --accent-blue-bg: rgba(138, 79, 207, 0.14);
-  --accent-green-bg: rgba(45, 106, 79, 0.14);
-  --accent-red-bg: rgba(236, 72, 153, 0.14);
-  --accent-orange-bg: rgba(245, 158, 11, 0.14);
-  --accent-purple-bg: rgba(199, 154, 245, 0.22);
-  --accent-shadow: rgba(138, 79, 207, 0.18);
+  --bg-hover: #dccee5;
+  --text-primary: #2d1f3b;
+  --text-secondary: #57436b;
+  --text-muted: #857299;
+  --accent-blue: #8975A8;
+  --accent-blue-rgb: 137, 117, 168;
+  --accent-purple: #BD96C1;
+  --accent-purple-rgb: 189, 150, 193;
+  --accent-green: #447b66;
+  --accent-orange: #d47b52;
+  --accent-red: #be5374;
+  --accent-cyan: #638ba6;
+  --accent-yellow: #cf9f45;
+  --accent-focus: rgba(137, 117, 168, 0.2);
+  --accent-blue-bg: rgba(137, 117, 168, 0.14);
+  --accent-green-bg: rgba(68, 123, 102, 0.14);
+  --accent-red-bg: rgba(190, 83, 116, 0.14);
+  --accent-orange-bg: rgba(212, 123, 82, 0.14);
+  --accent-purple-bg: rgba(189, 150, 193, 0.2);
+  --accent-shadow: rgba(137, 117, 168, 0.18);
   --text-on-accent: #ffffff;
-  --border-color: #d6bdf5;
-  --border-light: #c5a4f0;
-  --shadow: 0 4px 14px rgba(138, 79, 207, 0.09);
-  --shadow-lg: 0 10px 25px rgba(138, 79, 207, 0.14);
-  --highlight-bg: rgba(199, 154, 245, 0.38);
-  --highlight-text: #350e4a;
-  --highlight-border: #a168dd;
+  --border-color: #dbcde3;
+  --border-light: #ece0f1;
+  --shadow: 0 4px 14px rgba(87, 67, 107, 0.08);
+  --shadow-lg: 0 10px 25px rgba(87, 67, 107, 0.13);
+  --highlight-bg: rgba(189, 150, 193, 0.35);
+  --highlight-text: #2d1f3b;
+  --highlight-border: #8975A8;
 }
 
 [data-theme="catppuccin"] {

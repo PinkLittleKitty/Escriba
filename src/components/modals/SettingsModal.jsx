@@ -77,15 +77,15 @@ const THEMES = [
   {
     id: 'peluche',
     name: 'Peluche de Compañía',
-    bg: '#f5effe',
+    bg: '#f8f4fa',
     previewBg: '#ffffff',
-    headerBg: '#ebdcfb',
-    sidebarBg: '#dfc8f7',
-    item1: '#8a4fcf',
-    item2: '#c79af5',
-    contentBg: '#f5effe',
-    lineMain: '#350e4a',
-    lineSub: '#5c2a7a'
+    headerBg: '#eee6f3',
+    sidebarBg: '#e4d8ec',
+    item1: '#8975A8',
+    item2: '#BD96C1',
+    contentBg: '#f8f4fa',
+    lineMain: '#2d1f3b',
+    lineSub: '#57436b'
   },
   {
     id: 'catppuccin',

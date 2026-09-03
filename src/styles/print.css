@@ -282,6 +282,26 @@
     background: #ffffff !important;
   }
 
+  .print-uml-wrapper {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 1.5rem auto !important;
+    padding: 0 !important;
+    width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-uml-wrapper svg {
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 520pt !important;
+    background: #ffffff !important;
+  }
+
   .math-block-container,
   [class*="mathContainer"] {
     background: transparent !important;
@@ -309,4 +329,152 @@
     padding: 8px 0 !important;
     background: transparent !important;
   }
+
+  #printFolderContainer {
+    display: none !important;
+  }
+
+  body.print-folder-mode #root,
+  body.print-folder-mode .app-container,
+  body.print-folder-mode .app-main,
+  body.print-folder-mode .app-content,
+  body.print-folder-mode main,
+  body.print-folder-mode [class*="app-container"],
+  body.print-folder-mode [class*="app-main"],
+  body.print-folder-mode [class*="app-content"],
+  body.print-folder-mode [class*="appContainer"],
+  body.print-folder-mode [class*="appMain"],
+  body.print-folder-mode [class*="appContent"],
+  body.print-folder-mode [class*="editorContainer"],
+  body.print-folder-mode [class*="editorScrollArea"],
+  body.print-folder-mode [class*="editorBody"] {
+    display: none !important;
+  }
+
+  body.print-folder-mode #printFolderContainer {
+    display: block !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .print-cover-page {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    min-height: 75vh !important;
+    height: 85% !important;
+    max-height: 255mm !important;
+    padding: 2.5rem 2.5rem 1.5rem 2.5rem !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+  }
+
+  .print-cover-header {
+    margin-top: 8% !important;
+  }
+
+  .print-cover-subtitle {
+    font-size: 14pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 2px !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    display: block !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .print-cover-title {
+    font-size: 32pt !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin: 0 0 1.5rem 0 !important;
+    line-height: 1.2 !important;
+    border: none !important;
+  }
+
+  .print-cover-meta {
+    font-size: 13pt !important;
+    color: #334155 !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  .print-cover-footer {
+    margin-bottom: 1rem !important;
+    border-top: 2px solid #e2e8f0 !important;
+    padding-top: 1.5rem !important;
+  }
+
+  .print-cover-footer p {
+    font-size: 11pt !important;
+    color: #475569 !important;
+    margin: 0.35rem 0 !important;
+  }
+
+  .print-cover-watermark {
+    font-size: 9.5pt !important;
+    color: #94a3b8 !important;
+    text-align: right !important;
+    margin-top: 1.5rem !important;
+    font-style: italic !important;
+  }
+
+  .print-note {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    padding: 2rem 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-note:first-of-type {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  .print-note:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .print-note-header {
+    border-bottom: 2px solid #0f172a !important;
+    margin-bottom: 2.5rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .print-note-title {
+    font-size: 24pt !important;
+    font-weight: bold !important;
+    color: #0f172a !important;
+    margin: 0 0 0.75rem 0 !important;
+    border: none !important;
+  }
+
+  .print-note-meta {
+    font-size: 11pt !important;
+    color: #64748b !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+
+  .print-note-content {
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    color: #0f172a !important;
+  }
+}
+
+#printFolderContainer {
+  display: none;
 }

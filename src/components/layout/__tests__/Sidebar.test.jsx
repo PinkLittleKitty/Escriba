@@ -99,4 +99,14 @@ describe('Sidebar Component', () => {
     expect(target.noteId).toBe('note-1');
     expect(target.query).toBe('dijkstra');
   });
+
+  it('displays options menu with Imprimir carpeta when options button is clicked', () => {
+    render(<Sidebar />);
+    const moreBtn = screen.getByTitle(/más opciones/i);
+    fireEvent.click(moreBtn);
+
+    expect(screen.getByText(/imprimir carpeta/i)).toBeInTheDocument();
+    expect(screen.getByText(/compartir materia/i)).toBeInTheDocument();
+    expect(screen.getByText(/editar materia/i)).toBeInTheDocument();
+  });
 });

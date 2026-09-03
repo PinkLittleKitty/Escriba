@@ -28,7 +28,9 @@ import {
   downloadFile,
   convertHtmlToMarkdown,
   convertHtmlToStandaloneHtml,
-  generateShareUrl
+  convertHtmlToPlainText,
+  generateShareUrl,
+  printSubjectFolder
 } from '../../utils/exportHelpers.js';
 import styles from './Modal.module.css';
 
@@ -48,6 +50,7 @@ export const ExportModal = () => {
   const [activeTab, setActiveTab] = useState('qr');
   const [copiedKey, setCopiedKey] = useState(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
+  const [qrError, setQrError] = useState(null);
   const [shareUrl, setShareUrl] = useState('');
   const [shareMethod, setShareMethod] = useState('direct');
   const [isGenerating, setIsGenerating] = useState(true);
@@ -75,6 +78,9 @@ export const ExportModal = () => {
 
     const buildShareLink = async () => {
       setIsGenerating(true);
+      setQrError(null);
+      setQrDataUrl('');
+      setShareUrl('');
 
       const target = isSubjectMode ? currentSubject : currentNote;
       if (!target) return;
@@ -82,26 +88,29 @@ export const ExportModal = () => {
       const res = await generateShareUrl(target, {
         type: isSubjectMode ? 'subject' : 'note',
         subjectName,
-        github: { isAuthenticated, username, repoName, token }
+        github: { isAuthenticated, username, repoName, token },
+        useGist: true
       });
 
       if (!cancelled && res?.url) {
         setShareUrl(res.url);
         setShareMethod(res.method);
 
-        QRCode.toDataURL(
-          res.url,
-          {
+        try {
+          const dataUrl = await QRCode.toDataURL(res.url, {
             width: 260,
             margin: 2,
+            errorCorrectionLevel: 'L',
             color: { dark: '#0f172a', light: '#ffffff' }
-          },
-          (err, dataUrl) => {
-            if (!cancelled && !err && dataUrl) {
-              setQrDataUrl(dataUrl);
-            }
+          });
+          if (!cancelled && dataUrl) {
+            setQrDataUrl(dataUrl);
+            setQrError(null);
           }
-        );
+        } catch (err) {
+          console.warn('QR Code generation error:', err);
+          if (!cancelled) setQrError('size_limit');
+        }
       }
       if (!cancelled) setIsGenerating(false);
     };
@@ -197,17 +206,14 @@ export const ExportModal = () => {
 
   const handleExportTxt = () => {
     if (isSubjectMode) {
-      let text = `MATERIA: ${titleText}\nFecha: ${new Date().toLocaleDateString()}\n\n`;
+      let text = `MATERIA: ${titleText}\nFecha: ${new Date().toLocaleDateString('es-AR')}\n\n`;
       (currentSubject?.notes || []).forEach((n) => {
-        const temp = document.createElement('div');
-        temp.innerHTML = n.content;
-        text += `==============================\n${n.title}\n==============================\n${temp.innerText || temp.textContent || ''}\n\n`;
+        text += `==============================\n${n.title}\n==============================\n`;
+        text += `${convertHtmlToPlainText(n.content, '', titleText)}\n\n`;
       });
       downloadFile(`${sanitizeFilename(titleText)}.txt`, text, 'text/plain;charset=utf-8');
     } else {
-      const temp = document.createElement('div');
-      temp.innerHTML = noteContent;
-      const text = `${titleText}\nMateria: ${subjectName}\nFecha: ${new Date().toLocaleDateString()}\n\n${temp.innerText || temp.textContent || ''}`;
+      const text = convertHtmlToPlainText(noteContent, titleText, subjectName);
       downloadFile(`${sanitizeFilename(titleText)}.txt`, text, 'text/plain;charset=utf-8');
     }
     addToast({ message: 'Documento de texto descargado', type: 'success' });
@@ -221,7 +227,18 @@ export const ExportModal = () => {
 
   const handlePrint = () => {
     closeModal();
-    setTimeout(() => { window.print(); }, 150);
+    if (isSubjectMode && currentSubject) {
+      setTimeout(() => {
+        if (!currentSubject.notes || currentSubject.notes.length === 0) {
+          addToast({ message: 'Esta materia no tiene apuntes para imprimir', type: 'warning' });
+          return;
+        }
+        addToast({ message: 'Preparando impresión de la carpeta...', type: 'info', duration: 2500 });
+        printSubjectFolder(currentSubject);
+      }, 150);
+    } else {
+      setTimeout(() => { window.print(); }, 150);
+    }
   };
 
   return (
@@ -338,8 +355,35 @@ export const ExportModal = () => {
                 {qrDataUrl ? (
                   <img src={qrDataUrl} alt="QR Code" style={{ width: '180px', height: '180px', display: 'block' }} />
                 ) : (
-                  <div style={{ width: '180px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                    {isGenerating ? 'Generando QR...' : 'QR no disponible'}
+                  <div
+                    style={{
+                      width: '180px',
+                      height: '180px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0.75rem',
+                      color: '#475569',
+                      textAlign: 'center',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    {isGenerating ? (
+                      <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Generando QR...</span>
+                    ) : qrError === 'size_limit' ? (
+                      <>
+                        <QrCode size={26} color="#94a3b8" />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          Contenido muy extenso
+                        </span>
+                        <span style={{ fontSize: '0.6875rem', color: '#64748b', lineHeight: 1.3 }}>
+                          Supera el límite de un QR directo. Copiá el enlace abajo o sincronizá con GitHub para generar un QR mediante Gist.
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>QR no disponible</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -514,27 +558,29 @@ export const ExportModal = () => {
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Estructura de datos .json</span>
               </div>
 
-              {!isSubjectMode && (
-                <div
-                  style={{
-                    padding: '0.85rem 1rem',
-                    background: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem'
-                  }}
-                  onClick={handlePrint}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-purple)' }}>
-                    <Printer size={18} />
-                    <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>Imprimir / PDF</span>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Guardar como PDF</span>
+              <div
+                style={{
+                  padding: '0.85rem 1rem',
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem'
+                }}
+                onClick={handlePrint}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-purple)' }}>
+                  <Printer size={18} />
+                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    {isSubjectMode ? 'Imprimir Carpeta / PDF' : 'Imprimir / PDF'}
+                  </span>
                 </div>
-              )}
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {isSubjectMode ? 'Imprimir todos los apuntes juntos' : 'Guardar como PDF'}
+                </span>
+              </div>
             </div>
           )}
         </div>

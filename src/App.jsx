@@ -75,10 +75,10 @@ export const App = () => {
           if (newSub && Array.isArray(subData.notes)) {
             subData.notes.forEach((n) => {
               store.addNote(newSub.id, {
-                title: n.title,
-                content: n.content,
+                title: n.title || n.t || 'Sin título',
+                content: n.content || n.c || '',
                 tags: n.tags || ['compartido'],
-                favorite: !!n.favorite
+                favorite: !!(n.favorite || n.fav)
               });
             });
 

@@ -17,12 +17,14 @@ import {
   MoreVertical,
   ChevronDown,
   Clock,
-  Share2
+  Share2,
+  Printer
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
 import { formatDate, getSearchSnippet } from '../../utils/helpers.js';
+import { printSubjectFolder } from '../../utils/exportHelpers.js';
 import { SubjectBadge } from '../common/SubjectBadge.jsx';
 import { getSubjectInitials } from '../../utils/subjectIcons.js';
 import styles from './Sidebar.module.css';
@@ -300,6 +302,20 @@ export const Sidebar = () => {
     }
   };
 
+  const handlePrintSubject = async (subject) => {
+    if (!subject.notes || subject.notes.length === 0) {
+      addToast({ message: 'Esta materia no tiene apuntes para imprimir', type: 'warning' });
+      return;
+    }
+    addToast({ message: 'Preparando impresión de la carpeta...', type: 'info', duration: 2500 });
+    try {
+      await printSubjectFolder(subject);
+    } catch (err) {
+      console.error('Error printing subject folder:', err);
+      addToast({ message: 'Error al preparar la impresión de la carpeta', type: 'error' });
+    }
+  };
+
   const renderSubjectFolder = (subject, isArchived = false) => {
     const isExpanded = expandedSubjects[subject.id] !== undefined
       ? Boolean(expandedSubjects[subject.id]) || Boolean(searchQuery)
@@ -368,8 +384,20 @@ export const Sidebar = () => {
                       openModal('subject', subject);
                     }}
                   >
-                    <Edit2 size={13} />
+                    <Edit2 size={14} />
                     <span>Editar materia</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.subjectMenuItem}
+                    onClick={() => {
+                      setOpenMenuSubjectId(null);
+                      handlePrintSubject(subject);
+                    }}
+                  >
+                    <Printer size={14} />
+                    <span>Imprimir carpeta</span>
                   </button>
 
                   <button
@@ -380,7 +408,7 @@ export const Sidebar = () => {
                       openModal('export', { subject });
                     }}
                   >
-                    <Share2 size={13} color="var(--accent-blue)" />
+                    <Share2 size={14} />
                     <span>Compartir materia</span>
                   </button>
 
@@ -392,7 +420,7 @@ export const Sidebar = () => {
                       handleToggleArchive(subject, e);
                     }}
                   >
-                    {isArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                    {isArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
                     <span>{isArchived ? 'Desarchivar' : 'Archivar'}</span>
                   </button>
 
@@ -409,7 +437,7 @@ export const Sidebar = () => {
                       }
                     }}
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={14} />
                     <span>Eliminar</span>
                   </button>
                 </div>

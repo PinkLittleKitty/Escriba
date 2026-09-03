@@ -104,4 +104,23 @@ describe('ExportModal Component', () => {
 
     expect(useUIStore.getState().activeModal).toBe(null);
   });
+
+  it('displays Imprimir Carpeta option when in subject mode', () => {
+    useUIStore.setState({
+      activeModal: 'export',
+      modalData: {
+        subject: {
+          id: 'sub-1',
+          name: 'Sistemas Distribuidos',
+          notes: []
+        }
+      }
+    });
+
+    render(<ExportModal />);
+    const filesTab = screen.getByRole('button', { name: /exportar archivos/i });
+    fireEvent.click(filesTab);
+
+    expect(screen.getByText(/imprimir carpeta/i)).toBeInTheDocument();
+  });
 });

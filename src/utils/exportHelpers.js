@@ -348,14 +348,14 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
       borderColor: '#dee2e6',
       accentBlue: '#4361ee'
     },
-    sakura: {
-      bgPrimary: '#faf4ed',
-      bgCard: '#f2e9e1',
-      bgSecondary: '#ebdcd0',
-      textPrimary: '#575279',
-      textSecondary: '#797593',
-      borderColor: '#ebdcd0',
-      accentBlue: '#eb6f92'
+    'catppuccin-latte': {
+      bgPrimary: '#eff1f5',
+      bgCard: '#ffffff',
+      bgSecondary: '#e6e9ef',
+      textPrimary: '#4c4f69',
+      textSecondary: '#5c5f77',
+      borderColor: '#dce0e8',
+      accentBlue: '#8839ef'
     },
     peluche: {
       bgPrimary: '#f5effe',
@@ -366,14 +366,14 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
       borderColor: '#d6bdf5',
       accentBlue: '#8a4fcf'
     },
-    catppuccin: {
+    'catppuccin-mocha': {
       bgPrimary: '#1e1e2e',
       bgCard: '#181825',
       bgSecondary: '#313244',
       textPrimary: '#cdd6f4',
       textSecondary: '#a6adc8',
       borderColor: '#313244',
-      accentBlue: '#89b4fa'
+      accentBlue: '#cba6f7'
     },
     blue: {
       bgPrimary: '#0f1419',
@@ -414,7 +414,7 @@ export const convertHtmlToStandaloneHtml = (html = '', title = 'Apunte', subject
   };
 
   const palette = THEME_PALETTES[theme] || THEME_PALETTES.dark;
-  const isDark = theme !== 'light' && theme !== 'sakura' && theme !== 'peluche';
+  const isDark = theme !== 'light' && theme !== 'peluche' && theme !== 'catppuccin-latte';
   const cleanTitle = title || 'Apunte';
   const cleanSubject = subjectName ? `<div class="subject-tag">${subjectName}</div>` : '';
 

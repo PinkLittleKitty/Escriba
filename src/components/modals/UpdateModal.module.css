@@ -52,7 +52,7 @@
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-color, #333333);
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, transparent 100%);
+  background: linear-gradient(180deg, var(--accent-blue-bg) 0%, transparent 100%);
 }
 
 .titleRow {
@@ -65,8 +65,9 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--accent-blue-bg);
+  border: 1px solid var(--accent-blue);
+  border: 1px solid color-mix(in srgb, var(--accent-blue) 35%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,7 +217,7 @@
 
 .assetChip:hover {
   border-color: var(--accent-blue, #3b82f6);
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--accent-blue-bg);
   color: var(--accent-blue, #3b82f6);
 }
 

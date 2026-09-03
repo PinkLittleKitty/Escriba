@@ -276,6 +276,12 @@
   border-radius: var(--radius-full);
 }
 
+.themeGroupsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 .themeGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -580,8 +586,9 @@
   width: 72px;
   height: 72px;
   border-radius: 20px;
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--accent-blue-bg);
+  border: 1px solid var(--accent-blue);
+  border: 1px solid color-mix(in srgb, var(--accent-blue) 35%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -696,7 +703,7 @@
 
 .hotkeyItem:hover {
   border-color: var(--accent-blue);
-  background: rgba(59, 130, 246, 0.05);
+  background: var(--accent-blue-bg);
 }
 
 .hotkeyDesc {

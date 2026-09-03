@@ -20,9 +20,13 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().theme).toBe('nord');
     expect(document.documentElement.getAttribute('data-theme')).toBe('nord');
 
-    useSettingsStore.getState().setTheme('sakura');
-    expect(useSettingsStore.getState().theme).toBe('sakura');
-    expect(document.documentElement.getAttribute('data-theme')).toBe('sakura');
+    useSettingsStore.getState().setTheme('catppuccin-latte');
+    expect(useSettingsStore.getState().theme).toBe('catppuccin-latte');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('catppuccin-latte');
+
+    useSettingsStore.getState().setTheme('catppuccin-mocha');
+    expect(useSettingsStore.getState().theme).toBe('catppuccin-mocha');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('catppuccin-mocha');
 
     useSettingsStore.getState().setTheme('peluche');
     expect(useSettingsStore.getState().theme).toBe('peluche');

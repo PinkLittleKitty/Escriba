@@ -40,7 +40,7 @@ describe('DashboardView Component', () => {
 
   it('renders greeting heading and recent notes', () => {
     render(<DashboardView />);
-    expect(screen.getByText(/¡buenas/i)).toBeInTheDocument();
+    expect(screen.getByText(/¡buen(os|as)/i)).toBeInTheDocument();
     expect(screen.getByText('Redes Neuronales')).toBeInTheDocument();
   });
 

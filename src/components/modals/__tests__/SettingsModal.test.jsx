@@ -46,8 +46,15 @@ describe('SettingsModal Component', () => {
 
     const claroTheme = screen.getByText('Claro');
     fireEvent.click(claroTheme.closest('div'));
-
     expect(useSettingsStore.getState().theme).toBe('light');
+
+    const latteTheme = screen.getByText('Catppuccin Latte');
+    fireEvent.click(latteTheme.closest('div'));
+    expect(useSettingsStore.getState().theme).toBe('catppuccin-latte');
+
+    const mochaTheme = screen.getByText('Catppuccin Mocha');
+    fireEvent.click(mochaTheme.closest('div'));
+    expect(useSettingsStore.getState().theme).toBe('catppuccin-mocha');
   });
 
   it('shows desktop shortcuts in Ayuda tab', () => {

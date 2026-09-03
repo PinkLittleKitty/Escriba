@@ -127,7 +127,7 @@ export const NoteEditor = () => {
 
       const code = container.getAttribute('data-code') || container.innerText || '// Escribí tu código acá...';
       const lang = container.getAttribute('data-lang') || 'javascript';
-      const aceTheme = theme === 'light' || theme === 'sakura' || theme === 'peluche' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
+      const aceTheme = theme === 'light' || theme === 'peluche' || theme === 'catppuccin-latte' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
 
       container.innerHTML = '';
       container.style.height = '110px';
@@ -249,7 +249,7 @@ export const NoteEditor = () => {
   };
 
   useEffect(() => {
-    const aceTheme = theme === 'light' || theme === 'sakura' || theme === 'peluche' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
+    const aceTheme = theme === 'light' || theme === 'peluche' || theme === 'catppuccin-latte' ? 'ace/theme/github' : 'ace/theme/tomorrow_night';
     aceEditorsRef.current.forEach((editor) => {
       try {
         editor.setTheme(aceTheme);

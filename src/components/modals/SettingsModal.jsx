@@ -34,125 +34,142 @@ import { storageService } from '../../services/storageService.js';
 import { updaterService } from '../../services/updaterService.js';
 import styles from './SettingsModal.module.css';
 
-const THEMES = [
+const THEME_GROUPS = [
   {
-    id: 'dark',
-    name: 'Oscuro',
-    bg: '#1a1a1a',
-    previewBg: '#121212',
-    headerBg: '#1e1e1e',
-    sidebarBg: '#181818',
-    item1: '#4361ee',
-    item2: '#2ec4b6',
-    contentBg: '#121212',
-    lineMain: '#f5f5f5',
-    lineSub: '#888888'
+    category: 'Claros',
+    themes: [
+      {
+        id: 'light',
+        name: 'Claro',
+        bg: '#ffffff',
+        previewBg: '#f8f9fa',
+        headerBg: '#ffffff',
+        sidebarBg: '#f1f3f5',
+        item1: '#4361ee',
+        item2: '#2ec4b6',
+        contentBg: '#ffffff',
+        lineMain: '#212529',
+        lineSub: '#6c757d'
+      },
+      {
+        id: 'catppuccin-latte',
+        name: 'Catppuccin Latte',
+        bg: '#eff1f5',
+        previewBg: '#eff1f5',
+        headerBg: '#ffffff',
+        sidebarBg: '#e6e9ef',
+        item1: '#8839ef',
+        item2: '#ea76cb',
+        contentBg: '#eff1f5',
+        lineMain: '#4c4f69',
+        lineSub: '#8c8fa1'
+      },
+      {
+        id: 'peluche',
+        name: 'Peluche de Compañía',
+        bg: '#f8f4fa',
+        previewBg: '#ffffff',
+        headerBg: '#eee6f3',
+        sidebarBg: '#e4d8ec',
+        item1: '#8975A8',
+        item2: '#BD96C1',
+        contentBg: '#f8f4fa',
+        lineMain: '#2d1f3b',
+        lineSub: '#57436b'
+      }
+    ]
   },
   {
-    id: 'light',
-    name: 'Claro',
-    bg: '#ffffff',
-    previewBg: '#f8f9fa',
-    headerBg: '#ffffff',
-    sidebarBg: '#f1f3f5',
-    item1: '#4361ee',
-    item2: '#2ec4b6',
-    contentBg: '#ffffff',
-    lineMain: '#212529',
-    lineSub: '#6c757d'
+    category: 'Oscuros',
+    themes: [
+      {
+        id: 'dark',
+        name: 'Oscuro',
+        bg: '#1a1a1a',
+        previewBg: '#121212',
+        headerBg: '#1e1e1e',
+        sidebarBg: '#181818',
+        item1: '#4361ee',
+        item2: '#2ec4b6',
+        contentBg: '#121212',
+        lineMain: '#f5f5f5',
+        lineSub: '#888888'
+      },
+      {
+        id: 'catppuccin-mocha',
+        name: 'Catppuccin Mocha',
+        bg: '#1e1e2e',
+        previewBg: '#1e1e2e',
+        headerBg: '#181825',
+        sidebarBg: '#181825',
+        item1: '#cba6f7',
+        item2: '#f5c2e7',
+        contentBg: '#1e1e2e',
+        lineMain: '#cdd6f4',
+        lineSub: '#7f849c'
+      },
+      {
+        id: 'unq',
+        name: 'UNQ',
+        bg: '#0a0a0a',
+        previewBg: '#0a0a0a',
+        headerBg: '#141414',
+        sidebarBg: '#0f0f0f',
+        item1: '#990000',
+        item2: '#990000',
+        contentBg: '#0a0a0a',
+        lineMain: '#e5e5e5',
+        lineSub: '#a1a1a1'
+      }
+    ]
   },
   {
-    id: 'sakura',
-    name: 'Sakura',
-    bg: '#faf4ed',
-    previewBg: '#faf4ed',
-    headerBg: '#ffffff',
-    sidebarBg: '#f2e9e1',
-    item1: '#eb6f92',
-    item2: '#907aa9',
-    contentBg: '#faf4ed',
-    lineMain: '#575279',
-    lineSub: '#9893a5'
-  },
-  {
-    id: 'peluche',
-    name: 'Peluche de Compañía',
-    bg: '#f8f4fa',
-    previewBg: '#ffffff',
-    headerBg: '#eee6f3',
-    sidebarBg: '#e4d8ec',
-    item1: '#8975A8',
-    item2: '#BD96C1',
-    contentBg: '#f8f4fa',
-    lineMain: '#2d1f3b',
-    lineSub: '#57436b'
-  },
-  {
-    id: 'catppuccin',
-    name: 'Catppuccin',
-    bg: '#1e1e2e',
-    previewBg: '#1e1e2e',
-    headerBg: '#181825',
-    sidebarBg: '#181825',
-    item1: '#cba6f7',
-    item2: '#89b4fa',
-    contentBg: '#1e1e2e',
-    lineMain: '#cdd6f4',
-    lineSub: '#7f849c'
-  },
-  {
-    id: 'blue',
-    name: 'Azul',
-    bg: '#0f1419',
-    previewBg: '#0f172a',
-    headerBg: '#1e293b',
-    sidebarBg: '#131d31',
-    item1: '#38bdf8',
-    item2: '#38bdf8',
-    contentBg: '#0f172a',
-    lineMain: '#f1f5f9',
-    lineSub: '#94a3b8'
-  },
-  {
-    id: 'matcha',
-    name: 'Matcha',
-    bg: '#151e18',
-    previewBg: '#151e18',
-    headerBg: '#1d2a22',
-    sidebarBg: '#1d2a22',
-    item1: '#52b788',
-    item2: '#40916c',
-    contentBg: '#151e18',
-    lineMain: '#e8f5e9',
-    lineSub: '#729d89'
-  },
-  {
-    id: 'unq',
-    name: 'UNQ',
-    bg: '#0a0a0a',
-    previewBg: '#0a0a0a',
-    headerBg: '#141414',
-    sidebarBg: '#0f0f0f',
-    item1: '#990000',
-    item2: '#990000',
-    contentBg: '#0a0a0a',
-    lineMain: '#e5e5e5',
-    lineSub: '#a1a1a1'
-  },
-  {
-    id: 'sunset',
-    name: 'Atardecer',
-    bg: '#22150e',
-    previewBg: '#22150e',
-    headerBg: '#2c1b12',
-    sidebarBg: '#2c1b12',
-    item1: '#f97316',
-    item2: '#ff8a3d',
-    contentBg: '#281911',
-    lineMain: '#fff7ed',
-    lineSub: '#fed7aa'
+    category: 'Color',
+    themes: [
+      {
+        id: 'blue',
+        name: 'Azul',
+        bg: '#0f1419',
+        previewBg: '#0f172a',
+        headerBg: '#1e293b',
+        sidebarBg: '#131d31',
+        item1: '#38bdf8',
+        item2: '#38bdf8',
+        contentBg: '#0f172a',
+        lineMain: '#f1f5f9',
+        lineSub: '#94a3b8'
+      },
+      {
+        id: 'matcha',
+        name: 'Matcha',
+        bg: '#151e18',
+        previewBg: '#151e18',
+        headerBg: '#1d2a22',
+        sidebarBg: '#1d2a22',
+        item1: '#52b788',
+        item2: '#40916c',
+        contentBg: '#151e18',
+        lineMain: '#e8f5e9',
+        lineSub: '#729d89'
+      },
+      {
+        id: 'sunset',
+        name: 'Atardecer',
+        bg: '#22150e',
+        previewBg: '#22150e',
+        headerBg: '#2c1b12',
+        sidebarBg: '#2c1b12',
+        item1: '#f97316',
+        item2: '#ff8a3d',
+        contentBg: '#281911',
+        lineMain: '#fff7ed',
+        lineSub: '#fed7aa'
+      }
+    ]
   }
 ];
+
+const THEMES = THEME_GROUPS.flatMap((g) => g.themes);
 
 const FONTS = [
   { value: 'Inter, sans-serif', label: 'Inter (Predeterminada, Moderna)' },
@@ -486,58 +503,62 @@ export const SettingsModal = () => {
                     Elegí el esquema de colores que mejor se adapte a tu entorno de estudio.
                   </p>
 
-                  <div className={styles.themeGrid}>
-                    {THEMES.map((theme) => {
-                      const isCurrent = (settings.theme || 'dark') === theme.id;
-                      return (
-                        <div
-                          key={theme.id}
-                          className={`${styles.themeCard} ${isCurrent ? styles.activeTheme : ''}`}
-                          onClick={() => setTheme(theme.id)}
-                        >
-                          <div
-                            className={styles.themeMiniWindow}
-                            style={{ backgroundColor: theme.previewBg }}
-                          >
+                  <div className={styles.themeGroupsContainer}>
+                    {THEME_GROUPS.map((group, idx) => (
+                      <div key={idx} className={styles.themeGrid}>
+                        {group.themes.map((theme) => {
+                          const isCurrent = (settings.theme || 'dark') === theme.id;
+                          return (
                             <div
-                              className={styles.miniWindowHeader}
-                              style={{ backgroundColor: theme.headerBg }}
+                              key={theme.id}
+                              className={`${styles.themeCard} ${isCurrent ? styles.activeTheme : ''}`}
+                              onClick={() => setTheme(theme.id)}
                             >
-                              <div className={styles.miniDots} />
-                            </div>
-                            <div className={styles.miniWindowBody}>
                               <div
-                                className={styles.miniWindowSidebar}
-                                style={{ backgroundColor: theme.sidebarBg }}
+                                className={styles.themeMiniWindow}
+                                style={{ backgroundColor: theme.previewBg }}
                               >
                                 <div
-                                  className={styles.miniSidebarItem}
-                                  style={{ backgroundColor: theme.item1 }}
-                                />
-                                <div
-                                  className={styles.miniSidebarItem}
-                                  style={{ backgroundColor: theme.item2 }}
-                                />
+                                  className={styles.miniWindowHeader}
+                                  style={{ backgroundColor: theme.headerBg }}
+                                >
+                                  <div className={styles.miniDots} />
+                                </div>
+                                <div className={styles.miniWindowBody}>
+                                  <div
+                                    className={styles.miniWindowSidebar}
+                                    style={{ backgroundColor: theme.sidebarBg }}
+                                  >
+                                    <div
+                                      className={styles.miniSidebarItem}
+                                      style={{ backgroundColor: theme.item1 }}
+                                    />
+                                    <div
+                                      className={styles.miniSidebarItem}
+                                      style={{ backgroundColor: theme.item2 }}
+                                    />
+                                  </div>
+                                  <div
+                                    className={styles.miniWindowContent}
+                                    style={{ backgroundColor: theme.contentBg }}
+                                  >
+                                    <div
+                                      className={styles.miniLineMain}
+                                      style={{ backgroundColor: theme.lineMain }}
+                                    />
+                                    <div
+                                      className={styles.miniLineSub}
+                                      style={{ backgroundColor: theme.lineSub }}
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                              <div
-                                className={styles.miniWindowContent}
-                                style={{ backgroundColor: theme.contentBg }}
-                              >
-                                <div
-                                  className={styles.miniLineMain}
-                                  style={{ backgroundColor: theme.lineMain }}
-                                />
-                                <div
-                                  className={styles.miniLineSub}
-                                  style={{ backgroundColor: theme.lineSub }}
-                                />
-                              </div>
+                              <span className={styles.themeName}>{theme.name}</span>
                             </div>
-                          </div>
-                          <span className={styles.themeName}>{theme.name}</span>
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
                 </div>
 

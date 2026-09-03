@@ -33,7 +33,7 @@ export const CodeBlockAce = ({
 
     const editor = ace.edit(editorRef.current, {
       mode: `ace/mode/${currentLang}`,
-      theme: theme === 'light' || theme === 'sakura' || theme === 'peluche' || theme === 'sepia' ? 'ace/theme/github' : 'ace/theme/tomorrow_night',
+      theme: theme === 'light' || theme === 'peluche' || theme === 'catppuccin-latte' ? 'ace/theme/github' : 'ace/theme/tomorrow_night',
       maxLines: 35,
       minLines: 4,
       fontSize: 14,
@@ -64,7 +64,7 @@ export const CodeBlockAce = ({
   useEffect(() => {
     if (aceInstance.current) {
       aceInstance.current.setTheme(
-        theme === 'light' || theme === 'sakura' || theme === 'peluche' || theme === 'sepia' ? 'ace/theme/github' : 'ace/theme/tomorrow_night'
+        theme === 'light' || theme === 'peluche' || theme === 'catppuccin-latte' ? 'ace/theme/github' : 'ace/theme/tomorrow_night'
       );
     }
   }, [theme]);

@@ -16,6 +16,8 @@ const loaded = storageService.loadSettings();
 if (loaded) {
   if (loaded.theme === 'github') loaded.theme = 'dark';
   if (loaded.theme === 'pastel') loaded.theme = 'peluche';
+  if (loaded.theme === 'catppuccin') loaded.theme = 'catppuccin-mocha';
+  if (loaded.theme === 'sakura') loaded.theme = 'catppuccin-latte';
 }
 const initialSettings = { ...defaultSettings, ...loaded };
 

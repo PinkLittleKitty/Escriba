@@ -6,7 +6,7 @@
 
 ## Key Features
 
-### Powerful Academic Editor
+### Powerful Text Editor
 - **Rich Markdown & Shortcuts**: Full formatting toolbar and keyboard shortcuts for rapid note-taking.
 - **Math & Science (KaTeX)**: Native inline and block LaTeX math rendering (`Ctrl + M`).
 - **Interactive UML Diagrams**: Built-in **Mermaid.js** diagrams (Flowcharts, Class, Sequence, State, Mindmaps) with live preview and visual editor (`Ctrl + Alt + U`).

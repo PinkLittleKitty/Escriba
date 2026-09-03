@@ -1,65 +1,110 @@
-# 📚 Escriba
+# Escriba
 
-Escriba is a modern, offline-ready digital notebook designed for students and power users. It offers a seamless experience across web and desktop, with powerful synchronization features.
+**Escriba** is a modern, offline-first digital notebook designed for university students and power users. It offers a seamless experience across web and desktop, featuring Markdown and rich text editing, KaTeX math expressions, Mermaid UML diagrams, multi-language code blocks, academic schedule planning, and private cloud synchronization via GitHub.
 
-## ✨ Key Features
+---
 
-- 🌐 **Web First** - Recommended version for most users. Access your notes anywhere via GitHub Pages.
-- 💾 **100% Offline** - Data is saved locally in your browser or desktop app (no cloud required).
-- 🔄 **GitHub Sync** - Sync your notes across devices using your own private GitHub repository as a secure backend.
-- 🖥️ **Desktop App** - Optimized for offline use at university or areas with poor connection.
-- 🎨 **Rich Aesthetics** - 8 beautiful themes including Dark, Light, Cyberpunk, and more.
-- 📝 **Advanced Editing** - Support for UML diagrams, code blocks, and rich text.
-- 📊 **Smart Statistics** - Track your word counts, notes, and subjects.
-- 🚀 **Nightly Builds** - Automatically generated binaries on every update.
+## Key Features
 
-## 🌐 Web Version (Recommended)
+### Powerful Academic Editor
+- **Rich Markdown & Shortcuts**: Full formatting toolbar and keyboard shortcuts for rapid note-taking.
+- **Math & Science (KaTeX)**: Native inline and block LaTeX math rendering (`Ctrl + M`).
+- **Interactive UML Diagrams**: Built-in **Mermaid.js** diagrams (Flowcharts, Class, Sequence, State, Mindmaps) with live preview and visual editor (`Ctrl + Alt + U`).
+- **Embedded Code Blocks**: Powered by **Ace Editor** with syntax highlighting for dozens of programming languages (`Ctrl + Alt + C`).
+- **Bidirectional Note Linking**: Link notes together using `[[Note Title]]` or `Ctrl + L` to build your personal knowledge base.
+- **Interactive Knowledge Graph**: Visualize connections between your notes using Cytoscape.
 
-The web version is the easiest way to use Escriba. Your notes are saved in your browser's local storage and can be synced to GitHub for cross-device access.
+### Academic Management
+- **Subject Organization**: Organize notes into subjects with custom color palettes and Lucide icons.
+- **Dashboard**: Smart greeting, next upcoming class alerts, and quick access to recent notes.
+- **Class Schedules & Calendar**: Weekly timetable planner and exam/event tracking.
 
-👉 [**Visit Escriba Web**](https://pinklittlekitty.github.io/Escriba/)
+### Themes & Typography
+- **Themes**: Choose from 9 curated color schemes categorized for any environment.
+- **Custom Typography**: Support for *Inter*, *Roboto*, *Outfit*, and *JetBrains Mono* with adjustable font sizes.
 
-## 🖥️ Desktop App
+### Offline-First & Private GitHub Sync
+- **100% Offline**: All notes and data are persisted locally in your browser or desktop app (no proprietary cloud or tracking required).
+- **GitHub Sync**: Connect with a GitHub Personal Access Token to use your own private repository (`escriba-notes`) as a secure, cross-device backend.
+- **Local Disk Sync (Desktop)**: Read and write directly to a folder on your file system.
 
-The desktop version is recommended for users who need a dedicated window or work frequently without an internet connection.
+### Export & Share
+- **Print & PDF**: Professional print styling for individual notes or complete subject notebooks.
+- **Standalone HTML**: Export notes with all styles, KaTeX, and diagrams self-contained in a single `.html` file.
+- **Quick Share**: Share notes via GitHub Gist or direct URL with a built-in QR code generator.
 
-1. Go to the [Releases](https://github.com/PinkLittleKitty/Escriba/releases) section.
-2. Download the latest **Nightly** build for your OS (`.exe`, `.AppImage`, or `.dmg`).
-3. Run the installer and start taking notes!
+---
 
-## 🔄 GitHub Synchronization
+## Web Version
 
-Escriba allows you to use your own GitHub account as a private cloud:
+The web version runs directly in any modern browser with local storage persistence and full GitHub sync capabilities:
 
-1. Go to **Settings** (Opciones) in the app.
-2. Connect your GitHub account using a **Personal Access Token**.
-3. Escriba will create a private repository named `escriba-notes` to safely store and sync your data across all your devices.
+[**Open Escriba Web**](https://pinklittlekitty.github.io/Escriba/)
 
-## 🛠️ Local Development
+---
 
-If you want to run or build the app locally:
+## Desktop App
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/PinkLittleKitty/Escriba
-   cd Escriba
-   ```
+The desktop version is ideal for offline lectures, low-connectivity study sessions, or users wanting a dedicated application window:
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+1. Download the latest nightly release from the [Releases](https://github.com/PinkLittleKitty/Escriba/releases) page.
+2. Available for:
+   - **Windows** (`.exe` installer or portable)
+   - **Linux** (`.AppImage`)
+   - **macOS** (`.dmg`)
+3. Start taking notes!
 
-3. **Run Electron app**
-   ```bash
-   npm run electron:start
-   ```
+---
 
-4. **Build for production**
-   ```bash
-   npm run electron:build
-   ```
+## GitHub Synchronization
 
-## 🏗️ Build Pipeline
+You can use your GitHub account as a free, private cloud backend:
 
-This project uses **GitHub Actions** to automatically build and release the desktop app on every push to the `main` branch.
+1. In Escriba, open **Ajustes** (`Settings`) > **GitHub**.
+2. Generate a [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` and `gist` scopes.
+3. Enter your token and click **Conectar**.
+4. Escriba will automatically create and sync with a private `escriba-notes` repository on your GitHub account.
+
+---
+
+## Local Development
+
+### Prerequisites
+- Node.js (>= 18 recommended)
+- npm
+
+### Setup
+```bash
+git clone https://github.com/PinkLittleKitty/Escriba.git
+cd Escriba
+npm install
+```
+
+### Available Scripts
+
+| Command | Description |
+| :--- | :--- |
+| `npm run dev` | Start the Vite web development server |
+| `npm test` | Run the test suite with Vitest |
+| `npm run test:watch` | Run Vitest in interactive watch mode |
+| `npm run build` | Validate tests and create production web build |
+| `npm run electron:dev` | Start desktop app in Electron development mode |
+| `npm run electron:build` | Package desktop app for your current operating system |
+
+---
+
+## Tech Stack
+
+- **Frontend**: React 19, Vite, Zustand
+- **Editor & Rendering**: KaTeX (Math), Mermaid.js (UML), Ace Builds (Code highlighting)
+- **Graph Visualization**: Cytoscape.js
+- **Desktop Runtime**: Electron & electron-builder
+- **Mobile Runtime**: Capacitor
+- **Icons**: Lucide React
+- **Testing**: Vitest & React Testing Library
+
+---
+
+## License
+
+Created by **[JustNeki](https://github.com/PinkLittleKitty)**. Open source under the MIT License.

@@ -61,16 +61,26 @@ export class GitHubAuthService {
     return this.base64UrlEncode(digest);
   }
 
+  getEffectiveRedirectUri(redirectUri) {
+    if (redirectUri) return redirectUri;
+    if (typeof window !== 'undefined') {
+      const isElectron =
+        window.location.protocol === 'file:' ||
+        (typeof window.require === 'function' && Boolean(window.require('electron')));
+      if (isElectron) {
+        return 'https://www.justneki.com/Escriba/';
+      }
+      return window.location.origin + window.location.pathname;
+    }
+    return 'https://www.justneki.com/Escriba/';
+  }
+
   async startOAuthLogin({ clientId, redirectUri, repoName = 'escriba-notes' }) {
     if (!clientId) {
       throw new Error('No se ha configurado el Client ID de la GitHub App.');
     }
 
-    const effectiveRedirectUri =
-      redirectUri ||
-      (typeof window !== 'undefined'
-        ? window.location.origin + window.location.pathname
-        : '');
+    const effectiveRedirectUri = this.getEffectiveRedirectUri(redirectUri);
 
     const codeVerifier = this.generateRandomString(64);
     const codeChallenge = await this.generateCodeChallenge(codeVerifier);
@@ -92,6 +102,23 @@ export class GitHubAuthService {
     });
 
     const targetUrl = `${this.authBaseUrl}?${params.toString()}`;
+
+    if (typeof window !== 'undefined' && typeof window.require === 'function') {
+      try {
+        const electron = window.require('electron');
+        if (electron && electron.ipcRenderer) {
+          const authResult = await electron.ipcRenderer.invoke('github-oauth-open-popup', {
+            authUrl: targetUrl,
+            redirectUri: effectiveRedirectUri
+          });
+          return authResult;
+        }
+      } catch (ipcErr) {
+        if (ipcErr.message && !ipcErr.message.includes('No handler')) {
+          throw ipcErr;
+        }
+      }
+    }
 
     if (typeof window !== 'undefined') {
       window.location.assign(targetUrl);
@@ -130,9 +157,7 @@ export class GitHubAuthService {
     const effectiveRedirectUri =
       redirectUri ||
       savedRedirectUri ||
-      (typeof window !== 'undefined'
-        ? window.location.origin + window.location.pathname
-        : '');
+      this.getEffectiveRedirectUri();
 
     try {
       if (typeof window !== 'undefined' && window.require) {
@@ -143,7 +168,8 @@ export class GitHubAuthService {
               client_id: clientId,
               code,
               code_verifier: codeVerifier,
-              redirect_uri: effectiveRedirectUri
+              redirect_uri: effectiveRedirectUri,
+              proxy_url: this.getTokenEndpoint()
             });
             if (data) {
               if (data.error) {

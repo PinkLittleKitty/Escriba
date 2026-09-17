@@ -39,7 +39,7 @@
 
 The web version runs directly in any modern browser with local storage persistence and full GitHub sync capabilities:
 
-[**Open Escriba Web**](https://pinklittlekitty.github.io/Escriba/)
+[**Open Escriba Web**](https://www.justneki.com/Escriba/)
 
 ---
 

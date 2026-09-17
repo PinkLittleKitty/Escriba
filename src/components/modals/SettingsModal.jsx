@@ -311,6 +311,11 @@ export const SettingsModal = () => {
     const res = await loginWithGitHub(ghRepoInput.trim() || 'escriba-notes');
     if (!res.success) {
       addToast({ message: res.error, type: 'error' });
+    } else if (res.username) {
+      addToast({
+        message: `¡Conectado exitosamente con GitHub como @${res.username}!`,
+        type: 'success'
+      });
     }
   };
 

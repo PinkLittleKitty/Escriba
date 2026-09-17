@@ -45,10 +45,15 @@ export const useGitHubStore = create((set, get) => ({
 
     set({ isOAuthLoading: true, lastError: null });
     try {
-      await gitHubAuthService.startOAuthLogin({
+      const authRes = await gitHubAuthService.startOAuthLogin({
         clientId,
         repoName: repo || 'escriba-notes'
       });
+
+      if (authRes && authRes.code) {
+        return await get().handleAuthCallback(authRes.code, authRes.state);
+      }
+
       return { success: true };
     } catch (err) {
       set({ isOAuthLoading: false, lastError: err.message });

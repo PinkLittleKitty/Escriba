@@ -134,7 +134,7 @@ describe('GitHubAuthService', () => {
       expect(result.repoName).toBe('notes-public');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://github.com/login/oauth/access_token',
+        gitHubAuthService.getTokenEndpoint(),
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({

@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+env:
+  VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID || 'Iv23ctoq7kafoXoMzGIN' }}
+  VITE_GITHUB_AUTH_PROXY_URL: ${{ vars.VITE_GITHUB_AUTH_PROXY_URL }}
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -86,7 +90,10 @@ jobs:
           java-version: '21'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
 
       - name: Install Dependencies
         run: npm install

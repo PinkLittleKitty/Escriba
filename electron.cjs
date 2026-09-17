@@ -80,3 +80,19 @@ ipcMain.handle('get-app-version', () => {
     };
 });
 
+ipcMain.handle('github-oauth-token', async (event, params) => {
+    try {
+        const response = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(params)
+        });
+        return await response.json();
+    } catch (err) {
+        return { error: err.message };
+    }
+});
+

@@ -23,7 +23,10 @@ import {
   ShieldCheck,
   Check,
   Terminal,
-  Rocket
+  Rocket,
+  ChevronDown,
+  ChevronUp,
+  Key
 } from 'lucide-react';
 import { GitHubIcon } from '../common/Icons.jsx';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
@@ -215,8 +218,12 @@ export const SettingsModal = () => {
     token,
     username,
     repoName,
+    clientId,
+    setClientId,
     isAuthenticated,
     connectToken,
+    loginWithGitHub,
+    isOAuthLoading,
     disconnect,
     sync,
     forcePush,
@@ -232,6 +239,8 @@ export const SettingsModal = () => {
 
   const [ghTokenInput, setGhTokenInput] = useState('');
   const [ghRepoInput, setGhRepoInput] = useState(repoName || 'escriba-notes');
+  const [showAdvancedGitHub, setShowAdvancedGitHub] = useState(false);
+  const [customClientIdInput, setCustomClientIdInput] = useState(clientId || '');
   const [localFolder, setLocalFolder] = useState(
     localStorage.getItem('local_storage_folder_path') || ''
   );
@@ -288,13 +297,27 @@ export const SettingsModal = () => {
   const handleConnectGitHub = async (e) => {
     e.preventDefault();
     if (!ghTokenInput.trim()) return;
-    const res = await connectToken(ghTokenInput.trim(), ghRepoInput.trim());
+    const res = await connectToken(ghTokenInput.trim(), ghRepoInput.trim() || 'escriba-notes');
     if (res.success) {
       addToast({ message: `Conectado como @${res.username}`, type: 'success' });
       setGhTokenInput('');
     } else {
       addToast({ message: res.error, type: 'error' });
     }
+  };
+
+  const handleLoginOAuth = async (e) => {
+    e.preventDefault();
+    const res = await loginWithGitHub(ghRepoInput.trim() || 'escriba-notes');
+    if (!res.success) {
+      addToast({ message: res.error, type: 'error' });
+    }
+  };
+
+  const handleSaveClientId = (e) => {
+    e.preventDefault();
+    setClientId(customClientIdInput.trim());
+    addToast({ message: 'Client ID actualizado', type: 'success' });
   };
 
   const handleSelectFolder = async () => {
@@ -669,8 +692,34 @@ export const SettingsModal = () => {
                               <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
                                 Conectado a @{username}
                               </div>
-                              <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-                                Repositorio: <code>{repoName}</code>
+                              <div
+                                style={{
+                                  fontSize: '0.775rem',
+                                  color: 'var(--text-muted)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  marginTop: '0.2rem'
+                                }}
+                              >
+                                <span>Repositorio:</span>
+                                <a
+                                  href={`https://github.com/${username}/${repoName}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{
+                                    color: 'var(--accent-blue)',
+                                    textDecoration: 'none',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem',
+                                    fontWeight: 600
+                                  }}
+                                  title="Ver repositorio en GitHub"
+                                >
+                                  <code>{repoName}</code>
+                                  <ExternalLink size={12} />
+                                </a>
                               </div>
                             </div>
                           </div>
@@ -754,34 +803,123 @@ export const SettingsModal = () => {
                         )}
                       </div>
                     ) : (
-                      <form
-                        onSubmit={handleConnectGitHub}
-                        style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
-                      >
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                          Ingresá un Personal Access Token (PAT) de GitHub con permisos de <code>repo</code> para respaldar tus notas de forma segura en un repositorio privado.
-                        </p>
-                        <input
-                          type="password"
-                          className={styles.input}
-                          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                          value={ghTokenInput}
-                          onChange={(e) => setGhTokenInput(e.target.value)}
-                          required
-                        />
-                        <input
-                          type="text"
-                          className={styles.input}
-                          placeholder="Nombre del repositorio (ej: escriba-notes)"
-                          value={ghRepoInput}
-                          onChange={(e) => setGhRepoInput(e.target.value)}
-                          required
-                        />
-                        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-                          <GitHubIcon size={16} />
-                          <span>Conectar GitHub</span>
-                        </button>
-                      </form>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div
+                          style={{
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-color)',
+                            padding: '1.25rem',
+                            borderRadius: 'var(--radius-lg)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.85rem'
+                          }}
+                        >
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            Iniciá sesión con tu cuenta de GitHub. Se creará un repositorio <strong>público</strong> en tu perfil.
+                          </p>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                              Nombre del repositorio:
+                            </label>
+                            <input
+                              type="text"
+                              className={styles.input}
+                              placeholder="escriba-notes"
+                              value={ghRepoInput}
+                              onChange={(e) => setGhRepoInput(e.target.value)}
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleLoginOAuth}
+                            disabled={isOAuthLoading}
+                            style={{ alignSelf: 'flex-start', padding: '0.65rem 1.25rem' }}
+                          >
+                            <GitHubIcon size={18} />
+                            <span>{isOAuthLoading ? 'Redirigiendo a GitHub...' : 'Iniciar sesión con GitHub'}</span>
+                          </button>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.6rem' }}>
+                          <button
+                            type="button"
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--text-muted)',
+                              fontSize: '0.8rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              padding: '0.25rem 0'
+                            }}
+                            onClick={() => setShowAdvancedGitHub(!showAdvancedGitHub)}
+                          >
+                            <Key size={14} />
+                            <span>Opciones avanzadas (PAT o Client ID)</span>
+                            {showAdvancedGitHub ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+
+                          {showAdvancedGitHub && (
+                            <div
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '1rem',
+                                marginTop: '0.75rem',
+                                padding: '1rem',
+                                background: 'var(--bg-card)',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1px solid var(--border-color)'
+                              }}
+                            >
+                              <form onSubmit={handleSaveClientId} style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                  Client ID de GitHub App personalizada:
+                                </label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    placeholder="Iv1.xxxxxxxxxxxx"
+                                    value={customClientIdInput}
+                                    onChange={(e) => setCustomClientIdInput(e.target.value)}
+                                  />
+                                  <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }}>
+                                    Guardar ID
+                                  </button>
+                                </div>
+                              </form>
+
+                              <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }} />
+
+                              <form
+                                onSubmit={handleConnectGitHub}
+                                style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+                              >
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  O conectate manualmente con un Personal Access Token:
+                                </p>
+                                <input
+                                  type="password"
+                                  className={styles.input}
+                                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                                  value={ghTokenInput}
+                                  onChange={(e) => setGhTokenInput(e.target.value)}
+                                />
+                                <button type="submit" className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}>
+                                  Conectar con Token
+                                </button>
+                              </form>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

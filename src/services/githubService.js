@@ -68,7 +68,7 @@ export class GitHubService {
     return await response.json();
   }
 
-  async ensureRepository(token, username, repoName) {
+  async ensureRepository(token, username, repoName, isPrivate = false) {
     const checkRes = await this.fetchWithTimeout(
       `${this.baseUrl}/repos/${username}/${repoName}`,
       {},
@@ -83,7 +83,7 @@ export class GitHubService {
           body: JSON.stringify({
             name: repoName,
             description: 'Escriba Notes Backup & Cross-Device Sync',
-            private: true,
+            private: isPrivate,
             auto_init: true
           })
         },

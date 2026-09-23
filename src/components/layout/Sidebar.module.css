@@ -1207,6 +1207,20 @@
   min-width: 0;
 }
 
+.inlineRenameInput {
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--radius-xs);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.05rem 0.35rem;
+  width: 100%;
+  min-width: 0;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-blue-bg);
+}
+
 
 .favoriteStar {
   color: var(--accent-yellow);

@@ -45,6 +45,7 @@ export const Sidebar = () => {
   const reorderOrMoveNote = useNotesStore((state) => state.reorderOrMoveNote);
   const duplicateNote = useNotesStore((state) => state.duplicateNote);
   const deleteNote = useNotesStore((state) => state.deleteNote);
+  const updateNote = useNotesStore((state) => state.updateNote);
   const toggleFavoriteNote = useNotesStore((state) => state.toggleFavoriteNote);
   const deleteSubject = useNotesStore((state) => state.deleteSubject);
   const toggleArchiveSubject = useNotesStore((state) => state.toggleArchiveSubject);
@@ -97,6 +98,25 @@ export const Sidebar = () => {
   const [draggedNote, setDraggedNote] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   const dragExpandTimer = useRef(null);
+
+  const [renamingNoteId, setRenamingNoteId] = useState(null);
+  const [renameTitle, setRenameTitle] = useState('');
+  const renameInputRef = useRef(null);
+
+  useEffect(() => {
+    if (renamingNoteId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingNoteId]);
+
+  const handleConfirmRename = (noteId) => {
+    const trimmed = renameTitle.trim();
+    if (trimmed) {
+      updateNote(noteId, { title: trimmed });
+    }
+    setRenamingNoteId(null);
+  };
 
   const [expandedNotes, setExpandedNotes] = useState(() => {
     try {
@@ -651,9 +671,30 @@ export const Sidebar = () => {
                 )}
 
                 <FileText size={13} className={styles.noteDocIcon} />
-                <span className={styles.noteTitleText}>
-                  {renderHighlightedTitle(note.title, searchQuery)}
-                </span>
+                {renamingNoteId === note.id ? (
+                  <input
+                    ref={renameInputRef}
+                    type="text"
+                    className={styles.inlineRenameInput}
+                    value={renameTitle}
+                    onChange={(e) => setRenameTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter') {
+                        handleConfirmRename(note.id);
+                      } else if (e.key === 'Escape') {
+                        setRenamingNoteId(null);
+                      }
+                    }}
+                    onBlur={() => handleConfirmRename(note.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    draggable={false}
+                  />
+                ) : (
+                  <span className={styles.noteTitleText}>
+                    {renderHighlightedTitle(note.title, searchQuery)}
+                  </span>
+                )}
               </div>
 
               {note.favorite && (
@@ -721,6 +762,20 @@ export const Sidebar = () => {
                           <span>Hacer apunte principal</span>
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        className={styles.noteMenuItem}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuNoteId(null);
+                          setRenamingNoteId(note.id);
+                          setRenameTitle(note.title || '');
+                        }}
+                      >
+                        <Edit2 size={13} />
+                        <span>Renombrar</span>
+                      </button>
 
                       <button
                         type="button"

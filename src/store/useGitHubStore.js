@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { gitHubService } from '../services/githubService.js';
+import { gitHubAuthService } from '../services/githubAuthService.js';
 import { useNotesStore } from './useNotesStore.js';
 import { useSettingsStore } from './useSettingsStore.js';
 
@@ -7,10 +8,90 @@ export const useGitHubStore = create((set, get) => ({
   token: localStorage.getItem('github_access_token') || '',
   username: localStorage.getItem('github_username') || '',
   repoName: localStorage.getItem('github_repo_name') || 'escriba-notes',
+  clientId:
+    localStorage.getItem('github_client_id') ||
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GITHUB_CLIENT_ID) ||
+    '',
   isAuthenticated: !!localStorage.getItem('github_access_token'),
   syncStatus: 'idle',
+  isOAuthLoading: false,
   lastSyncTime: localStorage.getItem('last_sync_time') || null,
   lastError: null,
+
+  setClientId: (clientId) => {
+    const trimmed = (clientId || '').trim();
+    if (trimmed) {
+      localStorage.setItem('github_client_id', trimmed);
+    } else {
+      localStorage.removeItem('github_client_id');
+    }
+    set({ clientId: trimmed });
+  },
+
+  setRepoName: (repoName) => {
+    const trimmed = (repoName || '').trim() || 'escriba-notes';
+    localStorage.setItem('github_repo_name', trimmed);
+    set({ repoName: trimmed });
+  },
+
+  loginWithGitHub: async (repo = 'escriba-notes') => {
+    const { clientId } = get();
+    if (!clientId) {
+      return {
+        success: false,
+        error: 'Client ID no encontrado'
+      };
+    }
+
+    set({ isOAuthLoading: true, lastError: null });
+    try {
+      const authRes = await gitHubAuthService.startOAuthLogin({
+        clientId,
+        repoName: repo || 'escriba-notes'
+      });
+
+      if (authRes && authRes.code) {
+        return await get().handleAuthCallback(authRes.code, authRes.state);
+      }
+
+      return { success: true };
+    } catch (err) {
+      set({ isOAuthLoading: false, lastError: err.message });
+      return { success: false, error: err.message };
+    }
+  },
+
+  handleAuthCallback: async (code, state) => {
+    const { clientId } = get();
+    if (!clientId) {
+      return {
+        success: false,
+        error: 'Client ID no encontrado.'
+      };
+    }
+
+    set({ syncStatus: 'syncing', isOAuthLoading: true, lastError: null });
+    try {
+      const { accessToken, repoName } = await gitHubAuthService.exchangeCodeForToken({
+        code,
+        state,
+        clientId
+      });
+
+      const effectiveRepo = repoName || get().repoName || 'escriba-notes';
+      const connectRes = await get().connectToken(accessToken, effectiveRepo);
+
+      set({ isOAuthLoading: false });
+      return connectRes;
+    } catch (err) {
+      set({
+        syncStatus: 'error',
+        isOAuthLoading: false,
+        lastError: err.message
+      });
+      return { success: false, error: err.message };
+    }
+  },
 
   connectToken: async (token, repo = 'escriba-notes') => {
     if (!token) return { success: false, error: 'Token vacío' };

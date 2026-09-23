@@ -35,6 +35,9 @@ jobs:
         run: npm ci || npm install
 
       - name: Build
+        env:
+          VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID || 'Iv23ctoq7kafoXoMzGIN' }}
+          VITE_GITHUB_AUTH_PROXY_URL: ${{ vars.VITE_GITHUB_AUTH_PROXY_URL }}
         run: npm run build
 
       - name: Setup Pages

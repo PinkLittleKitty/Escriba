@@ -26,6 +26,7 @@ import { updaterService } from './services/updaterService.js';
 import { useNotesStore } from './store/useNotesStore.js';
 import { useUIStore } from './store/useUIStore.js';
 import { useSettingsStore } from './store/useSettingsStore.js';
+import { useGitHubStore } from './store/useGitHubStore.js';
 
 export const App = () => {
   const activeView = useNotesStore((state) => state.activeView);
@@ -45,6 +46,37 @@ export const App = () => {
     window.__settingsStore = useSettingsStore.getState();
     window.__uiStore = useUIStore.getState();
   }, []);
+
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      if (typeof window === 'undefined') return;
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const state = params.get('state');
+
+      if (!code) return;
+
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState(null, '', cleanUrl);
+
+      const ghStore = useGitHubStore.getState();
+      const res = await ghStore.handleAuthCallback(code, state);
+
+      if (res.success) {
+        addToast({
+          message: `¡Conectado exitosamente con GitHub como @${res.username}!`,
+          type: 'success'
+        });
+      } else {
+        addToast({
+          message: `Error al conectar con GitHub: ${res.error}`,
+          type: 'error'
+        });
+      }
+    };
+
+    handleOAuthCallback();
+  }, [addToast]);
 
   useEffect(() => {
     const handleRemoteContent = async () => {

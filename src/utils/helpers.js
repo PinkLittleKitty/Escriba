@@ -261,3 +261,65 @@ export const normalizeScheduleItem = (item = {}) => {
   };
 };
 
+export const buildNoteTree = (notes = []) => {
+  if (!Array.isArray(notes)) return [];
+
+  const noteMap = new Map();
+  const roots = [];
+
+  notes.forEach((note) => {
+    noteMap.set(note.id, { ...note, children: [] });
+  });
+
+  notes.forEach((note) => {
+    const node = noteMap.get(note.id);
+    if (note.parentId && noteMap.has(note.parentId) && note.parentId !== note.id) {
+      noteMap.get(note.parentId).children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
+};
+
+
+export const getNoteAncestors = (notes = [], noteId) => {
+  if (!Array.isArray(notes) || !noteId) return [];
+  const noteMap = new Map(notes.map((n) => [n.id, n]));
+  const ancestors = [];
+  const visited = new Set();
+
+  let curr = noteMap.get(noteId);
+  while (curr && curr.parentId && noteMap.has(curr.parentId)) {
+    if (visited.has(curr.parentId)) break; // cycle protection
+    visited.add(curr.parentId);
+    curr = noteMap.get(curr.parentId);
+    if (curr) {
+      ancestors.unshift(curr);
+    }
+  }
+
+  return ancestors;
+};
+
+
+export const getNoteDescendantIds = (notes = [], noteId) => {
+  if (!Array.isArray(notes) || !noteId) return [];
+  const descendants = [];
+  const visited = new Set([noteId]);
+  const queue = [noteId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    notes.forEach((note) => {
+      if (note.parentId === currentId && !visited.has(note.id)) {
+        visited.add(note.id);
+        descendants.push(note.id);
+        queue.push(note.id);
+      }
+    });
+  }
+
+  return descendants;
+};

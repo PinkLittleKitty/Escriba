@@ -18,12 +18,13 @@ import {
   ChevronDown,
   Clock,
   Share2,
-  Printer
+  Printer,
+  CornerDownRight
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
-import { formatDate, getSearchSnippet } from '../../utils/helpers.js';
+import { formatDate, getSearchSnippet, buildNoteTree, getNoteAncestors } from '../../utils/helpers.js';
 import { printSubjectFolder } from '../../utils/exportHelpers.js';
 import { SubjectBadge } from '../common/SubjectBadge.jsx';
 import { getSubjectInitials } from '../../utils/subjectIcons.js';
@@ -39,6 +40,8 @@ export const Sidebar = () => {
   const setActiveSubject = useNotesStore((state) => state.setActiveSubject);
   const setActiveView = useNotesStore((state) => state.setActiveView);
   const addNote = useNotesStore((state) => state.addNote);
+  const addSubNote = useNotesStore((state) => state.addSubNote);
+  const moveNoteToParent = useNotesStore((state) => state.moveNoteToParent);
   const duplicateNote = useNotesStore((state) => state.duplicateNote);
   const deleteNote = useNotesStore((state) => state.deleteNote);
   const toggleFavoriteNote = useNotesStore((state) => state.toggleFavoriteNote);
@@ -82,12 +85,23 @@ export const Sidebar = () => {
   });
 
   const [openMenuSubjectId, setOpenMenuSubjectId] = useState(null);
+  const [openMenuNoteId, setOpenMenuNoteId] = useState(null);
   const [showNewDropdown, setShowNewDropdown] = useState(false);
   const [activeFlyoutSubjectId, setActiveFlyoutSubjectId] = useState(null);
   const [flyoutPosition, setFlyoutPosition] = useState({ top: 0, left: 0 });
   const [showViewPicker, setShowViewPicker] = useState(false);
   const [viewPickerPos, setViewPickerPos] = useState({ top: 0, left: 0 });
   const viewPickerHoverTimer = useRef(null);
+
+  const [expandedNotes, setExpandedNotes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('expanded_notes');
+      if (saved !== null) {
+        return JSON.parse(saved);
+      }
+    } catch (e) { }
+    return {};
+  });
 
   const handleViewPickerMouseEnter = (e) => {
     if (viewPickerHoverTimer.current) {
@@ -118,6 +132,32 @@ export const Sidebar = () => {
 
   useEffect(() => {
     try {
+      localStorage.setItem('expanded_notes', JSON.stringify(expandedNotes));
+    } catch (e) { }
+  }, [expandedNotes]);
+
+  useEffect(() => {
+    if (!activeNoteId || !activeSubjectId) return;
+    const currentSub = subjects.find((s) => s.id === activeSubjectId);
+    if (!currentSub || !currentSub.notes) return;
+    const ancestors = getNoteAncestors(currentSub.notes, activeNoteId);
+    if (ancestors.length > 0) {
+      setExpandedNotes((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        ancestors.forEach((anc) => {
+          if (!next[anc.id]) {
+            next[anc.id] = true;
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }
+  }, [activeNoteId, activeSubjectId, subjects]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem('sidebar_show_archived', String(showArchived));
     } catch (e) { }
   }, [showArchived]);
@@ -133,6 +173,9 @@ export const Sidebar = () => {
       if (!e.target.closest(`.${styles.optionsWrapper}`)) {
         setOpenMenuSubjectId(null);
       }
+      if (!e.target.closest(`.${styles.noteOptionsWrapper}`)) {
+        setOpenMenuNoteId(null);
+      }
       if (!e.target.closest(`.${styles.newDropdownWrapper}`)) {
         setShowNewDropdown(false);
       }
@@ -146,6 +189,7 @@ export const Sidebar = () => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setOpenMenuSubjectId(null);
+        setOpenMenuNoteId(null);
         setShowNewDropdown(false);
         setActiveFlyoutSubjectId(null);
         setShowViewPicker(false);
@@ -231,6 +275,30 @@ export const Sidebar = () => {
     });
   };
 
+  const toggleNoteExpanded = (noteId, e) => {
+    if (e) e.stopPropagation();
+    setExpandedNotes((prev) => {
+      const isExpanded = prev[noteId] !== false;
+      return { ...prev, [noteId]: !isExpanded };
+    });
+  };
+
+  const handleAddSubNote = (parentNoteId, subjectId, e) => {
+    if (e) e.stopPropagation();
+    const newNote = addSubNote(parentNoteId, { title: 'Nuevo Sub-apunte' });
+    setExpandedNotes((prev) => ({ ...prev, [parentNoteId]: true }));
+    setExpandedSubjects((prev) => ({ ...prev, [subjectId]: true }));
+    if (newNote && window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleUnparentNote = (noteId, e) => {
+    if (e) e.stopPropagation();
+    moveNoteToParent(noteId, null);
+    addToast({ message: 'Apunte convertido en principal', type: 'info' });
+  };
+
   const filteredSubjects = subjects
     .map((subject) => {
       const matchesSubject =
@@ -260,12 +328,16 @@ export const Sidebar = () => {
   const allActiveNotes = subjects
     .filter((s) => !s.archived)
     .flatMap((s) =>
-      (s.notes || []).map((n) => ({
-        ...n,
-        subjectId: s.id,
-        subjectName: s.name,
-        subjectColor: s.color || 'var(--accent-blue)'
-      }))
+      (s.notes || []).map((n) => {
+        const parent = n.parentId ? (s.notes || []).find((p) => p.id === n.parentId) : null;
+        return {
+          ...n,
+          parentTitle: parent ? parent.title : null,
+          subjectId: s.id,
+          subjectName: s.name,
+          subjectColor: s.color || 'var(--accent-blue)'
+        };
+      })
     );
 
   const recentNotes = allActiveNotes
@@ -314,6 +386,161 @@ export const Sidebar = () => {
       console.error('Error printing subject folder:', err);
       addToast({ message: 'Error al preparar la impresión de la carpeta', type: 'error' });
     }
+  };
+
+  const renderNoteTree = (notesTree, subjectId, depth = 0) => {
+    return notesTree.map((note) => {
+      const isActiveNote = activeNoteId === note.id;
+      const snippet = searchQuery ? getSearchSnippet(note.content, searchQuery) : null;
+      const hasChildren = Array.isArray(note.children) && note.children.length > 0;
+      const isExpanded = expandedNotes[note.id] !== false || !!searchQuery;
+      const isSubNote = depth > 0;
+
+      return (
+        <div key={note.id} className={styles.noteTreeNode}>
+          <div
+            className={`${styles.noteItem} ${isActiveNote ? styles.active : ''} ${isSubNote ? styles.isSubNote : ''} ${snippet ? styles.hasSnippet : ''}`}
+            onClick={() => handleSelectNote(subjectId, note.id)}
+          >
+            <div className={styles.noteMainRow}>
+              <div className={styles.noteTitleWrapper}>
+                {hasChildren ? (
+                  <button
+                    type="button"
+                    className={`${styles.noteExpandBtn} ${isExpanded ? styles.expanded : ''}`}
+                    onClick={(e) => toggleNoteExpanded(note.id, e)}
+                    title={isExpanded ? 'Colapsar sub-apuntes' : 'Expandir sub-apuntes'}
+                  >
+                    <ChevronRight size={12} />
+                  </button>
+                ) : (
+                  <span className={styles.noteExpandSpacer} />
+                )}
+
+                <FileText size={13} className={styles.noteDocIcon} />
+                <span className={styles.noteTitleText}>
+                  {renderHighlightedTitle(note.title, searchQuery)}
+                </span>
+              </div>
+
+              {note.favorite && (
+                <Star size={12} className={styles.favoriteStar} fill="currentColor" />
+              )}
+
+              <div className={styles.noteActions}>
+                <button
+                  type="button"
+                  className={styles.noteActionBtn}
+                  onClick={(e) => handleAddSubNote(note.id, subjectId, e)}
+                  title="Agregar sub-apunte"
+                >
+                  <Plus size={12} />
+                </button>
+                <button
+                  type="button"
+                  className={styles.noteActionBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    duplicateNote(note.id);
+                  }}
+                  title="Duplicar"
+                >
+                  <Copy size={12} />
+                </button>
+
+                <div className={styles.noteOptionsWrapper}>
+                  <button
+                    type="button"
+                    className={`${styles.noteActionBtn} ${openMenuNoteId === note.id ? styles.activeMenuBtn : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuNoteId(openMenuNoteId === note.id ? null : note.id);
+                    }}
+                    title="Opciones de apunte"
+                  >
+                    <MoreVertical size={12} />
+                  </button>
+
+                  {openMenuNoteId === note.id && (
+                    <div className={styles.noteOptionsMenu} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={styles.noteMenuItem}
+                        onClick={(e) => {
+                          setOpenMenuNoteId(null);
+                          handleAddSubNote(note.id, subjectId, e);
+                        }}
+                      >
+                        <Plus size={13} />
+                        <span>Agregar sub-apunte</span>
+                      </button>
+
+                      {note.parentId && (
+                        <button
+                          type="button"
+                          className={styles.noteMenuItem}
+                          onClick={(e) => {
+                            setOpenMenuNoteId(null);
+                            handleUnparentNote(note.id, e);
+                          }}
+                        >
+                          <CornerDownRight size={13} style={{ transform: 'rotate(180deg)' }} />
+                          <span>Hacer apunte principal</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className={styles.noteMenuItem}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuNoteId(null);
+                          duplicateNote(note.id);
+                        }}
+                      >
+                        <Copy size={13} />
+                        <span>Duplicar</span>
+                      </button>
+
+                      <div className={styles.menuDivider} />
+
+                      <button
+                        type="button"
+                        className={`${styles.noteMenuItem} ${styles.dangerMenuItem}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuNoteId(null);
+                          deleteNote(note.id);
+                        }}
+                      >
+                        <Trash2 size={13} />
+                        <span>Eliminar</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {snippet && (
+              <div className={styles.searchSnippet}>
+                {snippet.prefix}
+                {snippet.beforeMatch}
+                <mark className={styles.searchSnippetMark}>{snippet.matchedText}</mark>
+                {snippet.afterMatch}
+                {snippet.suffix}
+              </div>
+            )}
+          </div>
+
+          {hasChildren && isExpanded && (
+            <div className={styles.subNotesGroup}>
+              {renderNoteTree(note.children, subjectId, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    });
   };
 
   const renderSubjectFolder = (subject, isArchived = false) => {
@@ -453,65 +680,7 @@ export const Sidebar = () => {
                 <span>Sin apuntes</span>
               </div>
             ) : (
-              subject.notes.map((note) => {
-                const isActiveNote = activeNoteId === note.id;
-                const snippet = searchQuery ? getSearchSnippet(note.content, searchQuery) : null;
-                return (
-                  <div
-                    key={note.id}
-                    className={`${styles.noteItem} ${isActiveNote ? styles.active : ''} ${snippet ? styles.hasSnippet : ''}`}
-                    onClick={() => handleSelectNote(subject.id, note.id)}
-                  >
-                    <div className={styles.noteMainRow}>
-                      <div className={styles.noteTitleWrapper}>
-                        <FileText size={13} className={styles.noteDocIcon} />
-                        <span className={styles.noteTitleText}>
-                          {renderHighlightedTitle(note.title, searchQuery)}
-                        </span>
-                      </div>
-
-                      {note.favorite && (
-                        <Star size={12} className={styles.favoriteStar} fill="currentColor" />
-                      )}
-
-                      <div className={styles.noteActions}>
-                        <button
-                          type="button"
-                          className={styles.noteActionBtn}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            duplicateNote(note.id);
-                          }}
-                          title="Duplicar"
-                        >
-                          <Copy size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.noteActionBtn}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteNote(note.id);
-                          }}
-                          title="Eliminar"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {snippet && (
-                      <div className={styles.searchSnippet}>
-                        {snippet.prefix}
-                        {snippet.beforeMatch}
-                        <mark className={styles.searchSnippetMark}>{snippet.matchedText}</mark>
-                        {snippet.afterMatch}
-                        {snippet.suffix}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+              renderNoteTree(buildNoteTree(subject.notes), subject.id, 0)
             )}
           </div>
         )}
@@ -548,7 +717,10 @@ export const Sidebar = () => {
               {renderHighlightedTitle(note.title, searchQuery)}
             </span>
             <div className={styles.flatNoteMeta}>
-              <span className={styles.flatNoteSubject}>{note.subjectName}</span>
+              <span className={styles.flatNoteSubject}>
+                {note.subjectName}
+                {note.parentTitle ? ` › ${note.parentTitle}` : ''}
+              </span>
               <span>•</span>
               <span>{formatDate(note.updatedAt)}</span>
             </div>
@@ -804,22 +976,30 @@ export const Sidebar = () => {
 
             <div className={styles.flyoutNotesList}>
               {flyoutSub.notes && flyoutSub.notes.length > 0 ? (
-                flyoutSub.notes.map((note) => (
-                  <div
-                    key={note.id}
-                    className={`${styles.flyoutNoteItem} ${activeNoteId === note.id ? styles.active : ''}`}
-                    onClick={() => {
-                      handleSelectNote(flyoutSub.id, note.id);
-                      setActiveFlyoutSubjectId(null);
-                    }}
-                  >
-                    <FileText size={15} color="var(--text-muted)" />
-                    <div className={styles.flyoutNoteContent}>
-                      <span className={styles.flyoutNoteTitle}>{note.title || 'Apunte sin título'}</span>
-                      <span className={styles.flyoutNoteMeta}>{formatDate(note.updatedAt || note.createdAt)}</span>
+                flyoutSub.notes.map((note) => {
+                  const isSub = !!note.parentId;
+                  return (
+                    <div
+                      key={note.id}
+                      className={`${styles.flyoutNoteItem} ${activeNoteId === note.id ? styles.active : ''}`}
+                      style={{ paddingLeft: isSub ? '1.8rem' : '0.8rem' }}
+                      onClick={() => {
+                        handleSelectNote(flyoutSub.id, note.id);
+                        setActiveFlyoutSubjectId(null);
+                      }}
+                    >
+                      {isSub ? (
+                        <CornerDownRight size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                      ) : (
+                        <FileText size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                      )}
+                      <div className={styles.flyoutNoteContent}>
+                        <span className={styles.flyoutNoteTitle}>{note.title || 'Apunte sin título'}</span>
+                        <span className={styles.flyoutNoteMeta}>{formatDate(note.updatedAt || note.createdAt)}</span>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className={styles.flyoutEmpty}>
                   <p>No hay apuntes todavía</p>

@@ -781,8 +781,10 @@ export const generateShareUrl = async (noteOrSubject, options = {}) => {
       icon: subject.icon || null,
       schedule: subject.schedule || [],
       notes: (subject.notes || []).map((n) => ({
+        id: n.id,
         title: n.title,
         content: n.content,
+        parentId: n.parentId || null,
         tags: n.tags || [],
         favorite: !!n.favorite,
         createdAt: n.createdAt,

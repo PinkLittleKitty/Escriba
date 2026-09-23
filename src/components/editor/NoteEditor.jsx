@@ -29,7 +29,10 @@ import {
   MinusCircle,
   Paintbrush,
   Minus,
-  Plus
+  Plus,
+  ChevronRight,
+  CornerDownRight,
+  FolderPlus
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
@@ -39,7 +42,7 @@ import { UMLBlock } from './UMLBlock.jsx';
 import { MathBlock } from './MathBlock.jsx';
 import { MathToolbar } from './MathToolbar.jsx';
 import { SubjectBadge } from '../common/SubjectBadge.jsx';
-import { formatDate, calculateReadingStats, debounce, highlightAndScrollToMatch } from '../../utils/helpers.js';
+import { formatDate, calculateReadingStats, debounce, highlightAndScrollToMatch, getNoteAncestors } from '../../utils/helpers.js';
 import { handleMarkdownKeyDown } from '../../utils/markdownAutoFormat.js';
 import styles from './NoteEditor.module.css';
 
@@ -62,6 +65,8 @@ export const NoteEditor = () => {
   const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
   const deleteNote = useNotesStore((state) => state.deleteNote);
   const setActiveNote = useNotesStore((state) => state.setActiveNote);
+  const addSubNote = useNotesStore((state) => state.addSubNote);
+  const setActiveView = useNotesStore((state) => state.setActiveView);
 
   const addToast = useUIStore((state) => state.addToast);
   const openModal = useUIStore((state) => state.openModal);
@@ -106,6 +111,9 @@ export const NoteEditor = () => {
       break;
     }
   }
+
+  const ancestors = (currentSubject && currentNote) ? getNoteAncestors(currentSubject.notes, currentNote.id) : [];
+  const subNotes = (currentSubject && currentNote) ? (currentSubject.notes || []).filter((n) => n.parentId === currentNote.id) : [];
 
   const [title, setTitle] = useState('');
   const [stats, setStats] = useState({ words: 0, chars: 0, readingTime: 0 });
@@ -901,13 +909,53 @@ export const NoteEditor = () => {
           />
           {currentSubject && (
             <div className={styles.breadcrumb}>
-              <SubjectBadge subject={currentSubject} size="sm" />
-              <span>{currentSubject.name}</span>
+              <button
+                type="button"
+                className={styles.breadcrumbBtn}
+                onClick={() => setActiveView('dashboard')}
+                title={`Ir al panel (${currentSubject.name})`}
+              >
+                <SubjectBadge subject={currentSubject} size="sm" />
+                <span>{currentSubject.name}</span>
+              </button>
+
+              {ancestors.map((anc) => (
+                <React.Fragment key={anc.id}>
+                  <ChevronRight size={12} className={styles.breadcrumbSep} />
+                  <button
+                    type="button"
+                    className={styles.breadcrumbBtn}
+                    onClick={() => setActiveNote(currentSubject.id, anc.id)}
+                    title={`Ir a ${anc.title || 'Apunte'}`}
+                  >
+                    <FileText size={12} />
+                    <span>{anc.title || 'Apunte sin título'}</span>
+                  </button>
+                </React.Fragment>
+              ))}
+
+              {ancestors.length > 0 && (
+                <>
+                  <ChevronRight size={12} className={styles.breadcrumbSep} />
+                  <span className={styles.breadcrumbCurrent}>
+                    {title || 'Apunte sin título'}
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
 
         <div className={styles.metaActions}>
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => addSubNote(currentNote.id, { title: 'Nuevo Sub-apunte' })}
+            title="Crear sub-apunte"
+          >
+            <FolderPlus size={18} />
+          </button>
+
           <button
             type="button"
             className={`btn-icon ${currentNote.favorite ? 'active' : ''}`}
@@ -1135,6 +1183,51 @@ export const NoteEditor = () => {
             }}
             data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
           />
+
+          <div className={styles.subNotesSection}>
+            <div className={styles.subNotesHeader}>
+              <div className={styles.subNotesTitleBox}>
+                <CornerDownRight size={16} className={styles.subNotesIcon} />
+                <h3 className={styles.subNotesHeading}>
+                  Sub-apuntes {subNotes.length > 0 ? `(${subNotes.length})` : ''}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className={styles.addSubNoteBtn}
+                onClick={() => addSubNote(currentNote.id, { title: 'Nuevo Sub-apunte' })}
+              >
+                <Plus size={14} />
+                <span>Nuevo sub-apunte</span>
+              </button>
+            </div>
+
+            {subNotes.length > 0 ? (
+              <div className={styles.subNotesGrid}>
+                {subNotes.map((subNote) => (
+                  <div
+                    key={subNote.id}
+                    className={styles.subNoteCard}
+                    onClick={() => setActiveNote(currentSubject.id, subNote.id)}
+                  >
+                    <div className={styles.subNoteCardTop}>
+                      <FileText size={14} className={styles.subNoteDocIcon} />
+                      <span className={styles.subNoteCardTitle}>
+                        {subNote.title || 'Sub-apunte sin título'}
+                      </span>
+                    </div>
+                    <span className={styles.subNoteCardDate}>
+                      {formatDate(subNote.updatedAt || subNote.createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.subNotesEmpty}>
+                <span>Este apunte no tiene sub-apuntes aún. Podés crear uno usando el botón superior.</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

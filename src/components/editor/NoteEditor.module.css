@@ -69,11 +69,26 @@
 
 .editorScrollArea {
   flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
+  overflow: auto;
+  padding: 2rem 1.5rem 4rem 1.5rem;
+  position: relative;
+  touch-action: pan-x pan-y;
+}
+
+.editorPageWrapper {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  zoom: var(--editor-zoom, 1);
+  transform-origin: top center;
   display: flex;
   flex-direction: column;
-  align-items: center;
+}
+
+@supports not (zoom: 1) {
+  .editorPageWrapper {
+    transform: scale(var(--editor-zoom, 1));
+  }
 }
 
 .editorBody {
@@ -209,6 +224,177 @@
   transform: translateY(-1px);
 }
 
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+
+.zoomBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.zoomBtn:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.zoomBtn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.zoomBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.zoomSliderContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100px;
+  height: 20px;
+}
+
+.zoomSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-color);
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+.zoomSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  border: 2px solid var(--bg-secondary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.zoomSlider:hover::-webkit-slider-thumb {
+  background: var(--accent-blue);
+  transform: scale(1.15);
+}
+
+.zoomSlider:active::-webkit-slider-thumb {
+  background: var(--accent-blue);
+  transform: scale(1.25);
+}
+
+.zoomSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  border: 2px solid var(--bg-secondary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.zoomSlider:hover::-moz-range-thumb {
+  background: var(--accent-blue);
+  transform: scale(1.15);
+}
+
+.zoomSliderTick100 {
+  position: absolute;
+  left: 33.33%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 8px;
+  background: var(--text-muted);
+  border-radius: 1px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.zoomValueBtn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  min-width: 44px;
+  text-align: right;
+  transition: all var(--transition-fast);
+}
+
+.zoomValueBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-blue);
+}
+
+.zoomPill {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 10;
+  pointer-events: none;
+  animation: zoomPillFadeInOut 1.2s forwards;
+}
+
+@keyframes zoomPillFadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.95);
+  }
+
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
 @media (max-width: 768px) {
   .editorScrollArea {
     padding: 1rem 0.75rem 2rem 0.75rem;
@@ -238,5 +424,15 @@
 
   .statsGroup {
     gap: 0.75rem;
+  }
+
+  .zoomSliderContainer {
+    width: 65px;
+  }
+}
+
+@media (max-width: 480px) {
+  .zoomSliderContainer {
+    display: none;
   }
 }

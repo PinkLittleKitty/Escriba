@@ -27,7 +27,9 @@ import {
   ArrowLeft,
   ArrowRight,
   MinusCircle,
-  Paintbrush
+  Paintbrush,
+  Minus,
+  Plus
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
@@ -64,8 +66,23 @@ export const NoteEditor = () => {
   const addToast = useUIStore((state) => state.addToast);
   const openModal = useUIStore((state) => state.openModal);
   const searchHighlightTarget = useUIStore((state) => state.searchHighlightTarget);
+  const editorZoom = useUIStore((state) => state.editorZoom);
+  const setEditorZoom = useUIStore((state) => state.setEditorZoom);
+  const resetEditorZoom = useUIStore((state) => state.resetEditorZoom);
   const autoSave = useSettingsStore((state) => state.autoSave);
   const theme = useSettingsStore((state) => state.theme);
+
+  const scrollAreaRef = useRef(null);
+  const [showZoomPill, setShowZoomPill] = useState(false);
+  const zoomPillTimeoutRef = useRef(null);
+
+  const triggerZoomPill = () => {
+    setShowZoomPill(true);
+    if (zoomPillTimeoutRef.current) clearTimeout(zoomPillTimeoutRef.current);
+    zoomPillTimeoutRef.current = setTimeout(() => {
+      setShowZoomPill(false);
+    }, 1200);
+  };
 
   const contentRef = useRef(null);
   const aceEditorsRef = useRef(new Map());
@@ -105,6 +122,93 @@ export const NoteEditor = () => {
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [tableMenu]);
+
+  useEffect(() => {
+    const scrollEl = scrollAreaRef.current;
+    if (!scrollEl) return;
+
+    const handleWheel = (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        let delta = -e.deltaY;
+        if (e.deltaMode === 1) delta *= 16;
+        const step = delta > 0 ? Math.max(1, Math.round(delta * 0.15)) : Math.min(-1, Math.round(delta * 0.15));
+        setEditorZoom((prev) => Math.min(200, Math.max(50, prev + step)));
+        triggerZoomPill();
+      }
+    };
+
+    let initialTouchDistance = null;
+    let initialZoom = null;
+
+    const handleTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        initialTouchDistance = Math.hypot(
+          touch1.clientX - touch2.clientX,
+          touch1.clientY - touch2.clientY
+        );
+        initialZoom = useUIStore.getState().editorZoom;
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (e.touches.length === 2 && initialTouchDistance && initialZoom !== null) {
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDistance = Math.hypot(
+          touch1.clientX - touch2.clientX,
+          touch1.clientY - touch2.clientY
+        );
+        const scale = currentDistance / initialTouchDistance;
+        const newZoom = Math.min(200, Math.max(50, Math.round(initialZoom * scale)));
+        setEditorZoom(newZoom);
+        triggerZoomPill();
+      }
+    };
+
+    const handleTouchEnd = () => {
+      initialTouchDistance = null;
+      initialZoom = null;
+    };
+
+    scrollEl.addEventListener('wheel', handleWheel, { passive: false });
+    scrollEl.addEventListener('touchstart', handleTouchStart, { passive: true });
+    scrollEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+    scrollEl.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      scrollEl.removeEventListener('wheel', handleWheel);
+      scrollEl.removeEventListener('touchstart', handleTouchStart);
+      scrollEl.removeEventListener('touchmove', handleTouchMove);
+      scrollEl.removeEventListener('touchend', handleTouchEnd);
+      if (zoomPillTimeoutRef.current) clearTimeout(zoomPillTimeoutRef.current);
+    };
+  }, [setEditorZoom]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key === '=' || e.key === '+') {
+        e.preventDefault();
+        setEditorZoom((prev) => Math.min(200, prev + 10));
+        triggerZoomPill();
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setEditorZoom((prev) => Math.max(50, prev - 10));
+        triggerZoomPill();
+      } else if (e.key === '0') {
+        e.preventDefault();
+        resetEditorZoom();
+        triggerZoomPill();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setEditorZoom, resetEditorZoom]);
 
   const debouncedSave = useRef(
     debounce((noteId, newTitle, newContent) => {
@@ -868,157 +972,170 @@ export const NoteEditor = () => {
         />
       )}
 
-      <div className={styles.editorScrollArea}>
+      <div className={styles.editorScrollArea} ref={scrollAreaRef}>
+        {showZoomPill && (
+          <div className={styles.zoomPill} aria-live="polite">
+            <span>{editorZoom}%</span>
+          </div>
+        )}
         <div
-          ref={contentRef}
-          className={styles.editorBody}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={handleContentInput}
-          onContextMenu={handleContextMenu}
-          onClick={(e) => {
-            const link = e.target.closest('a[data-note-id], .internal-link, a[href^="#note-"]');
-            if (link) {
-              e.preventDefault();
-              e.stopPropagation();
-              const noteId = link.getAttribute('data-note-id') || link.getAttribute('href')?.replace('#note-', '');
-              const linkText = link.textContent?.trim().replace(/^\[\[|\]\]$/g, '');
+          className={styles.editorPageWrapper}
+          style={{
+            '--editor-zoom': editorZoom / 100,
+            zoom: editorZoom / 100
+          }}
+        >
+          <div
+            ref={contentRef}
+            className={styles.editorBody}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={handleContentInput}
+            onContextMenu={handleContextMenu}
+            onClick={(e) => {
+              const link = e.target.closest('a[data-note-id], .internal-link, a[href^="#note-"]');
+              if (link) {
+                e.preventDefault();
+                e.stopPropagation();
+                const noteId = link.getAttribute('data-note-id') || link.getAttribute('href')?.replace('#note-', '');
+                const linkText = link.textContent?.trim().replace(/^\[\[|\]\]$/g, '');
 
-              let targetNote = null;
-              let targetSubject = null;
+                let targetNote = null;
+                let targetSubject = null;
 
-              if (noteId) {
-                for (const s of subjects) {
-                  const found = s.notes.find((n) => n.id === noteId);
-                  if (found) {
-                    targetNote = found;
-                    targetSubject = s;
-                    break;
+                if (noteId) {
+                  for (const s of subjects) {
+                    const found = s.notes.find((n) => n.id === noteId);
+                    if (found) {
+                      targetNote = found;
+                      targetSubject = s;
+                      break;
+                    }
                   }
                 }
-              }
 
-              if (!targetNote && linkText) {
-                for (const s of subjects) {
-                  const found = s.notes.find((n) => n.title.toLowerCase() === linkText.toLowerCase());
-                  if (found) {
-                    targetNote = found;
-                    targetSubject = s;
-                    break;
+                if (!targetNote && linkText) {
+                  for (const s of subjects) {
+                    const found = s.notes.find((n) => n.title.toLowerCase() === linkText.toLowerCase());
+                    if (found) {
+                      targetNote = found;
+                      targetSubject = s;
+                      break;
+                    }
                   }
                 }
-              }
 
-              if (targetNote && targetSubject) {
-                setActiveNote(targetSubject.id, targetNote.id);
-                addToast({ message: `Abriendo "${targetNote.title}"`, type: 'info' });
-              } else {
-                addToast({ message: 'No se encontró el apunte enlazado', type: 'warning' });
+                if (targetNote && targetSubject) {
+                  setActiveNote(targetSubject.id, targetNote.id);
+                  addToast({ message: `Abriendo "${targetNote.title}"`, type: 'info' });
+                } else {
+                  addToast({ message: 'No se encontró el apunte enlazado', type: 'warning' });
+                }
               }
-            }
-          }}
-          onFocus={() => {
-            window.__lastActiveMathBlockId = null;
-          }}
-          onMouseDown={(e) => {
-            if (!e.target.closest('.math-block-container')) {
+            }}
+            onFocus={() => {
               window.__lastActiveMathBlockId = null;
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.ctrlKey || e.metaKey) {
-              const key = e.key.toLowerCase();
-              if (key === 'm') {
-                e.preventDefault();
-                handleToggleMathToolbar();
-              } else if (e.altKey && key === 'c') {
-                e.preventDefault();
-                handleInsertCodeBlock();
-              } else if (e.altKey && key === 'u') {
-                e.preventDefault();
-                handleInsertUML();
-              } else if (key === 'l' && !e.altKey && !e.shiftKey) {
-                e.preventDefault();
-                const sel = window.getSelection();
-                let selectedText = '';
-                let savedRange = null;
-                if (sel && sel.rangeCount > 0) {
-                  savedRange = sel.getRangeAt(0).cloneRange();
-                  selectedText = sel.toString().trim();
+            }}
+            onMouseDown={(e) => {
+              if (!e.target.closest('.math-block-container')) {
+                window.__lastActiveMathBlockId = null;
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) {
+                const key = e.key.toLowerCase();
+                if (key === 'm') {
+                  e.preventDefault();
+                  handleToggleMathToolbar();
+                } else if (e.altKey && key === 'c') {
+                  e.preventDefault();
+                  handleInsertCodeBlock();
+                } else if (e.altKey && key === 'u') {
+                  e.preventDefault();
+                  handleInsertUML();
+                } else if (key === 'l' && !e.altKey && !e.shiftKey) {
+                  e.preventDefault();
+                  const sel = window.getSelection();
+                  let selectedText = '';
+                  let savedRange = null;
+                  if (sel && sel.rangeCount > 0) {
+                    savedRange = sel.getRangeAt(0).cloneRange();
+                    selectedText = sel.toString().trim();
+                  }
+                  openModal('linkNote', { selectedText, savedRange });
+                } else if (key === '`') {
+                  e.preventDefault();
+                  const selection = window.getSelection();
+                  if (selection && selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const selectedText = range.toString();
+                    if (selectedText) {
+                      const codeNode = document.createElement('code');
+                      codeNode.style.cssText =
+                        'background: var(--bg-tertiary); padding: 0.15rem 0.35rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85em; color: var(--accent-blue);';
+                      codeNode.textContent = selectedText;
+                      range.deleteContents();
+                      range.insertNode(codeNode);
+                    }
+                  }
+                } else if (key === 't' && !e.altKey && !e.shiftKey) {
+                  e.preventDefault();
+                  if (document.queryCommandState('justifyCenter')) {
+                    document.execCommand('justifyLeft', false, null);
+                  } else {
+                    document.execCommand('justifyCenter', false, null);
+                  }
                 }
-                openModal('linkNote', { selectedText, savedRange });
-              } else if (key === '`') {
+              }
+
+              if (e.key === 'Tab') {
                 e.preventDefault();
                 const selection = window.getSelection();
                 if (selection && selection.rangeCount > 0) {
                   const range = selection.getRangeAt(0);
-                  const selectedText = range.toString();
-                  if (selectedText) {
-                    const codeNode = document.createElement('code');
-                    codeNode.style.cssText =
-                      'background: var(--bg-tertiary); padding: 0.15rem 0.35rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85em; color: var(--accent-blue);';
-                    codeNode.textContent = selectedText;
-                    range.deleteContents();
-                    range.insertNode(codeNode);
-                  }
-                }
-              } else if (key === 't' && !e.altKey && !e.shiftKey) {
-                e.preventDefault();
-                if (document.queryCommandState('justifyCenter')) {
-                  document.execCommand('justifyLeft', false, null);
-                } else {
-                  document.execCommand('justifyCenter', false, null);
-                }
-              }
-            }
+                  const node = range.commonAncestorContainer;
+                  const elem = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+                  const isInsideList = elem && elem.closest('li, ul, ol');
 
-            if (e.key === 'Tab') {
-              e.preventDefault();
-              const selection = window.getSelection();
-              if (selection && selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const node = range.commonAncestorContainer;
-                const elem = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-                const isInsideList = elem && elem.closest('li, ul, ol');
-
-                if (isInsideList) {
-                  if (e.shiftKey) {
-                    document.execCommand('outdent', false, null);
+                  if (isInsideList) {
+                    if (e.shiftKey) {
+                      document.execCommand('outdent', false, null);
+                    } else {
+                      document.execCommand('indent', false, null);
+                    }
                   } else {
-                    document.execCommand('indent', false, null);
-                  }
-                } else {
-                  if (e.shiftKey) {
-                    document.execCommand('outdent', false, null);
-                  } else {
-                    document.execCommand('insertText', false, '    ');
+                    if (e.shiftKey) {
+                      document.execCommand('outdent', false, null);
+                    } else {
+                      document.execCommand('insertText', false, '    ');
+                    }
                   }
                 }
+                return;
               }
-              return;
-            }
 
-            const handled = handleMarkdownKeyDown(e, {
-              editorRoot: contentRef.current,
-              onInsertCodeBlock: handleInsertCodeBlock,
-              onOpenLinkModal: () => {
-                const sel = window.getSelection();
-                let selectedText = '';
-                let savedRange = null;
-                if (sel && sel.rangeCount > 0) {
-                  savedRange = sel.getRangeAt(0).cloneRange();
-                  selectedText = sel.toString().trim();
+              const handled = handleMarkdownKeyDown(e, {
+                editorRoot: contentRef.current,
+                onInsertCodeBlock: handleInsertCodeBlock,
+                onOpenLinkModal: () => {
+                  const sel = window.getSelection();
+                  let selectedText = '';
+                  let savedRange = null;
+                  if (sel && sel.rangeCount > 0) {
+                    savedRange = sel.getRangeAt(0).cloneRange();
+                    selectedText = sel.toString().trim();
+                  }
+                  openModal('linkNote', { selectedText, savedRange });
+                },
+                onNotifyChange: () => {
+                  handleContentInput();
                 }
-                openModal('linkNote', { selectedText, savedRange });
-              },
-              onNotifyChange: () => {
-                handleContentInput();
-              }
-            });
-            if (handled) return;
-          }}
-          data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
-        />
+              });
+              if (handled) return;
+            }}
+            data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
+          />
+        </div>
       </div>
 
       {tableMenu && (
@@ -1118,6 +1235,67 @@ export const NoteEditor = () => {
             <Clock size={13} />
             <span>{stats.readingTime} min lectura</span>
           </div>
+        </div>
+
+        <div className={styles.zoomControls}>
+          <button
+            type="button"
+            className={styles.zoomBtn}
+            onClick={() => {
+              setEditorZoom((prev) => Math.max(50, prev - 10));
+              triggerZoomPill();
+            }}
+            title="Alejar (Ctrl + -)"
+            aria-label="Alejar zoom"
+            disabled={editorZoom <= 50}
+          >
+            <Minus size={13} />
+          </button>
+
+          <div className={styles.zoomSliderContainer}>
+            <input
+              type="range"
+              min="50"
+              max="200"
+              step="5"
+              value={editorZoom}
+              onChange={(e) => {
+                setEditorZoom(Number(e.target.value));
+                triggerZoomPill();
+              }}
+              className={styles.zoomSlider}
+              aria-label="Nivel de zoom"
+              title={`Nivel de zoom: ${editorZoom}%`}
+            />
+            <div className={styles.zoomSliderTick100} title="100%" />
+          </div>
+
+          <button
+            type="button"
+            className={styles.zoomBtn}
+            onClick={() => {
+              setEditorZoom((prev) => Math.min(200, prev + 10));
+              triggerZoomPill();
+            }}
+            title="Acercar (Ctrl + +)"
+            aria-label="Acercar zoom"
+            disabled={editorZoom >= 200}
+          >
+            <Plus size={13} />
+          </button>
+
+          <button
+            type="button"
+            className={styles.zoomValueBtn}
+            onClick={() => {
+              resetEditorZoom();
+              triggerZoomPill();
+            }}
+            title="Restablecer al 100% (Ctrl + 0)"
+            aria-label="Restablecer zoom al 100%"
+          >
+            {editorZoom}%
+          </button>
         </div>
       </div>
     </div>

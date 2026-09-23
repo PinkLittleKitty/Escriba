@@ -92,4 +92,26 @@ describe('useUIStore', () => {
       expect(useUIStore.getState().isConsoleOpen).toBe(false);
     });
   });
+
+  describe('Editor Zoom state', () => {
+    it('sets and clamps editor zoom between 50 and 200', () => {
+      useUIStore.getState().setEditorZoom(120);
+      expect(useUIStore.getState().editorZoom).toBe(120);
+
+      useUIStore.getState().setEditorZoom(280);
+      expect(useUIStore.getState().editorZoom).toBe(200);
+
+      useUIStore.getState().setEditorZoom(20);
+      expect(useUIStore.getState().editorZoom).toBe(50);
+
+      useUIStore.getState().setEditorZoom((prev) => prev + 25);
+      expect(useUIStore.getState().editorZoom).toBe(75);
+    });
+
+    it('resets editor zoom to 100', () => {
+      useUIStore.getState().setEditorZoom(160);
+      useUIStore.getState().resetEditorZoom();
+      expect(useUIStore.getState().editorZoom).toBe(100);
+    });
+  });
 });

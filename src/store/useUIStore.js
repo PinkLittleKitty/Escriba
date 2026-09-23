@@ -12,6 +12,25 @@ export const useUIStore = create((set, get) => ({
   toasts: [],
   settingsTab: 'general',
   isConsoleOpen: false,
+  editorZoom: (() => {
+    const saved = localStorage.getItem('editor_zoom');
+    const parsed = saved ? parseInt(saved, 10) : 100;
+    return !isNaN(parsed) && parsed >= 50 && parsed <= 200 ? parsed : 100;
+  })(),
+
+  setEditorZoom: (zoom) => {
+    set((state) => {
+      const val = typeof zoom === 'function' ? zoom(state.editorZoom) : zoom;
+      const clamped = Math.min(200, Math.max(50, Math.round(val)));
+      localStorage.setItem('editor_zoom', String(clamped));
+      return { editorZoom: clamped };
+    });
+  },
+
+  resetEditorZoom: () => {
+    localStorage.setItem('editor_zoom', '100');
+    set({ editorZoom: 100 });
+  },
 
   toggleConsole: () => set((state) => ({ isConsoleOpen: !state.isConsoleOpen })),
   openConsole: () => set({ isConsoleOpen: true }),

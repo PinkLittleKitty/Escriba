@@ -461,6 +461,149 @@ export const useNotesStore = create((set, get) => ({
     return true;
   },
 
+  reorderOrMoveNote: ({ noteId, targetSubjectId, targetNoteId = null, position = 'inside' }) => {
+    if (!noteId) return false;
+    const state = get();
+
+    let sourceSub = null;
+    let sourceNote = null;
+    for (const sub of state.subjects) {
+      const found = (sub.notes || []).find((n) => n.id === noteId);
+      if (found) {
+        sourceSub = sub;
+        sourceNote = found;
+        break;
+      }
+    }
+
+    if (!sourceNote || !sourceSub) return false;
+
+    const resolvedTargetSubjectId = targetSubjectId || sourceSub.id;
+    const targetSub = state.subjects.find((s) => s.id === resolvedTargetSubjectId);
+    if (!targetSub) return false;
+
+    if (targetNoteId && targetNoteId === noteId) return false;
+
+    const descendantIds = getNoteDescendantIds(sourceSub.notes, noteId);
+    if (targetNoteId && descendantIds.includes(targetNoteId)) {
+      return false;
+    }
+
+    let targetNote = null;
+    if (targetNoteId) {
+      targetNote = (targetSub.notes || []).find((n) => n.id === targetNoteId);
+      if (!targetNote) return false;
+    }
+
+    let newParentId = null;
+    if (position === 'inside' && targetNote) {
+      newParentId = targetNote.id;
+    } else if ((position === 'before' || position === 'after') && targetNote) {
+      newParentId = targetNote.parentId || null;
+    } else {
+      newParentId = null;
+    }
+
+    if (newParentId === noteId || descendantIds.includes(newParentId)) {
+      return false;
+    }
+
+    const allIdsToMove = [noteId, ...descendantIds];
+    const nowIso = new Date().toISOString();
+
+    const clusterNotes = sourceSub.notes
+      .filter((n) => allIdsToMove.includes(n.id))
+      .map((n) => ({
+        ...n,
+        subjectId: resolvedTargetSubjectId,
+        parentId: n.id === noteId ? newParentId : n.parentId,
+        updatedAt: nowIso
+      }));
+
+    set((state) => {
+      if (sourceSub.id === resolvedTargetSubjectId) {
+        const remainingNotes = sourceSub.notes.filter((n) => !allIdsToMove.includes(n.id));
+        let insertIndex = remainingNotes.length;
+
+        if (targetNote) {
+          const tIdx = remainingNotes.findIndex((n) => n.id === targetNoteId);
+          if (tIdx !== -1) {
+            if (position === 'before') {
+              insertIndex = tIdx;
+            } else {
+              insertIndex = tIdx + 1;
+            }
+          }
+        }
+
+        const newNotes = [
+          ...remainingNotes.slice(0, insertIndex),
+          ...clusterNotes,
+          ...remainingNotes.slice(insertIndex)
+        ];
+
+        return {
+          subjects: state.subjects.map((sub) => {
+            if (sub.id === sourceSub.id) {
+              return {
+                ...sub,
+                lastModified: nowIso,
+                notes: newNotes
+              };
+            }
+            return sub;
+          }),
+          activeSubjectId: resolvedTargetSubjectId
+        };
+      } else {
+        const newSourceNotes = sourceSub.notes.filter((n) => !allIdsToMove.includes(n.id));
+        const remainingTargetNotes = targetSub.notes || [];
+        let insertIndex = remainingTargetNotes.length;
+
+        if (targetNote) {
+          const tIdx = remainingTargetNotes.findIndex((n) => n.id === targetNoteId);
+          if (tIdx !== -1) {
+            if (position === 'before') {
+              insertIndex = tIdx;
+            } else {
+              insertIndex = tIdx + 1;
+            }
+          }
+        }
+
+        const newTargetNotes = [
+          ...remainingTargetNotes.slice(0, insertIndex),
+          ...clusterNotes,
+          ...remainingTargetNotes.slice(insertIndex)
+        ];
+
+        return {
+          subjects: state.subjects.map((sub) => {
+            if (sub.id === sourceSub.id) {
+              return {
+                ...sub,
+                lastModified: nowIso,
+                notes: newSourceNotes
+              };
+            }
+            if (sub.id === resolvedTargetSubjectId) {
+              return {
+                ...sub,
+                lastModified: nowIso,
+                notes: newTargetNotes
+              };
+            }
+            return sub;
+          }),
+          activeSubjectId: resolvedTargetSubjectId
+        };
+      }
+    });
+
+    get()._persist();
+    return true;
+  },
+
   duplicateNote: (noteId) => {
     const state = get();
     for (const sub of state.subjects) {

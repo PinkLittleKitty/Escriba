@@ -196,5 +196,109 @@ describe('Sub-notes (Hierarchical Notes)', () => {
       expect(restoredChild).toBeDefined();
       expect(restoredChild.parentId).toBeNull();
     });
+
+    describe('reorderOrMoveNote (Drag and Drop)', () => {
+      it('reorders notes with position = before and position = after', () => {
+        const sub = useNotesStore.getState().addSubject({ name: 'Matemática' });
+        const n1 = useNotesStore.getState().addNote(sub.id, { title: 'Nota 1' });
+        const n2 = useNotesStore.getState().addNote(sub.id, { title: 'Nota 2' });
+        const n3 = useNotesStore.getState().addNote(sub.id, { title: 'Nota 3' });
+
+        const res1 = useNotesStore.getState().reorderOrMoveNote({
+          noteId: n1.id,
+          targetSubjectId: sub.id,
+          targetNoteId: n3.id,
+          position: 'before'
+        });
+        expect(res1).toBe(true);
+
+        let notes = useNotesStore.getState().subjects.find((s) => s.id === sub.id).notes;
+        expect(notes.map((n) => n.id)).toEqual([n1.id, n3.id, n2.id]);
+
+        const res2 = useNotesStore.getState().reorderOrMoveNote({
+          noteId: n1.id,
+          targetSubjectId: sub.id,
+          targetNoteId: n2.id,
+          position: 'after'
+        });
+        expect(res2).toBe(true);
+
+        notes = useNotesStore.getState().subjects.find((s) => s.id === sub.id).notes;
+        expect(notes.map((n) => n.id)).toEqual([n3.id, n2.id, n1.id]);
+      });
+
+      it('nests a note inside another note (position = inside)', () => {
+        const sub = useNotesStore.getState().addSubject({ name: 'Física' });
+        const parent = useNotesStore.getState().addNote(sub.id, { title: 'Mecánica' });
+        const child = useNotesStore.getState().addNote(sub.id, { title: 'Cinemática' });
+
+        const res = useNotesStore.getState().reorderOrMoveNote({
+          noteId: child.id,
+          targetSubjectId: sub.id,
+          targetNoteId: parent.id,
+          position: 'inside'
+        });
+        expect(res).toBe(true);
+
+        const notes = useNotesStore.getState().subjects.find((s) => s.id === sub.id).notes;
+        const movedChild = notes.find((n) => n.id === child.id);
+        expect(movedChild.parentId).toBe(parent.id);
+      });
+
+      it('prevents cyclic nesting when dragging a parent inside its descendant', () => {
+        const sub = useNotesStore.getState().addSubject({ name: 'Biología' });
+        const grandpa = useNotesStore.getState().addNote(sub.id, { title: 'Célula' });
+        const parent = useNotesStore.getState().addSubNote(grandpa.id, { title: 'Núcleo' });
+        const child = useNotesStore.getState().addSubNote(parent.id, { title: 'ADN' });
+
+        const res = useNotesStore.getState().reorderOrMoveNote({
+          noteId: grandpa.id,
+          targetSubjectId: sub.id,
+          targetNoteId: child.id,
+          position: 'inside'
+        });
+        expect(res).toBe(false);
+
+        const res2 = useNotesStore.getState().reorderOrMoveNote({
+          noteId: grandpa.id,
+          targetSubjectId: sub.id,
+          targetNoteId: child.id,
+          position: 'before'
+        });
+        expect(res2).toBe(false);
+      });
+
+      it('moves a note and its descendants to another subject and nests under a target note', () => {
+        const sub1 = useNotesStore.getState().addSubject({ name: 'Origen' });
+        const sub2 = useNotesStore.getState().addSubject({ name: 'Destino' });
+
+        const root1 = useNotesStore.getState().addNote(sub1.id, { title: 'Tema A' });
+        const child1 = useNotesStore.getState().addSubNote(root1.id, { title: 'Sub-tema A1' });
+
+        const targetInSub2 = useNotesStore.getState().addNote(sub2.id, { title: 'Tema B' });
+
+        const res = useNotesStore.getState().reorderOrMoveNote({
+          noteId: root1.id,
+          targetSubjectId: sub2.id,
+          targetNoteId: targetInSub2.id,
+          position: 'inside'
+        });
+        expect(res).toBe(true);
+
+        const notes1 = useNotesStore.getState().subjects.find((s) => s.id === sub1.id).notes;
+        const notes2 = useNotesStore.getState().subjects.find((s) => s.id === sub2.id).notes;
+
+        expect(notes1.length).toBe(0);
+        expect(notes2.length).toBe(3);
+
+        const movedRoot = notes2.find((n) => n.id === root1.id);
+        const movedChild = notes2.find((n) => n.id === child1.id);
+
+        expect(movedRoot.subjectId).toBe(sub2.id);
+        expect(movedRoot.parentId).toBe(targetInSub2.id);
+        expect(movedChild.subjectId).toBe(sub2.id);
+        expect(movedChild.parentId).toBe(root1.id);
+      });
+    });
   });
 });

@@ -30,9 +30,7 @@ import {
   Paintbrush,
   Minus,
   Plus,
-  ChevronRight,
-  CornerDownRight,
-  FolderPlus
+  ChevronRight
 } from 'lucide-react';
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
@@ -65,7 +63,6 @@ export const NoteEditor = () => {
   const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
   const deleteNote = useNotesStore((state) => state.deleteNote);
   const setActiveNote = useNotesStore((state) => state.setActiveNote);
-  const addSubNote = useNotesStore((state) => state.addSubNote);
   const setActiveView = useNotesStore((state) => state.setActiveView);
 
   const addToast = useUIStore((state) => state.addToast);
@@ -113,7 +110,6 @@ export const NoteEditor = () => {
   }
 
   const ancestors = (currentSubject && currentNote) ? getNoteAncestors(currentSubject.notes, currentNote.id) : [];
-  const subNotes = (currentSubject && currentNote) ? (currentSubject.notes || []).filter((n) => n.parentId === currentNote.id) : [];
 
   const [title, setTitle] = useState('');
   const [stats, setStats] = useState({ words: 0, chars: 0, readingTime: 0 });
@@ -949,15 +945,6 @@ export const NoteEditor = () => {
         <div className={styles.metaActions}>
           <button
             type="button"
-            className="btn-icon"
-            onClick={() => addSubNote(currentNote.id, { title: 'Nuevo Sub-apunte' })}
-            title="Crear sub-apunte"
-          >
-            <FolderPlus size={18} />
-          </button>
-
-          <button
-            type="button"
             className={`btn-icon ${currentNote.favorite ? 'active' : ''}`}
             onClick={() => toggleFavorite(currentNote.id)}
             title={currentNote.favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
@@ -1183,51 +1170,6 @@ export const NoteEditor = () => {
             }}
             data-placeholder="Empezá a escribir tus apuntes acá... Usá Tab para sangría, Ctrl+B para negrita, Ctrl+I para cursiva."
           />
-
-          <div className={styles.subNotesSection}>
-            <div className={styles.subNotesHeader}>
-              <div className={styles.subNotesTitleBox}>
-                <CornerDownRight size={16} className={styles.subNotesIcon} />
-                <h3 className={styles.subNotesHeading}>
-                  Sub-apuntes {subNotes.length > 0 ? `(${subNotes.length})` : ''}
-                </h3>
-              </div>
-              <button
-                type="button"
-                className={styles.addSubNoteBtn}
-                onClick={() => addSubNote(currentNote.id, { title: 'Nuevo Sub-apunte' })}
-              >
-                <Plus size={14} />
-                <span>Nuevo sub-apunte</span>
-              </button>
-            </div>
-
-            {subNotes.length > 0 ? (
-              <div className={styles.subNotesGrid}>
-                {subNotes.map((subNote) => (
-                  <div
-                    key={subNote.id}
-                    className={styles.subNoteCard}
-                    onClick={() => setActiveNote(currentSubject.id, subNote.id)}
-                  >
-                    <div className={styles.subNoteCardTop}>
-                      <FileText size={14} className={styles.subNoteDocIcon} />
-                      <span className={styles.subNoteCardTitle}>
-                        {subNote.title || 'Sub-apunte sin título'}
-                      </span>
-                    </div>
-                    <span className={styles.subNoteCardDate}>
-                      {formatDate(subNote.updatedAt || subNote.createdAt)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className={styles.subNotesEmpty}>
-                <span>Este apunte no tiene sub-apuntes aún. Podés crear uno usando el botón superior.</span>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

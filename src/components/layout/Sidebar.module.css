@@ -1000,7 +1000,7 @@
 }
 
 .subNotesGroup:hover {
-  border-left-color: rgba(59, 130, 246, 0.4);
+  border-left-color: rgba(var(--accent-blue-rgb), 0.4);
 }
 
 .noteExpandBtn {
@@ -1074,7 +1074,7 @@
 }
 
 .subNotesGroup:hover>.noteTreeNode>.noteItem.isSubNote::before {
-  background: rgba(59, 130, 246, 0.4);
+  background: rgba(var(--accent-blue-rgb), 0.4);
 }
 
 .noteItem.hasSnippet {
@@ -1124,6 +1124,65 @@
   background: var(--accent-blue-bg);
   color: var(--accent-blue);
   font-weight: 500;
+}
+
+.noteItem.isDragging {
+  opacity: 0.35;
+  transform: scale(0.98);
+}
+
+.noteItem.dropTargetBefore {
+  position: relative;
+}
+
+.noteItem.dropTargetBefore::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background-color: var(--accent-blue);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(var(--accent-blue-rgb), 0.7);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.noteItem.dropTargetAfter {
+  position: relative;
+}
+
+.noteItem.dropTargetAfter::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background-color: var(--accent-blue);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(var(--accent-blue-rgb), 0.7);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.noteItem.dropTargetInside {
+  background: var(--accent-blue-bg) !important;
+  outline: 1.5px dashed var(--accent-blue);
+  outline-offset: -1px;
+}
+
+.subjectHeader.subjectDropTarget {
+  background: var(--accent-blue-bg) !important;
+  outline: 1.5px dashed var(--accent-blue);
+  outline-offset: -2px;
+}
+
+.notesList.subjectDropTarget {
+  background: rgba(var(--accent-blue-rgb), 0.08);
+  border-radius: var(--radius-sm);
+  outline: 1.5px dashed var(--accent-blue);
 }
 
 .noteTitleWrapper {

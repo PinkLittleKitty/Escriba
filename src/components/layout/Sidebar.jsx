@@ -24,7 +24,7 @@ import {
 import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
-import { formatDate, getSearchSnippet, buildNoteTree, getNoteAncestors } from '../../utils/helpers.js';
+import { formatDate, getSearchSnippet, buildNoteTree, getNoteAncestors, getNoteDescendantIds } from '../../utils/helpers.js';
 import { printSubjectFolder } from '../../utils/exportHelpers.js';
 import { SubjectBadge } from '../common/SubjectBadge.jsx';
 import { getSubjectInitials } from '../../utils/subjectIcons.js';
@@ -42,6 +42,7 @@ export const Sidebar = () => {
   const addNote = useNotesStore((state) => state.addNote);
   const addSubNote = useNotesStore((state) => state.addSubNote);
   const moveNoteToParent = useNotesStore((state) => state.moveNoteToParent);
+  const reorderOrMoveNote = useNotesStore((state) => state.reorderOrMoveNote);
   const duplicateNote = useNotesStore((state) => state.duplicateNote);
   const deleteNote = useNotesStore((state) => state.deleteNote);
   const toggleFavoriteNote = useNotesStore((state) => state.toggleFavoriteNote);
@@ -92,6 +93,10 @@ export const Sidebar = () => {
   const [showViewPicker, setShowViewPicker] = useState(false);
   const [viewPickerPos, setViewPickerPos] = useState({ top: 0, left: 0 });
   const viewPickerHoverTimer = useRef(null);
+
+  const [draggedNote, setDraggedNote] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);
+  const dragExpandTimer = useRef(null);
 
   const [expandedNotes, setExpandedNotes] = useState(() => {
     try {
@@ -388,6 +393,216 @@ export const Sidebar = () => {
     }
   };
 
+  const handleNoteDragStart = (e, note, subjectId) => {
+    e.stopPropagation();
+    const payload = { noteId: note.id, subjectId };
+    setDraggedNote(payload);
+    e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('application/json', JSON.stringify(payload));
+      e.dataTransfer.setData('text/plain', note.id);
+    } catch (err) {}
+  };
+
+  const handleNoteDragEnd = () => {
+    if (dragExpandTimer.current) {
+      clearTimeout(dragExpandTimer.current);
+    }
+    setDraggedNote(null);
+    setDropTarget(null);
+  };
+
+  const handleNoteDragOver = (e, targetNote, targetSubjectId) => {
+    if (!draggedNote) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggedNote.noteId === targetNote.id) {
+      if (dropTarget) setDropTarget(null);
+      e.dataTransfer.dropEffect = 'none';
+      return;
+    }
+
+    const sourceSubject = subjects.find((s) => s.id === draggedNote.subjectId);
+    if (sourceSubject) {
+      const descendants = getNoteDescendantIds(sourceSubject.notes, draggedNote.noteId);
+      if (descendants.includes(targetNote.id)) {
+        if (dropTarget) setDropTarget(null);
+        e.dataTransfer.dropEffect = 'none';
+        return;
+      }
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = (e.clientY - rect.top) / rect.height;
+
+    let position = 'inside';
+    if (relY < 0.25) {
+      position = 'before';
+    } else if (relY > 0.75) {
+      position = 'after';
+    }
+
+    e.dataTransfer.dropEffect = 'move';
+    if (
+      !dropTarget ||
+      dropTarget.type !== 'note' ||
+      dropTarget.id !== targetNote.id ||
+      dropTarget.position !== position
+    ) {
+      setDropTarget({
+        type: 'note',
+        id: targetNote.id,
+        subjectId: targetSubjectId,
+        position
+      });
+
+      if (position === 'inside' && targetNote.children?.length > 0 && expandedNotes[targetNote.id] === false) {
+        if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
+        dragExpandTimer.current = setTimeout(() => {
+          setExpandedNotes((prev) => ({ ...prev, [targetNote.id]: true }));
+        }, 600);
+      }
+    }
+  };
+
+  const handleNoteDragLeave = (e, noteId) => {
+    e.stopPropagation();
+    if (dropTarget?.type === 'note' && dropTarget?.id === noteId) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (
+        e.clientX <= rect.left ||
+        e.clientX >= rect.right ||
+        e.clientY <= rect.top ||
+        e.clientY >= rect.bottom
+      ) {
+        if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
+        setDropTarget(null);
+      }
+    }
+  };
+
+  const handleNoteDrop = (e, targetNote, targetSubjectId) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
+
+    if (!draggedNote || !dropTarget || dropTarget.type !== 'note') {
+      setDraggedNote(null);
+      setDropTarget(null);
+      return;
+    }
+
+    const { noteId: sourceNoteId, subjectId: sourceSubjectId } = draggedNote;
+    const position = dropTarget.position;
+
+    if (sourceNoteId === targetNote.id) {
+      setDraggedNote(null);
+      setDropTarget(null);
+      return;
+    }
+
+    const success = reorderOrMoveNote({
+      noteId: sourceNoteId,
+      targetSubjectId,
+      targetNoteId: targetNote.id,
+      position
+    });
+
+    if (success) {
+      if (position === 'inside') {
+        setExpandedNotes((prev) => ({ ...prev, [targetNote.id]: true }));
+      }
+      setExpandedSubjects((prev) => ({ ...prev, [targetSubjectId]: true }));
+      addToast({
+        message: position === 'inside'
+          ? `Apunte anidado dentro de "${targetNote.title || 'Apunte'}"`
+          : 'Apunte reordenado',
+        type: 'success',
+        duration: 2000
+      });
+    }
+
+    setDraggedNote(null);
+    setDropTarget(null);
+  };
+
+  const handleSubjectDragOver = (e, subjectId) => {
+    if (!draggedNote) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    if (!dropTarget || dropTarget.type !== 'subject' || dropTarget.id !== subjectId) {
+      setDropTarget({
+        type: 'subject',
+        id: subjectId
+      });
+
+      if (!expandedSubjects[subjectId]) {
+        if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
+        dragExpandTimer.current = setTimeout(() => {
+          setExpandedSubjects((prev) => ({ ...prev, [subjectId]: true }));
+        }, 600);
+      }
+    }
+  };
+
+  const handleSubjectDragLeave = (e, subjectId) => {
+    e.stopPropagation();
+    if (dropTarget?.type === 'subject' && dropTarget?.id === subjectId) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (
+        e.clientX <= rect.left ||
+        e.clientX >= rect.right ||
+        e.clientY <= rect.top ||
+        e.clientY >= rect.bottom
+      ) {
+        if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
+        setDropTarget(null);
+      }
+    }
+  };
+
+  const handleSubjectDrop = (e, subjectId) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
+
+    if (!draggedNote) {
+      setDraggedNote(null);
+      setDropTarget(null);
+      return;
+    }
+
+    const { noteId: sourceNoteId, subjectId: sourceSubjectId } = draggedNote;
+    const targetSub = subjects.find((s) => s.id === subjectId);
+    const targetSubName = targetSub ? targetSub.name : 'la materia';
+
+    const success = reorderOrMoveNote({
+      noteId: sourceNoteId,
+      targetSubjectId: subjectId,
+      targetNoteId: null,
+      position: 'root'
+    });
+
+    if (success) {
+      setExpandedSubjects((prev) => ({ ...prev, [subjectId]: true }));
+      addToast({
+        message: sourceSubjectId !== subjectId
+          ? `Apunte movido a "${targetSubName}"`
+          : 'Apunte convertido en principal',
+        type: 'success',
+        duration: 2000
+      });
+    }
+
+    setDraggedNote(null);
+    setDropTarget(null);
+  };
+
   const renderNoteTree = (notesTree, subjectId, depth = 0) => {
     return notesTree.map((note) => {
       const isActiveNote = activeNoteId === note.id;
@@ -396,10 +611,28 @@ export const Sidebar = () => {
       const isExpanded = expandedNotes[note.id] !== false || !!searchQuery;
       const isSubNote = depth > 0;
 
+      const isBeingDragged = draggedNote?.noteId === note.id;
+      const isDropTarget = dropTarget?.type === 'note' && dropTarget?.id === note.id;
+      const dropPosition = isDropTarget ? dropTarget.position : null;
+
+      const dropTargetClass = dropPosition === 'before'
+        ? styles.dropTargetBefore
+        : dropPosition === 'after'
+          ? styles.dropTargetAfter
+          : dropPosition === 'inside'
+            ? styles.dropTargetInside
+            : '';
+
       return (
         <div key={note.id} className={styles.noteTreeNode}>
           <div
-            className={`${styles.noteItem} ${isActiveNote ? styles.active : ''} ${isSubNote ? styles.isSubNote : ''} ${snippet ? styles.hasSnippet : ''}`}
+            className={`${styles.noteItem} ${isActiveNote ? styles.active : ''} ${isSubNote ? styles.isSubNote : ''} ${snippet ? styles.hasSnippet : ''} ${isBeingDragged ? styles.isDragging : ''} ${dropTargetClass}`}
+            draggable={!snippet}
+            onDragStart={(e) => handleNoteDragStart(e, note, subjectId)}
+            onDragEnd={handleNoteDragEnd}
+            onDragOver={(e) => handleNoteDragOver(e, note, subjectId)}
+            onDragLeave={(e) => handleNoteDragLeave(e, note.id)}
+            onDrop={(e) => handleNoteDrop(e, note, subjectId)}
             onClick={() => handleSelectNote(subjectId, note.id)}
           >
             <div className={styles.noteMainRow}>
@@ -427,7 +660,7 @@ export const Sidebar = () => {
                 <Star size={12} className={styles.favoriteStar} fill="currentColor" />
               )}
 
-              <div className={styles.noteActions}>
+              <div className={styles.noteActions} onDragStart={(e) => e.stopPropagation()} draggable={false}>
                 <button
                   type="button"
                   className={styles.noteActionBtn}
@@ -548,12 +781,16 @@ export const Sidebar = () => {
       ? Boolean(expandedSubjects[subject.id]) || Boolean(searchQuery)
       : (expandSubjectsSetting || activeSubjectId === subject.id || Boolean(searchQuery));
     const isActiveSubject = activeSubjectId === subject.id;
+    const isSubjectDropTarget = dropTarget?.type === 'subject' && dropTarget?.id === subject.id;
 
     return (
       <div key={subject.id} className={`${styles.subjectGroup} ${isArchived ? styles.archivedGroup : ''}`}>
         <div
-          className={`${styles.subjectHeader} ${isActiveSubject ? styles.active : ''}`}
+          className={`${styles.subjectHeader} ${isActiveSubject ? styles.active : ''} ${isSubjectDropTarget ? styles.subjectDropTarget : ''}`}
           onClick={(e) => handleSubjectHeaderClick(subject, e)}
+          onDragOver={(e) => handleSubjectDragOver(e, subject.id)}
+          onDragLeave={(e) => handleSubjectDragLeave(e, subject.id)}
+          onDrop={(e) => handleSubjectDrop(e, subject.id)}
         >
           <span
             className={`${styles.chevron} ${isExpanded ? styles.expanded : ''}`}
@@ -674,7 +911,12 @@ export const Sidebar = () => {
         </div>
 
         {isExpanded && (
-          <div className={styles.notesList}>
+          <div
+            className={`${styles.notesList} ${isSubjectDropTarget ? styles.subjectDropTarget : ''}`}
+            onDragOver={(e) => handleSubjectDragOver(e, subject.id)}
+            onDragLeave={(e) => handleSubjectDragLeave(e, subject.id)}
+            onDrop={(e) => handleSubjectDrop(e, subject.id)}
+          >
             {subject.notes.length === 0 ? (
               <div className={styles.emptyNoteItem}>
                 <span>Sin apuntes</span>

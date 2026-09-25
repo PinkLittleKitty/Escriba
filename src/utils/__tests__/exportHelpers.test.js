@@ -1,14 +1,61 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   generateShareUrl,
   createGitHubGist,
   loadRemoteSharedContent,
-  printSubjectFolder
+  printSubjectFolder,
+  getShareBaseUrl,
+  APP_WEB_URL
 } from '../exportHelpers.js';
 
 describe('exportHelpers', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  describe('getShareBaseUrl', () => {
+    const originalLocation = window.location;
+
+    afterEach(() => {
+      delete window.location;
+      window.location = originalLocation;
+    });
+
+    it('returns APP_WEB_URL when in Electron or AppImage (file: protocol)', () => {
+      delete window.location;
+      window.location = {
+        protocol: 'file:',
+        origin: 'file://',
+        pathname: '/tmp/.mount_EscribSUhJMo/resources/app.asar/dist/index.html',
+        hostname: ''
+      };
+
+      expect(getShareBaseUrl()).toBe(APP_WEB_URL);
+    });
+
+    it('returns APP_WEB_URL when running on localhost', () => {
+      delete window.location;
+      window.location = {
+        protocol: 'http:',
+        origin: 'http://localhost:5173',
+        pathname: '/',
+        hostname: 'localhost'
+      };
+
+      expect(getShareBaseUrl()).toBe(APP_WEB_URL);
+    });
+
+    it('returns origin + pathname when on public web URL', () => {
+      delete window.location;
+      window.location = {
+        protocol: 'https:',
+        origin: 'https://www.justneki.com',
+        pathname: '/Escriba/',
+        hostname: 'www.justneki.com'
+      };
+
+      expect(getShareBaseUrl()).toBe('https://www.justneki.com/Escriba/');
+    });
   });
 
   describe('createGitHubGist', () => {
@@ -30,6 +77,86 @@ describe('exportHelpers', () => {
           })
         })
       );
+    });
+  });
+
+  describe('generateShareUrl for notes', () => {
+    it('creates Gist and returns gist url when token is available', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'gist-note-123' })
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const note = {
+        id: 'note-1790285585297-id9nguw',
+        title: 'Mi Apunte',
+        content: '<p>Contenido del apunte</p>',
+        tags: ['uni']
+      };
+
+      const result = await generateShareUrl(note, {
+        type: 'note',
+        subjectName: 'Biología',
+        github: {
+          isAuthenticated: true,
+          username: 'PinkLittleKitty',
+          repoName: 'escriba-notes',
+          token: 'ghp_secret_token'
+        },
+        useGist: true
+      });
+
+      expect(result.method).toBe('gist');
+      expect(result.url).toContain('?gist=gist-note-123');
+      expect(result.url).not.toContain('file:///tmp');
+    });
+
+    it('falls back to github_repo if Gist creation fails and repo is configured', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: async () => 'Forbidden'
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const note = {
+        id: 'note-1790285585297-id9nguw',
+        title: 'Mi Apunte',
+        content: '<p>Contenido</p>'
+      };
+
+      const result = await generateShareUrl(note, {
+        type: 'note',
+        subjectName: 'Biología',
+        github: {
+          isAuthenticated: true,
+          username: 'PinkLittleKitty',
+          repoName: 'escriba-notes',
+          token: 'token-without-gist'
+        },
+        useGist: true
+      });
+
+      expect(result.method).toBe('github_repo');
+      expect(result.url).toContain('?github=PinkLittleKitty/escriba-notes/data/notes/note-1790285585297-id9nguw.json');
+    });
+
+    it('falls back to direct link when not authenticated', async () => {
+      const note = {
+        id: 'note-1',
+        title: 'Nota local',
+        content: '<p>Hola</p>'
+      };
+
+      const result = await generateShareUrl(note, {
+        type: 'note',
+        subjectName: 'General',
+        github: null
+      });
+
+      expect(result.method).toBe('direct');
+      expect(result.url).toContain('?share=');
     });
   });
 

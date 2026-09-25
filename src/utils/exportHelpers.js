@@ -2,9 +2,33 @@ import { formatDate } from './helpers.js';
 
 export const APP_WEB_URL = 'https://www.justneki.com/Escriba/';
 
+export const isElectronEnv = () => {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    window.location.protocol === 'file:' ||
+    !window.location.hostname ||
+    window.process?.type ||
+    (typeof window.require === 'function' && Boolean(window.require('electron'))) ||
+    (typeof window.require === 'function' && Boolean(window.require('fs'))) ||
+    navigator.userAgent.toLowerCase().includes(' electron/') ||
+    navigator.userAgent.toLowerCase().includes('electron')
+  );
+};
+
 export const getShareBaseUrl = () => {
   if (typeof window === 'undefined') return APP_WEB_URL;
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || navigator.userAgent.toLowerCase().includes(' electron/')) {
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+
+  if (
+    (protocol && protocol !== 'http:' && protocol !== 'https:') ||
+    !hostname ||
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname.endsWith('.local') ||
+    isElectronEnv()
+  ) {
     return APP_WEB_URL;
   }
   return `${window.location.origin}${window.location.pathname}`;
@@ -720,6 +744,12 @@ export const base64ToUtf8 = (base64) => {
 
 export const createGitHubGist = async (data, isSubject = false, token = null) => {
   try {
+    const authToken = (token || localStorage.getItem('github_access_token') || localStorage.getItem('github_token') || '').trim();
+    if (!authToken) {
+      console.warn('Cannot create GitHub Gist: No GitHub authentication token available.');
+      return null;
+    }
+
     const filename = isSubject ? 'escriba-subject.json' : 'escriba-note.json';
     const description = isSubject
       ? `Escriba Subject: ${data.name || data.subjectName || 'Materia'}`
@@ -737,12 +767,9 @@ export const createGitHubGist = async (data, isSubject = false, token = null) =>
 
     const headers = {
       'Content-Type': 'application/json',
-      Accept: 'application/vnd.github.v3+json'
+      Accept: 'application/vnd.github.v3+json',
+      Authorization: `Bearer ${authToken}`
     };
-    const authToken = token || localStorage.getItem('github_access_token') || localStorage.getItem('github_token');
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
-    }
 
     const response = await fetch('https://api.github.com/gists', {
       method: 'POST',
@@ -764,7 +791,7 @@ export const createGitHubGist = async (data, isSubject = false, token = null) =>
 };
 
 export const generateShareUrl = async (noteOrSubject, options = {}) => {
-  const { type = 'note', subjectName = '', github = null, useGist = false } = options;
+  const { type = 'note', subjectName = '', github = null, useGist = false, preferRepo = false } = options;
   const baseUrl = getShareBaseUrl();
   const token = github?.token || localStorage.getItem('github_access_token') || localStorage.getItem('github_token');
 
@@ -813,7 +840,7 @@ export const generateShareUrl = async (noteOrSubject, options = {}) => {
     d: note.updatedAt || note.createdAt
   };
 
-  if (github && github.isAuthenticated && github.username && github.repoName) {
+  if (preferRepo && github && github.isAuthenticated && github.username && github.repoName) {
     const relativePath = `data/notes/${note.id}.json`;
     const repoUrl = `${baseUrl}?github=${github.username}/${github.repoName}/${relativePath}`;
     if (repoUrl.length < 2000) {
@@ -821,9 +848,17 @@ export const generateShareUrl = async (noteOrSubject, options = {}) => {
     }
   }
 
-  if (useGist) {
-    const gistUrl = await createGitHubGist(shareData, false, github?.token);
+  if (token || useGist) {
+    const gistUrl = await createGitHubGist(shareData, false, token);
     if (gistUrl) return { url: gistUrl, method: 'gist' };
+  }
+
+  if (github && github.isAuthenticated && github.username && github.repoName) {
+    const relativePath = `data/notes/${note.id}.json`;
+    const repoUrl = `${baseUrl}?github=${github.username}/${github.repoName}/${relativePath}`;
+    if (repoUrl.length < 2000) {
+      return { url: repoUrl, method: 'github_repo' };
+    }
   }
 
   const base64Data = utf8ToBase64(JSON.stringify(shareData));

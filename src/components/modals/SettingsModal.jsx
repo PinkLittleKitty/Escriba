@@ -908,7 +908,7 @@ export const SettingsModal = () => {
                                 style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
                               >
                                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                  O conectate manualmente con un Personal Access Token:
+                                  O conectate manualmente con un Personal Access Token (requiere permisos <code>repo</code> y <code>gist</code>):
                                 </p>
                                 <input
                                   type="password"

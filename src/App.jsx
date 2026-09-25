@@ -105,7 +105,57 @@ export const App = () => {
           });
 
           if (newSub && Array.isArray(subData.notes)) {
+            const idMap = new Map();
+            const rootNotes = [];
+            const childNotes = [];
+            const noteIds = new Set(subData.notes.map((n) => n.id));
+
             subData.notes.forEach((n) => {
+              if (n.parentId && noteIds.has(n.parentId)) {
+                childNotes.push(n);
+              } else {
+                rootNotes.push(n);
+              }
+            });
+
+            rootNotes.forEach((n) => {
+              const added = store.addNote(newSub.id, {
+                title: n.title || n.t || 'Sin título',
+                content: n.content || n.c || '',
+                tags: n.tags || ['compartido'],
+                favorite: !!(n.favorite || n.fav)
+              });
+              if (added && n.id) {
+                idMap.set(n.id, added.id);
+              }
+            });
+
+            let remaining = [...childNotes];
+            let progress = true;
+            while (remaining.length > 0 && progress) {
+              progress = false;
+              const nextRemaining = [];
+              for (const n of remaining) {
+                if (idMap.has(n.parentId)) {
+                  const targetParentId = idMap.get(n.parentId);
+                  const added = store.addSubNote(targetParentId, {
+                    title: n.title || n.t || 'Sin título',
+                    content: n.content || n.c || '',
+                    tags: n.tags || ['compartido'],
+                    favorite: !!(n.favorite || n.fav)
+                  });
+                  if (added && n.id) {
+                    idMap.set(n.id, added.id);
+                  }
+                  progress = true;
+                } else {
+                  nextRemaining.push(n);
+                }
+              }
+              remaining = nextRemaining;
+            }
+
+            remaining.forEach((n) => {
               store.addNote(newSub.id, {
                 title: n.title || n.t || 'Sin título',
                 content: n.content || n.c || '',
@@ -135,12 +185,66 @@ export const App = () => {
             const newNote = store.addNote(targetSub.id, {
               title: `${noteTitle} (Importado)`,
               content: noteContent,
-              tags: noteData.tags || ['compartido']
+              tags: noteData.tags || ['compartido'],
+              favorite: !!(noteData.favorite || noteData.fav)
             });
 
             if (newNote) {
+              const subNotes = Array.isArray(noteData.subNotes)
+                ? noteData.subNotes
+                : (Array.isArray(noteData.notes) ? noteData.notes : []);
+
+              if (subNotes.length > 0) {
+                const idMap = new Map();
+                if (noteData.id) {
+                  idMap.set(noteData.id, newNote.id);
+                }
+
+                let remaining = [...subNotes];
+                let progress = true;
+                while (remaining.length > 0 && progress) {
+                  progress = false;
+                  const nextRemaining = [];
+                  for (const child of remaining) {
+                    const parentId = child.parentId;
+                    const resolvedParentId =
+                      (parentId && idMap.get(parentId)) ||
+                      (parentId === noteData.id ? newNote.id : null);
+
+                    if (resolvedParentId || !parentId) {
+                      const targetParentId = resolvedParentId || newNote.id;
+                      const addedSub = store.addSubNote(targetParentId, {
+                        title: child.title || child.t || 'Sub-apunte sin título',
+                        content: child.content || child.c || '',
+                        tags: child.tags || ['compartido'],
+                        favorite: !!(child.favorite || child.fav)
+                      });
+                      if (addedSub && child.id) {
+                        idMap.set(child.id, addedSub.id);
+                      }
+                      progress = true;
+                    } else {
+                      nextRemaining.push(child);
+                    }
+                  }
+                  remaining = nextRemaining;
+                }
+
+                remaining.forEach((child) => {
+                  store.addSubNote(newNote.id, {
+                    title: child.title || child.t || 'Sub-apunte sin título',
+                    content: child.content || child.c || '',
+                    tags: child.tags || ['compartido'],
+                    favorite: !!(child.favorite || child.fav)
+                  });
+                });
+              }
+
               store.setActiveNote(targetSub.id, newNote.id);
-              addToast({ message: `Apunte "${noteTitle}" importado desde ${result.source}`, type: 'success' });
+              const countText = subNotes.length > 0
+                ? ` y ${subNotes.length} sub-apunte${subNotes.length === 1 ? '' : 's'}`
+                : '';
+              addToast({ message: `Apunte "${noteTitle}"${countText} importado desde ${result.source}`, type: 'success' });
               window.history.replaceState(null, '', window.location.pathname);
             }
           }

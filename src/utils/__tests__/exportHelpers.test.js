@@ -142,6 +142,74 @@ describe('exportHelpers', () => {
       expect(result.url).toContain('?github=PinkLittleKitty/escriba-notes/data/notes/note-1790285585297-id9nguw.json');
     });
 
+    it('packages sub-notes in Gist payload when note has sub-notes', async () => {
+      let sentBody = null;
+      const mockFetch = vi.fn().mockImplementation(async (url, opts) => {
+        sentBody = JSON.parse(opts.body);
+        return {
+          ok: true,
+          json: async () => ({ id: 'gist-with-subnotes' })
+        };
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const parentNote = {
+        id: 'n-parent',
+        title: 'Células',
+        content: '<p>Teoría Celular</p>'
+      };
+      const subNotes = [
+        { id: 'n-child-1', title: 'Mitocondria', content: '<p>Energía</p>', parentId: 'n-parent' },
+        { id: 'n-child-2', title: 'Núcleo', content: '<p>ADN</p>', parentId: 'n-parent' }
+      ];
+
+      const result = await generateShareUrl(parentNote, {
+        type: 'note',
+        subjectName: 'Biología',
+        subNotes,
+        github: {
+          isAuthenticated: true,
+          username: 'PinkLittleKitty',
+          token: 'token-xyz'
+        },
+        useGist: true
+      });
+
+      expect(result.method).toBe('gist');
+      expect(result.url).toContain('?gist=gist-with-subnotes');
+      expect(sentBody.description).toContain('sub-apuntes');
+      const fileContent = JSON.parse(sentBody.files['escriba-note.json'].content);
+      expect(fileContent.subNotes).toHaveLength(2);
+      expect(fileContent.subNotes[0].title).toBe('Mitocondria');
+      expect(fileContent.subNotes[1].title).toBe('Núcleo');
+    });
+
+    it('packages sub-notes in direct base64 share link when unauthenticated', async () => {
+      const parentNote = {
+        id: 'n-parent',
+        title: 'Algoritmos',
+        content: '<p>Grafos</p>'
+      };
+      const subNotes = [
+        { id: 'n-sub', title: 'Dijkstra', content: '<p>Shortest Path</p>', parentId: 'n-parent' }
+      ];
+
+      const result = await generateShareUrl(parentNote, {
+        type: 'note',
+        subjectName: 'Informática',
+        subNotes,
+        github: null
+      });
+
+      expect(result.method).toBe('direct');
+      expect(result.url).toContain('?share=');
+      const base64Data = new URL(result.url).searchParams.get('share');
+      const { base64ToUtf8 } = await import('../exportHelpers.js');
+      const parsed = JSON.parse(base64ToUtf8(decodeURIComponent(base64Data)));
+      expect(parsed.subNotes).toHaveLength(1);
+      expect(parsed.subNotes[0].title).toBe('Dijkstra');
+    });
+
     it('falls back to direct link when not authenticated', async () => {
       const note = {
         id: 'note-1',

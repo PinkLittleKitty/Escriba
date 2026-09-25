@@ -32,6 +32,7 @@ import {
   generateShareUrl,
   printSubjectFolder
 } from '../../utils/exportHelpers.js';
+import { getNoteDescendantIds } from '../../utils/helpers.js';
 import styles from './Modal.module.css';
 
 export const ExportModal = () => {
@@ -69,6 +70,13 @@ export const ExportModal = () => {
     }
   }
 
+  const descendantNotes = React.useMemo(() => {
+    if (isSubjectMode || !currentNote || !currentSubject?.notes) return [];
+    const descendantIds = getNoteDescendantIds(currentSubject.notes, currentNote.id);
+    if (!descendantIds || descendantIds.length === 0) return [];
+    return currentSubject.notes.filter((n) => descendantIds.includes(n.id));
+  }, [isSubjectMode, currentNote, currentSubject]);
+
   const titleText = isSubjectMode ? currentSubject?.name || 'Materia' : currentNote?.title || 'Apunte sin título';
   const noteContent = currentNote?.content || '';
   const subjectName = currentSubject?.name || 'Materia';
@@ -88,6 +96,7 @@ export const ExportModal = () => {
       const res = await generateShareUrl(target, {
         type: isSubjectMode ? 'subject' : 'note',
         subjectName,
+        subNotes: descendantNotes,
         github: { isAuthenticated, username, repoName, token },
         useGist: true
       });
@@ -117,7 +126,7 @@ export const ExportModal = () => {
 
     buildShareLink();
     return () => { cancelled = true; };
-  }, [currentNote, currentSubject, isSubjectMode, isAuthenticated, username, repoName, token, subjectName]);
+  }, [currentNote, currentSubject, isSubjectMode, isAuthenticated, username, repoName, token, subjectName, descendantNotes]);
 
   const copyWithFeedback = (key, text, toastMsg) => {
     navigator.clipboard.writeText(text);
@@ -183,7 +192,13 @@ export const ExportModal = () => {
       });
       downloadFile(`${sanitizeFilename(titleText)}_apuntes.md`, fullMd, 'text/markdown;charset=utf-8');
     } else {
-      const md = convertHtmlToMarkdown(noteContent, titleText, subjectName);
+      let md = convertHtmlToMarkdown(noteContent, titleText, subjectName);
+      if (descendantNotes.length > 0) {
+        md += '\n\n---\n\n## Sub-apuntes\n\n';
+        descendantNotes.forEach((child) => {
+          md += `### ${child.title || 'Sub-apunte'}\n\n${convertHtmlToMarkdown(child.content, child.title, subjectName)}\n\n`;
+        });
+      }
       downloadFile(`${sanitizeFilename(titleText)}.md`, md, 'text/markdown;charset=utf-8');
     }
     addToast({ message: 'Archivo Markdown descargado', type: 'success' });
@@ -198,7 +213,14 @@ export const ExportModal = () => {
       const htmlDoc = convertHtmlToStandaloneHtml(combinedHTML, titleText, 'Materia', theme);
       downloadFile(`${sanitizeFilename(titleText)}.html`, htmlDoc, 'text/html;charset=utf-8');
     } else {
-      const htmlDoc = convertHtmlToStandaloneHtml(noteContent, titleText, subjectName, theme);
+      let combinedHTML = `<h2>${titleText}</h2><div>${noteContent}</div>`;
+      if (descendantNotes.length > 0) {
+        combinedHTML += `<hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-color, #e2e8f0);" /><h3>Sub-apuntes</h3>`;
+        descendantNotes.forEach((child) => {
+          combinedHTML += `<div style="margin-bottom: 2rem; padding-left: 1rem; border-left: 3px solid var(--accent-blue, #3b82f6);"><h4>${child.title || 'Sub-apunte'}</h4><div>${child.content}</div></div>`;
+        });
+      }
+      const htmlDoc = convertHtmlToStandaloneHtml(combinedHTML, titleText, subjectName, theme);
       downloadFile(`${sanitizeFilename(titleText)}.html`, htmlDoc, 'text/html;charset=utf-8');
     }
     addToast({ message: 'Página HTML descargada', type: 'success' });
@@ -213,14 +235,27 @@ export const ExportModal = () => {
       });
       downloadFile(`${sanitizeFilename(titleText)}.txt`, text, 'text/plain;charset=utf-8');
     } else {
-      const text = convertHtmlToPlainText(noteContent, titleText, subjectName);
+      let text = convertHtmlToPlainText(noteContent, titleText, subjectName);
+      if (descendantNotes.length > 0) {
+        text += '\n\n------------------------------\nSUB-APUNTES:\n------------------------------\n\n';
+        descendantNotes.forEach((child) => {
+          text += `>>> ${child.title || 'Sub-apunte'}\n${convertHtmlToPlainText(child.content, child.title, subjectName)}\n\n`;
+        });
+      }
       downloadFile(`${sanitizeFilename(titleText)}.txt`, text, 'text/plain;charset=utf-8');
     }
     addToast({ message: 'Documento de texto descargado', type: 'success' });
   };
 
   const handleExportJSON = () => {
-    const data = isSubjectMode ? currentSubject : { ...currentNote, subjectName, exportDate: new Date().toISOString() };
+    const data = isSubjectMode
+      ? currentSubject
+      : {
+          ...currentNote,
+          subjectName,
+          subNotes: descendantNotes,
+          exportDate: new Date().toISOString()
+        };
     downloadFile(`${sanitizeFilename(titleText)}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
     addToast({ message: 'Archivo JSON descargado', type: 'success' });
   };
@@ -282,7 +317,11 @@ export const ExportModal = () => {
               {titleText}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {isSubjectMode ? `${currentSubject?.notes?.length || 0} apuntes contenidos` : subjectName}
+              {isSubjectMode
+                ? `${currentSubject?.notes?.length || 0} apuntes contenidos`
+                : descendantNotes.length > 0
+                ? `${subjectName} · Incluye ${descendantNotes.length} sub-apunte${descendantNotes.length === 1 ? '' : 's'}`
+                : subjectName}
             </div>
           </div>
           <span style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', background: 'var(--accent-blue-subtle, rgba(59, 130, 246, 0.15))', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>

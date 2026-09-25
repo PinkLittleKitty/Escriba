@@ -301,4 +301,88 @@ describe('Sub-notes (Hierarchical Notes)', () => {
       });
     });
   });
+
+  describe('Importing Shared Notes with Sub-Notes', () => {
+    it('successfully imports a note tree mapping old parent IDs to newly created IDs', () => {
+      const store = useNotesStore.getState();
+      const targetSub = store.addSubject({ name: 'Química' });
+
+      const remoteNoteData = {
+        id: 'remote-parent-1',
+        title: 'Átomos',
+        content: '<p>Modelos Atómicos</p>',
+        subNotes: [
+          {
+            id: 'remote-child-1',
+            title: 'Protones y Neutrones',
+            content: '<p>Núcleo</p>',
+            parentId: 'remote-parent-1'
+          },
+          {
+            id: 'remote-child-2',
+            title: 'Electrones',
+            content: '<p>Orbitales</p>',
+            parentId: 'remote-parent-1'
+          },
+          {
+            id: 'remote-grandchild-1',
+            title: 'Quarks',
+            content: '<p>Up y Down</p>',
+            parentId: 'remote-child-1'
+          }
+        ]
+      };
+
+      const newRoot = store.addNote(targetSub.id, {
+        title: `${remoteNoteData.title} (Importado)`,
+        content: remoteNoteData.content
+      });
+
+      const idMap = new Map();
+      idMap.set(remoteNoteData.id, newRoot.id);
+
+      let remaining = [...remoteNoteData.subNotes];
+      let progress = true;
+      while (remaining.length > 0 && progress) {
+        progress = false;
+        const nextRemaining = [];
+        for (const child of remaining) {
+          const parentId = child.parentId;
+          const resolvedParentId =
+            (parentId && idMap.get(parentId)) ||
+            (parentId === remoteNoteData.id ? newRoot.id : null);
+
+          if (resolvedParentId || !parentId) {
+            const targetParentId = resolvedParentId || newRoot.id;
+            const addedSub = store.addSubNote(targetParentId, {
+              title: child.title,
+              content: child.content
+            });
+            if (addedSub && child.id) {
+              idMap.set(child.id, addedSub.id);
+            }
+            progress = true;
+          } else {
+            nextRemaining.push(child);
+          }
+        }
+        remaining = nextRemaining;
+      }
+
+      const notes = useNotesStore.getState().subjects.find((s) => s.id === targetSub.id).notes;
+      expect(notes.length).toBe(4);
+
+      const rootNote = notes.find((n) => n.id === newRoot.id);
+      expect(rootNote.title).toBe('Átomos (Importado)');
+
+      const protones = notes.find((n) => n.title === 'Protones y Neutrones');
+      expect(protones.parentId).toBe(rootNote.id);
+
+      const quarks = notes.find((n) => n.title === 'Quarks');
+      expect(quarks.parentId).toBe(protones.id);
+
+      const electrones = notes.find((n) => n.title === 'Electrones');
+      expect(electrones.parentId).toBe(rootNote.id);
+    });
+  });
 });

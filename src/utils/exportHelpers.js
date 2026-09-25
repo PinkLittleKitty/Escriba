@@ -751,9 +751,10 @@ export const createGitHubGist = async (data, isSubject = false, token = null) =>
     }
 
     const filename = isSubject ? 'escriba-subject.json' : 'escriba-note.json';
+    const subCount = Array.isArray(data.subNotes) && data.subNotes.length > 0 ? ` (+${data.subNotes.length} sub-apuntes)` : '';
     const description = isSubject
       ? `Escriba Subject: ${data.name || data.subjectName || 'Materia'}`
-      : `Escriba Note: ${data.title || data.t || 'Apunte'}`;
+      : `Escriba Note: ${data.title || data.t || 'Apunte'}${subCount}`;
 
     const gistData = {
       description,
@@ -829,18 +830,38 @@ export const generateShareUrl = async (noteOrSubject, options = {}) => {
   }
 
   const note = noteOrSubject;
+  const childNotes = options.subNotes || note.subNotes || [];
+  const hasSubNotes = Array.isArray(childNotes) && childNotes.length > 0;
+
   const shareData = {
     app: 'escriba',
     version: '1.0',
     type: 'note',
+    id: note.id,
     t: note.title,
+    title: note.title,
     c: note.content,
+    content: note.content,
     s: subjectName || 'General',
     tags: note.tags || [],
-    d: note.updatedAt || note.createdAt
+    d: note.updatedAt || note.createdAt,
+    favorite: !!note.favorite
   };
 
-  if (preferRepo && github && github.isAuthenticated && github.username && github.repoName) {
+  if (hasSubNotes) {
+    shareData.subNotes = childNotes.map((sn) => ({
+      id: sn.id,
+      title: sn.title || sn.t || 'Sub-apunte sin título',
+      content: sn.content || sn.c || '',
+      parentId: sn.parentId || note.id,
+      tags: sn.tags || [],
+      favorite: !!sn.favorite,
+      createdAt: sn.createdAt,
+      updatedAt: sn.updatedAt
+    }));
+  }
+
+  if (preferRepo && !hasSubNotes && github && github.isAuthenticated && github.username && github.repoName) {
     const relativePath = `data/notes/${note.id}.json`;
     const repoUrl = `${baseUrl}?github=${github.username}/${github.repoName}/${relativePath}`;
     if (repoUrl.length < 2000) {
@@ -853,7 +874,7 @@ export const generateShareUrl = async (noteOrSubject, options = {}) => {
     if (gistUrl) return { url: gistUrl, method: 'gist' };
   }
 
-  if (github && github.isAuthenticated && github.username && github.repoName) {
+  if (!hasSubNotes && github && github.isAuthenticated && github.username && github.repoName) {
     const relativePath = `data/notes/${note.id}.json`;
     const repoUrl = `${baseUrl}?github=${github.username}/${github.repoName}/${relativePath}`;
     if (repoUrl.length < 2000) {

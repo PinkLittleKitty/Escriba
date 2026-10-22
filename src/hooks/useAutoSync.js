@@ -39,10 +39,10 @@ export const useAutoSync = () => {
 
     const unsubscribeNotes = useNotesStore.subscribe((state, prevState) => {
       if (state.subjects === prevState.subjects) return;
-      const { isAuthenticated, syncStatus } = useGitHubStore.getState();
+      const { isAuthenticated, syncStatus, isApplyingRemote } = useGitHubStore.getState();
       const { autoSync } = useSettingsStore.getState();
 
-      if (!isAuthenticated || autoSync === false || syncStatus === 'syncing') return;
+      if (!isAuthenticated || autoSync === false || syncStatus === 'syncing' || isApplyingRemote) return;
 
       if (autoSyncDebounceTimer.current) {
         clearTimeout(autoSyncDebounceTimer.current);
@@ -51,7 +51,7 @@ export const useAutoSync = () => {
       autoSyncDebounceTimer.current = setTimeout(() => {
         const currentGh = useGitHubStore.getState();
         const currentSettings = useSettingsStore.getState();
-        if (currentGh.isAuthenticated && currentSettings.autoSync !== false && currentGh.syncStatus !== 'syncing') {
+        if (currentGh.isAuthenticated && currentSettings.autoSync !== false && currentGh.syncStatus !== 'syncing' && !currentGh.isApplyingRemote) {
           currentGh.sync();
         }
       }, 5000);

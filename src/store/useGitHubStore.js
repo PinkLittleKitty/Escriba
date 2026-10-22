@@ -14,6 +14,7 @@ export const useGitHubStore = create((set, get) => ({
     '',
   isAuthenticated: !!localStorage.getItem('github_access_token'),
   syncStatus: 'idle',
+  isApplyingRemote: false,
   isOAuthLoading: false,
   lastSyncTime: localStorage.getItem('last_sync_time') || null,
   lastError: null,
@@ -185,12 +186,17 @@ export const useGitHubStore = create((set, get) => ({
           subjects: [...new Set([...formattedDeleted.subjects, ...remoteDeletedSubjects])]
         };
 
-        useNotesStore.getState().setAllData({
-          subjects: mergedData.subjects,
-          events: mergedData.events || [],
-          deletedItems: Array.isArray(rawDeleted) ? rawDeleted : [],
-          deletionTombstones: updatedTombstones
-        });
+        set({ isApplyingRemote: true });
+        try {
+          useNotesStore.getState().setAllData({
+            subjects: mergedData.subjects,
+            events: mergedData.events || [],
+            deletedItems: Array.isArray(rawDeleted) ? rawDeleted : [],
+            deletionTombstones: updatedTombstones
+          });
+        } finally {
+          set({ isApplyingRemote: false });
+        }
         if (mergedData.settings) {
           useSettingsStore.getState().updateSettings(mergedData.settings);
         }
@@ -267,11 +273,16 @@ export const useGitHubStore = create((set, get) => ({
     try {
       const remoteData = await gitHubService.getRemoteData(token, username, repoName);
       if (remoteData && Array.isArray(remoteData.subjects)) {
-        useNotesStore.getState().setAllData({
-          subjects: remoteData.subjects,
-          events: remoteData.events || [],
-          deletedItems: []
-        });
+        set({ isApplyingRemote: true });
+        try {
+          useNotesStore.getState().setAllData({
+            subjects: remoteData.subjects,
+            events: remoteData.events || [],
+            deletedItems: []
+          });
+        } finally {
+          set({ isApplyingRemote: false });
+        }
         if (remoteData.settings) {
           useSettingsStore.getState().updateSettings(remoteData.settings);
         }

@@ -97,10 +97,11 @@ export class GitHubService {
     }
   }
 
-  async getFile(token, username, repoName, path) {
+  async getFile(token, username, repoName, path, ref = null) {
     const t = Date.now();
+    const refParam = ref ? `&ref=${encodeURIComponent(ref)}` : '';
     const response = await this.fetchWithTimeout(
-      `${this.baseUrl}/repos/${username}/${repoName}/contents/${path}?_t=${t}`,
+      `${this.baseUrl}/repos/${username}/${repoName}/contents/${path}?_t=${t}${refParam}`,
       {},
       token
     );
@@ -109,8 +110,26 @@ export class GitHubService {
     if (!response.ok) throw new Error(`Error obteniendo ${path}: ${response.status}`);
 
     const data = await response.json();
+    let content = this.decodeContent(data.content);
+
+    if (!content && data.sha) {
+      try {
+        const blobRes = await this.fetchWithTimeout(
+          `${this.baseUrl}/repos/${username}/${repoName}/git/blobs/${data.sha}`,
+          {},
+          token
+        );
+        if (blobRes.ok) {
+          const blobData = await blobRes.json();
+          content = this.decodeContent(blobData.content);
+        }
+      } catch (err) {
+        console.warn(`[gitHubService] Fallback to blob API for ${path} failed:`, err);
+      }
+    }
+
     return {
-      content: this.decodeContent(data.content),
+      content,
       sha: data.sha
     };
   }
@@ -299,6 +318,14 @@ export class GitHubService {
   async getRemoteData(token, username, repoName) {
     const data = { subjects: [], events: [], settings: {}, deletedItems: { notes: [], subjects: [] } };
 
+    let headSha = null;
+    try {
+      const head = await this.getBranchHead(token, username, repoName);
+      headSha = head?.sha || null;
+    } catch (err) {
+      console.warn('[gitHubService] Could not resolve head sha, using default ref:', err.message);
+    }
+
     const files = [
       { path: 'data/subjects.json', key: 'subjects', default: [] },
       { path: 'data/events.json', key: 'events', default: [] },
@@ -308,7 +335,7 @@ export class GitHubService {
 
     for (const file of files) {
       try {
-        const result = await this.getFile(token, username, repoName, file.path);
+        const result = await this.getFile(token, username, repoName, file.path, headSha);
         if (result && result.content) {
           data[file.key] = JSON.parse(result.content);
         }
@@ -317,6 +344,44 @@ export class GitHubService {
           throw e;
         }
         data[file.key] = file.default;
+      }
+    }
+
+    if (headSha && Array.isArray(data.subjects) && data.subjects.length > 0) {
+      try {
+        const baseTreeSha = await this.getTreeSha(token, username, repoName, headSha);
+        const existingPaths = await this.getTreeFiles(token, username, repoName, baseTreeSha);
+        const knownNoteIds = new Set();
+        data.subjects.forEach((s) => (s.notes || []).forEach((n) => knownNoteIds.add(n.id)));
+        const deletedNoteIds = new Set(data.deletedItems?.notes || []);
+
+        const missingNotePaths = [...existingPaths].filter((p) => {
+          if (!p.startsWith('data/notes/') || !p.endsWith('.json')) return false;
+          const noteId = p.replace('data/notes/', '').replace('.json', '');
+          return !knownNoteIds.has(noteId) && !deletedNoteIds.has(noteId);
+        });
+
+        if (missingNotePaths.length > 0) {
+          console.info(`[gitHubService] Reconciling ${missingNotePaths.length} notes from git tree...`);
+          for (const notePath of missingNotePaths) {
+            const noteFile = await this.getFile(token, username, repoName, notePath, headSha);
+            if (noteFile && noteFile.content) {
+              try {
+                const noteObj = JSON.parse(noteFile.content);
+                const targetSub = data.subjects.find((s) => s.id === noteObj.subjectId) || data.subjects[0];
+                if (targetSub) {
+                  if (!Array.isArray(targetSub.notes)) targetSub.notes = [];
+                  targetSub.notes.push(noteObj);
+                  knownNoteIds.add(noteObj.id);
+                }
+              } catch (e) {
+                console.warn(`[gitHubService] Error parsing orphan note ${notePath}:`, e);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[gitHubService] Error inspecting remote git tree for orphan notes:', err);
       }
     }
 
@@ -522,8 +587,12 @@ export class GitHubService {
         const existingPaths = await this.getTreeFiles(token, username, repoName, baseTreeSha);
         const treeFiles = [...files];
 
+        const deletedNoteSet = new Set(
+          (this.normalizeDeletedItems(data.deletedItems)?.notes || []).map((id) => `data/notes/${id}.json`)
+        );
+
         for (const existingPath of existingPaths) {
-          if (existingPath.startsWith('data/notes/') && !currentNoteFilePaths.has(existingPath)) {
+          if (existingPath.startsWith('data/notes/') && deletedNoteSet.has(existingPath)) {
             treeFiles.push({
               path: existingPath,
               sha: null

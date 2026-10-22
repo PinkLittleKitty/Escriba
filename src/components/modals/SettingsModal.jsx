@@ -229,7 +229,8 @@ export const SettingsModal = () => {
     forcePush,
     forcePull,
     syncStatus,
-    lastSyncTime
+    lastSyncTime,
+    lastError
   } = useGitHubStore();
 
   const closeModal = useUIStore((state) => state.closeModal);
@@ -800,6 +801,25 @@ export const SettingsModal = () => {
                             <span>Forzar Push</span>
                           </button>
                         </div>
+
+                        {lastError && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              padding: '0.65rem 0.85rem',
+                              background: 'var(--accent-red-bg, rgba(239, 68, 68, 0.12))',
+                              border: '1px solid var(--accent-red, #ef4444)',
+                              borderRadius: 'var(--radius-md)',
+                              color: 'var(--accent-red, #ef4444)',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+                            <span>Error en última sincronización: {lastError}</span>
+                          </div>
+                        )}
 
                         {lastSyncTime && (
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>

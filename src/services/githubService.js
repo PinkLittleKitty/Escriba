@@ -313,6 +313,9 @@ export class GitHubService {
           data[file.key] = JSON.parse(result.content);
         }
       } catch (e) {
+        if (e.message && (e.message.includes('401') || e.message.includes('403') || e.message.includes('demasiado tiempo'))) {
+          throw e;
+        }
         data[file.key] = file.default;
       }
     }

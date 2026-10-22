@@ -24,7 +24,7 @@ export const Header = () => {
   const toggleSidebarCollapse = useUIStore((state) => state.toggleSidebarCollapse);
   const addToast = useUIStore((state) => state.addToast);
 
-  const { isAuthenticated, syncStatus, sync, forcePush, forcePull } = useGitHubStore();
+  const { isAuthenticated, syncStatus, sync, forcePush, forcePull, lastError, lastSyncTime } = useGitHubStore();
 
   const handleForcePull = async () => {
     if (window.confirm('¿Descargar datos de GitHub? Esto reemplazará tus notas locales con los datos remotos de GitHub.')) {
@@ -108,7 +108,13 @@ export const Header = () => {
                 }`}
               onClick={() => sync()}
               disabled={syncStatus === 'syncing'}
-              title="Sincronización con GitHub"
+              title={
+                syncStatus === 'error' && lastError
+                  ? `Error al sincronizar: ${lastError}. Clic para reintentar.`
+                  : lastSyncTime
+                    ? `Última sincronización: ${new Date(lastSyncTime).toLocaleTimeString('es-AR')}. Clic para sincronizar.`
+                    : 'Sincronizar con GitHub'
+              }
             >
               <RefreshCw size={14} className={syncStatus === 'syncing' ? styles.spin : ''} />
               <span>

@@ -140,8 +140,9 @@ export const useGitHubStore = create((set, get) => ({
   },
 
   sync: async () => {
-    const { token, username, repoName, isAuthenticated } = get();
+    const { token, username, repoName, isAuthenticated, syncStatus } = get();
     if (!isAuthenticated || !token) return { success: false, error: 'No autenticado' };
+    if (syncStatus === 'syncing') return { success: false, error: 'Sincronización en curso' };
 
     set({ syncStatus: 'syncing', lastError: null });
 
@@ -219,8 +220,9 @@ export const useGitHubStore = create((set, get) => ({
   },
 
   forcePush: async () => {
-    const { token, username, repoName, isAuthenticated } = get();
+    const { token, username, repoName, isAuthenticated, syncStatus } = get();
     if (!isAuthenticated || !token) return { success: false, error: 'No autenticado' };
+    if (syncStatus === 'syncing') return { success: false, error: 'Sincronización en curso' };
 
     set({ syncStatus: 'syncing', lastError: null });
     try {
@@ -257,8 +259,9 @@ export const useGitHubStore = create((set, get) => ({
   },
 
   forcePull: async () => {
-    const { token, username, repoName, isAuthenticated } = get();
+    const { token, username, repoName, isAuthenticated, syncStatus } = get();
     if (!isAuthenticated || !token) return { success: false, error: 'No autenticado' };
+    if (syncStatus === 'syncing') return { success: false, error: 'Sincronización en curso' };
 
     set({ syncStatus: 'syncing', lastError: null });
     try {

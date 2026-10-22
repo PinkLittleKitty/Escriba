@@ -27,8 +27,11 @@ import { useNotesStore } from './store/useNotesStore.js';
 import { useUIStore } from './store/useUIStore.js';
 import { useSettingsStore } from './store/useSettingsStore.js';
 import { useGitHubStore } from './store/useGitHubStore.js';
+import { useAutoSync } from './hooks/useAutoSync.js';
 
 export const App = () => {
+  useAutoSync();
+
   const activeView = useNotesStore((state) => state.activeView);
   const subjects = useNotesStore((state) => state.subjects);
   const activeModal = useUIStore((state) => state.activeModal);

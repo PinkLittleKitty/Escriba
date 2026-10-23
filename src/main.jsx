@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App.jsx';
 import { ErrorBoundary } from './components/common/ErrorBoundary.jsx';
+import './services/pwaService.js';
 
 import './styles/tokens.css';
 import './styles/themes.css';

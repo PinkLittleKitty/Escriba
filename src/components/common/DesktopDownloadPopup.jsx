@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Monitor, Download, X } from 'lucide-react';
 import { storageService } from '../../services/storageService.js';
+import { usePWA } from '../../services/pwaService.js';
 import styles from './DesktopDownloadPopup.module.css';
 
 const DOWNLOAD_URL = 'https://github.com/PinkLittleKitty/Escriba/releases/tag/nightly';
@@ -9,18 +10,19 @@ const STORAGE_KEY = 'escriba_desktop_dismissed';
 export const DesktopDownloadPopup = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const { canInstall, isInstalled, installApp } = usePWA();
 
   useEffect(() => {
     const isElectron = storageService.isElectron();
     const isDismissed = localStorage.getItem(STORAGE_KEY) === 'true';
 
-    if (!isElectron && !isDismissed) {
+    if (!isElectron && !isInstalled && !isDismissed) {
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [isInstalled]);
 
   const handleDismiss = () => {
     setIsClosing(true);
@@ -72,16 +74,30 @@ export const DesktopDownloadPopup = () => {
         >
           Más tarde
         </button>
-        <a
-          href={DOWNLOAD_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.downloadBtn}
-          onClick={handleDownload}
-        >
-          <Download size={14} />
-          <span>Descargar</span>
-        </a>
+        {canInstall ? (
+          <button
+            type="button"
+            className={styles.downloadBtn}
+            onClick={async () => {
+              const res = await installApp();
+              if (res.success) handleDismiss();
+            }}
+          >
+            <Download size={14} />
+            <span>Instalar App</span>
+          </button>
+        ) : (
+          <a
+            href={DOWNLOAD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.downloadBtn}
+            onClick={handleDownload}
+          >
+            <Download size={14} />
+            <span>Descargar</span>
+          </a>
+        )}
       </div>
     </div>
   );

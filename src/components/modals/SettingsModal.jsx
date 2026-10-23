@@ -35,6 +35,7 @@ import { useNotesStore } from '../../store/useNotesStore.js';
 import { useUIStore } from '../../store/useUIStore.js';
 import { storageService } from '../../services/storageService.js';
 import { updaterService } from '../../services/updaterService.js';
+import { usePWA } from '../../services/pwaService.js';
 import styles from './SettingsModal.module.css';
 
 const THEME_GROUPS = [
@@ -247,6 +248,7 @@ export const SettingsModal = () => {
   );
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [appVersion, setAppVersion] = useState('nightly');
+  const { canInstall, isInstalled, installApp } = usePWA();
 
   const openModal = useUIStore((state) => state.openModal);
 
@@ -1196,6 +1198,38 @@ export const SettingsModal = () => {
                       <RefreshCw size={12} className={checkingUpdates ? 'spin' : ''} />
                       <span>{checkingUpdates ? 'Buscando...' : 'Buscar actualizaciones'}</span>
                     </button>
+                  </div>
+                  <div className={styles.aboutItem}>
+                    <span className={styles.aboutLabel}>Plataforma / PWA</span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      {storageService.isElectron() ? (
+                        <span style={{ fontSize: '0.825rem', color: 'var(--accent-blue)' }}>Escritorio (Electron)</span>
+                      ) : isInstalled ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.825rem', color: 'var(--accent-green)' }}>
+                          <Check size={14} />
+                          <span>Instalada como PWA</span>
+                        </span>
+                      ) : canInstall ? (
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          onClick={async () => {
+                            const res = await installApp();
+                            if (res.success) {
+                              addToast({ message: 'Escriba se instaló correctamente como app', type: 'success' });
+                            }
+                          }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.25rem 0.65rem' }}
+                        >
+                          <Download size={13} />
+                          <span>Instalar como App</span>
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>
+                          Navegador Web (PWA lista)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 

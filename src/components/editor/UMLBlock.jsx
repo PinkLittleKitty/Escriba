@@ -13,10 +13,11 @@ import {
   LayoutTemplate,
   AlertTriangle,
   RotateCcw,
-  Scan,
   Download,
   Copy,
-  Check
+  Check,
+  FileCode,
+  Image
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore.js';
 import { MermaidAceEditor } from './MermaidAceEditor.jsx';
@@ -25,6 +26,7 @@ import { UML_PRESETS } from './umlPresets.js';
 import { getMermaidConfig, getPrintMermaidConfig } from './mermaidThemeConfig.js';
 import {
   copySvgToClipboard,
+  copyCodeToClipboard,
   exportSvgToFile,
   exportSvgToPng
 } from './umlExportUtils.js';
@@ -46,8 +48,9 @@ export const UMLBlock = ({
   const [svgContent, setSvgContent] = useState('');
   const [printSvgContent, setPrintSvgContent] = useState('');
   const [renderError, setRenderError] = useState(null);
-  const [isRendering, setIsRendering] = useState(true);
   const [isStudioOpen, setIsStudioOpen] = useState(false);
+  const [blockHeight, setBlockHeight] = useState(520);
+  const [isResizingHeight, setIsResizingHeight] = useState(false);
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -59,7 +62,10 @@ export const UMLBlock = ({
 
   const [showPresets, setShowPresets] = useState(false);
   const presetsRef = useRef(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef(null);
   const [copiedSvg, setCopiedSvg] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const theme = useSettingsStore((state) => state.theme);
 
@@ -72,6 +78,9 @@ export const UMLBlock = ({
       if (presetsRef.current && !presetsRef.current.contains(e.target)) {
         setShowPresets(false);
       }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+        setShowExportMenu(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -79,7 +88,6 @@ export const UMLBlock = ({
 
   useEffect(() => {
     let cancelled = false;
-    setIsRendering(true);
 
     const timer = setTimeout(async () => {
       mermaid.initialize(getMermaidConfig(theme));
@@ -107,7 +115,6 @@ export const UMLBlock = ({
         }
       } finally {
         if (screenContainer.parentNode) screenContainer.remove();
-        if (!cancelled) setIsRendering(false);
       }
 
       const isLightTheme = theme === 'light' || theme === 'peluche' || theme === 'catppuccin-latte';
@@ -163,12 +170,41 @@ export const UMLBlock = ({
 
   const handleMouseDown = useCallback((e) => {
     if (e.button !== 0 && e.button !== 1) return;
+    const rect = e.currentTarget?.getBoundingClientRect();
+    if (rect) {
+      if (e.clientY > rect.bottom - 20 || e.clientX > rect.right - 20) {
+        return;
+      }
+    }
     e.preventDefault();
     e.stopPropagation();
     isDragging.current = true;
     dragStart.current = { x: e.clientX, y: e.clientY };
     panAtDrag.current = pan;
   }, [pan]);
+
+  const handleResizeStart = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizingHeight(true);
+    const startY = e.clientY;
+    const startHeight = blockHeight;
+
+    const handleMouseMove = (moveEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      const newHeight = Math.max(280, Math.min(startHeight + deltaY, 1200));
+      setBlockHeight(Math.round(newHeight));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingHeight(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }, [blockHeight]);
 
   const handleMouseMove = useCallback((e) => {
     if (!isDragging.current) return;
@@ -198,36 +234,6 @@ export const UMLBlock = ({
     setZoom((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(2)));
   };
 
-  const fitToScreen = useCallback((e) => {
-    if (e) e.stopPropagation();
-    const svgEl = svgContainerRef.current?.querySelector('svg');
-    const viewportEl = viewportRef.current;
-    if (!svgEl || !viewportEl) return;
-
-    let svgW = 0;
-    let svgH = 0;
-    const viewBox = svgEl.viewBox?.baseVal;
-    if (viewBox && viewBox.width > 0 && viewBox.height > 0) {
-      svgW = viewBox.width;
-      svgH = viewBox.height;
-    } else {
-      const bbox = svgEl.getBBox ? svgEl.getBBox() : svgEl.getBoundingClientRect();
-      svgW = bbox.width;
-      svgH = bbox.height;
-    }
-
-    const vpRect = viewportEl.getBoundingClientRect();
-    if (svgW > 0 && svgH > 0 && vpRect.width > 0 && vpRect.height > 0) {
-      const pad = 48;
-      const scaleX = (vpRect.width - pad) / svgW;
-      const scaleY = (vpRect.height - pad) / svgH;
-      const optimalScale = Math.min(scaleX, scaleY);
-      const clamped = Math.max(MIN_ZOOM, Math.min(optimalScale, 2.5));
-      setZoom(+clamped.toFixed(2));
-      setPan({ x: 0, y: 0 });
-    }
-  }, []);
-
   const resetView = (e) => {
     e.stopPropagation();
     setZoom(1);
@@ -240,7 +246,7 @@ export const UMLBlock = ({
   };
 
   const handleCopySvg = async (e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const ok = await copySvgToClipboard(svgContent);
     if (ok) {
       setCopiedSvg(true);
@@ -248,8 +254,22 @@ export const UMLBlock = ({
     }
   };
 
+  const handleCopyCode = async (e) => {
+    if (e) e.stopPropagation();
+    const ok = await copyCodeToClipboard(umlCode);
+    if (ok) {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
+
+  const handleDownloadSvg = (e) => {
+    if (e) e.stopPropagation();
+    exportSvgToFile(svgContent, 'diagrama-mermaid.svg');
+  };
+
   const handleDownloadPng = (e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const svgEl = svgContainerRef.current?.querySelector('svg');
     if (svgEl) {
       exportSvgToPng(svgEl, 'diagrama-mermaid.png');
@@ -355,10 +375,10 @@ export const UMLBlock = ({
                 e.stopPropagation();
                 setIsStudioOpen(true);
               }}
-              title="Abrir en Modo Estudio (Pantalla Completa como Mermaid.live)"
+              title="Abrir en Estudio UML"
             >
               <Maximize2 size={12} />
-              <span>Modo Estudio</span>
+              <span>Estudio UML</span>
             </button>
 
             {(activeTab === 'preview' || activeTab === 'split') && (
@@ -370,32 +390,80 @@ export const UMLBlock = ({
                 <button type="button" className={styles.actionBtn} onClick={zoomIn} title="Acercar (+)">
                   <ZoomIn size={12} />
                 </button>
-                <button type="button" className={styles.actionBtn} onClick={fitToScreen} title="Ajustar al contenido">
-                  <Scan size={12} />
-                </button>
                 <button type="button" className={styles.actionBtn} onClick={resetView} title="Restablecer vista (100%)">
                   <RotateCcw size={11} />
                 </button>
               </div>
             )}
 
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={handleCopySvg}
-              title="Copiar SVG al portapapeles"
-            >
-              {copiedSvg ? <Check size={12} color="var(--accent-green, #10b981)" /> : <Copy size={12} />}
-            </button>
-
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={handleDownloadPng}
-              title="Descargar diagrama como PNG"
-            >
-              <Download size={12} />
-            </button>
+            <div className={styles.exportMenuWrapper} ref={exportMenuRef}>
+              <button
+                type="button"
+                className={styles.exportBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExportMenu((v) => !v);
+                }}
+                title="Exportar y copiar diagrama"
+              >
+                <Download size={12} />
+                <span>Exportar</span>
+                <ChevronDown size={11} />
+              </button>
+              {showExportMenu && (
+                <div className={styles.exportDropdown}>
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopySvg();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    {copiedSvg ? <Check size={12} color="var(--accent-green, #10b981)" /> : <Copy size={12} />}
+                    <span>{copiedSvg ? 'SVG Copiado' : 'Copiar SVG'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyCode();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    {copiedCode ? <Check size={12} color="var(--accent-green, #10b981)" /> : <Code size={12} />}
+                    <span>{copiedCode ? 'Código Copiado' : 'Copiar Código'}</span>
+                  </button>
+                  <div className={styles.exportDivider} />
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownloadSvg();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    <FileCode size={12} />
+                    <span>Descargar SVG</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownloadPng();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    <Image size={12} />
+                    <span>Descargar PNG</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {onDelete && (
               <button
@@ -414,7 +482,7 @@ export const UMLBlock = ({
         </div>
 
         {activeTab === 'split' ? (
-          <div className={styles.splitLayout}>
+          <div className={styles.splitLayout} style={{ height: `${blockHeight}px` }}>
             <div
               ref={viewportRef}
               className={`${styles.previewArea} ${isDragging.current ? styles.dragging : ''}`}
@@ -446,8 +514,6 @@ export const UMLBlock = ({
                 value={umlCode}
                 onChange={handleCodeChange}
                 theme={theme}
-                minLines={12}
-                maxLines={32}
               />
             </div>
           </div>
@@ -455,6 +521,7 @@ export const UMLBlock = ({
           <div
             ref={viewportRef}
             className={`${styles.previewArea} ${isDragging.current ? styles.dragging : ''}`}
+            style={{ height: `${blockHeight}px` }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -478,16 +545,24 @@ export const UMLBlock = ({
             )}
           </div>
         ) : (
-          <div className={styles.codeModeWrapper}>
+          <div className={styles.codeModeWrapper} style={{ height: `${blockHeight}px` }}>
             <MermaidAceEditor
               value={umlCode}
               onChange={handleCodeChange}
               theme={theme}
-              minLines={10}
-              maxLines={30}
             />
           </div>
         )}
+
+        <div
+          className={`${styles.heightResizeBar} ${isResizingHeight ? styles.resizing : ''}`}
+          onMouseDown={handleResizeStart}
+          onDoubleClick={() => setBlockHeight(520)}
+          title="Arrastrar para ajustar altura del bloque (Doble clic para 520px)"
+          data-testid="uml-height-resize-bar"
+        >
+          <div className={styles.resizeHandlePill} />
+        </div>
       </div>
 
       <textarea
@@ -515,7 +590,6 @@ export const UMLBlock = ({
         theme={theme}
         svgContent={svgContent}
         renderError={renderError}
-        isRendering={isRendering}
       />
     </div>
   );

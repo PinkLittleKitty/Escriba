@@ -8,8 +8,8 @@ export const MermaidAceEditor = ({
   value = '',
   onChange,
   theme = 'dark',
-  minLines = 8,
-  maxLines = Infinity,
+  minLines,
+  maxLines,
   fontSize = 13,
   className = '',
   readOnly = false,
@@ -26,11 +26,9 @@ export const MermaidAceEditor = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const editor = ace.edit(containerRef.current, {
+    const aceOptions = {
       mode: 'ace/mode/markdown',
       theme: aceTheme,
-      minLines,
-      maxLines,
       fontSize,
       showPrintMargin: false,
       tabSize: 2,
@@ -39,8 +37,20 @@ export const MermaidAceEditor = ({
       readOnly,
       wrap: true,
       useWorker: false,
+      scrollPastEnd: 0.5,
+      autoScrollEditorIntoView: false,
+      vScrollBarAlwaysVisible: false,
       fontFamily: 'JetBrains Mono, Menlo, Monaco, Consolas, monospace',
-    });
+    };
+
+    if (typeof minLines === 'number' && Number.isFinite(minLines)) {
+      aceOptions.minLines = minLines;
+    }
+    if (typeof maxLines === 'number' && Number.isFinite(maxLines)) {
+      aceOptions.maxLines = maxLines;
+    }
+
+    const editor = ace.edit(containerRef.current, aceOptions);
 
     editor.session.setUseWorker(false);
     editor.setValue(value, -1);
@@ -113,7 +123,7 @@ export const MermaidAceEditor = ({
       style={{
         width: '100%',
         height: '100%',
-        minHeight: '280px',
+        minHeight: 0,
         flex: 1,
         borderRadius: '0',
         lineHeight: 1.5,

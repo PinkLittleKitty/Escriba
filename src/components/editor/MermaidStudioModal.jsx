@@ -8,13 +8,13 @@ import {
   Download,
   ZoomIn,
   ZoomOut,
-  Maximize2,
   ChevronDown,
   AlertTriangle,
   RotateCcw,
-  Scan,
   LayoutTemplate,
-  Palette
+  Code,
+  FileCode,
+  Image
 } from 'lucide-react';
 import { MermaidAceEditor } from './MermaidAceEditor.jsx';
 import { UML_PRESETS } from './umlPresets.js';
@@ -49,10 +49,12 @@ export const MermaidStudioModal = ({
   const [showPresets, setShowPresets] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(480);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const presetsRef = useRef(null);
+  const exportMenuRef = useRef(null);
   const viewportRef = useRef(null);
   const svgContainerRef = useRef(null);
   const studioContainerRef = useRef(null);
@@ -93,6 +95,9 @@ export const MermaidStudioModal = ({
     const handler = (e) => {
       if (presetsRef.current && !presetsRef.current.contains(e.target)) {
         setShowPresets(false);
+      }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+        setShowExportMenu(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -155,35 +160,6 @@ export const MermaidStudioModal = ({
     isDragging.current = false;
   }, []);
 
-  const fitToScreen = useCallback(() => {
-    const svgEl = svgContainerRef.current?.querySelector('svg');
-    const viewportEl = viewportRef.current;
-    if (!svgEl || !viewportEl) return;
-
-    let svgW = 0;
-    let svgH = 0;
-    const viewBox = svgEl.viewBox?.baseVal;
-    if (viewBox && viewBox.width > 0 && viewBox.height > 0) {
-      svgW = viewBox.width;
-      svgH = viewBox.height;
-    } else {
-      const bbox = svgEl.getBBox ? svgEl.getBBox() : svgEl.getBoundingClientRect();
-      svgW = bbox.width;
-      svgH = bbox.height;
-    }
-
-    const vpRect = viewportEl.getBoundingClientRect();
-    if (svgW > 0 && svgH > 0 && vpRect.width > 0 && vpRect.height > 0) {
-      const pad = 64;
-      const scaleX = (vpRect.width - pad) / svgW;
-      const scaleY = (vpRect.height - pad) / svgH;
-      const optimalScale = Math.min(scaleX, scaleY);
-      const clamped = Math.max(MIN_ZOOM, Math.min(optimalScale, 2.5));
-      setZoom(+clamped.toFixed(2));
-      setPan({ x: 0, y: 0 });
-    }
-  }, []);
-
   const zoomIn = () => setZoom((z) => Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(2)));
   const zoomOut = () => setZoom((z) => Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(2)));
   const resetView = () => {
@@ -232,7 +208,7 @@ export const MermaidStudioModal = ({
           <div className={styles.headerLeft}>
             <div className={styles.brandBadge}>
               <GitGraph size={16} />
-              <span>Mermaid Live Studio</span>
+              <span>Estudio UML</span>
             </div>
             <div className={styles.presetsWrapper} ref={presetsRef}>
               <button
@@ -263,45 +239,67 @@ export const MermaidStudioModal = ({
           </div>
 
           <div className={styles.headerRight}>
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={handleCopySvg}
-              title="Copiar código SVG al portapapeles"
-            >
-              {copiedSvg ? <Check size={13} color="var(--accent-green, #10b981)" /> : <Copy size={13} />}
-              <span>{copiedSvg ? 'SVG Copiado' : 'Copiar SVG'}</span>
-            </button>
-
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={handleDownloadSvg}
-              title="Descargar como archivo SVG vectorial"
-            >
-              <Download size={13} />
-              <span>SVG</span>
-            </button>
-
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={handleDownloadPng}
-              title="Descargar como imagen PNG de alta resolución"
-            >
-              <Download size={13} />
-              <span>PNG</span>
-            </button>
-
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={handleCopyCode}
-              title="Copiar código Mermaid al portapapeles"
-            >
-              {copiedCode ? <Check size={13} color="var(--accent-green, #10b981)" /> : <Copy size={13} />}
-              <span>{copiedCode ? 'Código Copiado' : 'Código'}</span>
-            </button>
+            <div className={styles.exportMenuWrapper} ref={exportMenuRef}>
+              <button
+                type="button"
+                className={styles.dropdownBtn}
+                onClick={() => setShowExportMenu((v) => !v)}
+                title="Exportar y copiar diagrama"
+              >
+                <Download size={13} />
+                <span>Exportar</span>
+                <ChevronDown size={12} />
+              </button>
+              {showExportMenu && (
+                <div className={styles.exportDropdown}>
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={() => {
+                      handleCopySvg();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    {copiedSvg ? <Check size={13} color="var(--accent-green, #10b981)" /> : <Copy size={13} />}
+                    <span>{copiedSvg ? 'SVG Copiado' : 'Copiar SVG'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={() => {
+                      handleCopyCode();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    {copiedCode ? <Check size={13} color="var(--accent-green, #10b981)" /> : <Code size={13} />}
+                    <span>{copiedCode ? 'Código Copiado' : 'Copiar Código'}</span>
+                  </button>
+                  <div className={styles.exportDivider} />
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={() => {
+                      handleDownloadSvg();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    <FileCode size={13} />
+                    <span>Descargar SVG</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.exportItem}
+                    onClick={() => {
+                      handleDownloadPng();
+                      setShowExportMenu(false);
+                    }}
+                  >
+                    <Image size={13} />
+                    <span>Descargar PNG</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               type="button"
@@ -330,8 +328,6 @@ export const MermaidStudioModal = ({
                 value={code}
                 onChange={handleEditorChange}
                 theme={theme}
-                minLines={20}
-                maxLines={Infinity}
                 fontSize={13}
                 autoFocus={true}
               />
@@ -390,9 +386,6 @@ export const MermaidStudioModal = ({
               <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
               <button type="button" className={styles.controlBtn} onClick={zoomIn} title="Acercar (+)">
                 <ZoomIn size={14} />
-              </button>
-              <button type="button" className={styles.controlBtn} onClick={fitToScreen} title="Ajustar al contenido">
-                <Scan size={14} />
               </button>
               <button type="button" className={styles.controlBtn} onClick={resetView} title="Restablecer (100%)">
                 <RotateCcw size={14} />

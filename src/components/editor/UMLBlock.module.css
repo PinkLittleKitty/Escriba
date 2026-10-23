@@ -179,6 +179,77 @@
   justify-content: flex-end;
 }
 
+.exportMenuWrapper {
+  position: relative;
+}
+
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-xs, 4px);
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.exportBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--border-hover, var(--border-color));
+}
+
+.exportDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 500;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  min-width: 175px;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  animation: fadeIn 0.12s ease;
+}
+
+.exportItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs, 4px);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+
+.exportItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.exportDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0.2rem 0.3rem;
+}
+
 .zoomControls {
   display: flex;
   align-items: center;
@@ -227,10 +298,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 320px;
+  min-height: 280px;
   height: 520px;
-  max-height: 950px;
-  resize: vertical;
+  max-height: 1200px;
   overflow: hidden;
   position: relative;
   user-select: none;
@@ -281,10 +351,9 @@
 .splitLayout {
   display: flex;
   flex-direction: row;
-  min-height: 320px;
+  min-height: 280px;
   height: 520px;
-  max-height: 950px;
-  resize: vertical;
+  max-height: 1200px;
   overflow: hidden;
 }
 
@@ -299,8 +368,8 @@
 
 .splitEditorWrapper {
   flex: 2;
-  min-height: 100%;
-  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
   height: 100%;
   overflow: hidden;
   display: flex;
@@ -313,10 +382,9 @@
 }
 
 .codeModeWrapper {
-  min-height: 320px;
+  min-height: 280px;
   height: 520px;
-  max-height: 950px;
-  resize: vertical;
+  max-height: 1200px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -327,6 +395,42 @@
   height: 100% !important;
   width: 100% !important;
   flex: 1 !important;
+}
+
+.heightResizeBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 14px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  cursor: row-resize;
+  user-select: none;
+  transition: background 0.15s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.heightResizeBar:hover,
+.heightResizeBar.resizing {
+  background: var(--bg-hover);
+}
+
+.resizeHandlePill {
+  width: 38px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.heightResizeBar:hover .resizeHandlePill,
+.heightResizeBar.resizing .resizeHandlePill {
+  background: var(--accent-purple, #a855f7);
+  opacity: 1;
+  width: 56px;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
 }
 
 .errorFloatingBadge {

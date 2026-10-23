@@ -36,7 +36,7 @@ describe('UMLBlock Component (Mermaid Live features)', () => {
     expect(screen.getByTitle(/vista previa interactiva/i)).toBeInTheDocument();
     expect(screen.getByTitle(/vista dividida/i)).toBeInTheDocument();
     expect(screen.getByTitle(/editor de código/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/modo estudio/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/abrir en estudio/i)).toBeInTheDocument();
   });
 
   it('switches between preview, split, and code tabs', () => {
@@ -66,17 +66,28 @@ describe('UMLBlock Component (Mermaid Live features)', () => {
     );
   });
 
-  it('opens Mermaid Live Studio modal when clicking Modo Estudio button', () => {
+  it('opens Estudio UML modal when clicking Estudio UML button', () => {
     render(<UMLBlock code="graph TD\n  A --> B" />);
 
-    const studioBtn = screen.getByTitle(/modo estudio/i);
+    const studioBtn = screen.getByTitle(/abrir en estudio/i);
     fireEvent.click(studioBtn);
 
-    expect(screen.getByText('Mermaid Live Studio')).toBeInTheDocument();
     expect(screen.getByTitle(/cerrar estudio/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByTitle(/cerrar estudio/i));
-    expect(screen.queryByText('Mermaid Live Studio')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/cerrar estudio/i)).not.toBeInTheDocument();
+  });
+
+  it('opens export submenu and displays export options', () => {
+    render(<UMLBlock code="graph TD\n  A --> B" />);
+
+    const exportBtn = screen.getByTitle(/exportar y copiar/i);
+    fireEvent.click(exportBtn);
+
+    expect(screen.getByText('Copiar SVG')).toBeInTheDocument();
+    expect(screen.getByText('Copiar Código')).toBeInTheDocument();
+    expect(screen.getByText('Descargar SVG')).toBeInTheDocument();
+    expect(screen.getByText('Descargar PNG')).toBeInTheDocument();
   });
 
   it('allows zoom controls to increase, decrease, and reset zoom', () => {
@@ -112,5 +123,46 @@ describe('UMLBlock Component (Mermaid Live features)', () => {
     const umlContainer = container.querySelector('[data-uml-code]');
     expect(umlContainer).toBeInTheDocument();
     expect(umlContainer.getAttribute('data-uml-code')).toBe(testCode);
+  });
+
+  it('renders vertical height resize bar and resizes height on drag', () => {
+    const { container } = render(<UMLBlock code="graph TD\n  A --> B" />);
+    const resizeBar = screen.getByTestId('uml-height-resize-bar');
+    expect(resizeBar).toBeInTheDocument();
+
+    const previewEl = container.querySelector('[class*="previewArea"]');
+    expect(previewEl.style.height).toBe('520px');
+
+    fireEvent.mouseDown(resizeBar, { clientY: 500 });
+    fireEvent.mouseMove(window, { clientY: 650 });
+    fireEvent.mouseUp(window);
+
+    expect(previewEl.style.height).toBe('670px');
+
+    fireEvent.doubleClick(resizeBar);
+    expect(previewEl.style.height).toBe('520px');
+  });
+
+  it('does not pan canvas when clicking near the bottom-right corner of preview area', () => {
+    const { container } = render(<UMLBlock code="graph TD\n  A --> B" />);
+    const previewEl = container.querySelector('[class*="previewArea"]');
+
+    vi.spyOn(previewEl, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      right: 500,
+      bottom: 520,
+      width: 500,
+      height: 520,
+    });
+
+    const svgCanvas = container.querySelector('[class*="svgCanvas"]');
+    const initialTransform = svgCanvas.style.transform;
+
+    fireEvent.mouseDown(previewEl, { clientX: 250, clientY: 515 });
+    fireEvent.mouseMove(previewEl, { clientX: 250, clientY: 600 });
+    fireEvent.mouseUp(previewEl);
+
+    expect(svgCanvas.style.transform).toBe(initialTransform);
   });
 });

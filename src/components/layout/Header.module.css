@@ -126,8 +126,25 @@
   color: var(--text-primary);
 }
 
-.syncBtn.syncing svg,
+.syncIconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.syncIconWrap svg {
+  display: block;
+}
+
 .spin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
   animation: spin 1s linear infinite;
 }
 

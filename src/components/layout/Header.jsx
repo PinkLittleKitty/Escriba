@@ -116,7 +116,9 @@ export const Header = () => {
                     : 'Sincronizar con GitHub'
               }
             >
-              <RefreshCw size={14} className={syncStatus === 'syncing' ? styles.spin : ''} />
+              <span className={`${styles.syncIconWrap} ${syncStatus === 'syncing' ? styles.spin : ''}`}>
+                <RefreshCw size={14} />
+              </span>
               <span>
                 {syncStatus === 'syncing'
                   ? 'Sincronizando...'

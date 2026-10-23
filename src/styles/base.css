@@ -189,6 +189,10 @@ textarea:focus-visible {
 }
 
 .spin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
   animation: spin 1s linear infinite;
 }
 

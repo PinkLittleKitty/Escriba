@@ -1193,7 +1193,7 @@ export const SettingsModal = () => {
                       disabled={checkingUpdates}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.25rem 0.65rem' }}
                     >
-                      <RefreshCw size={12} className={checkingUpdates ? styles.spinning : ''} />
+                      <RefreshCw size={12} className={checkingUpdates ? 'spin' : ''} />
                       <span>{checkingUpdates ? 'Buscando...' : 'Buscar actualizaciones'}</span>
                     </button>
                   </div>

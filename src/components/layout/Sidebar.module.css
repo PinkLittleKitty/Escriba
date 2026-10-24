@@ -1480,18 +1480,30 @@
 @media (max-width: 768px) {
   .mobileGrabber {
     display: block;
-    width: 44px;
+    width: 48px;
     height: 5px;
     background: var(--border-color);
     border-radius: 3px;
     margin: 10px auto 6px auto;
     flex-shrink: 0;
     opacity: 0.7;
-    cursor: pointer;
+    cursor: grab;
+    position: relative;
+    touch-action: none;
     transition: opacity 0.2s ease, background-color 0.2s ease;
   }
 
-  .mobileGrabber:hover {
+  .mobileGrabber::before {
+    content: '';
+    position: absolute;
+    top: -14px;
+    bottom: -14px;
+    left: -24px;
+    right: -24px;
+  }
+
+  .mobileGrabber:hover,
+  .mobileGrabber:active {
     opacity: 1;
     background: var(--text-muted);
   }
@@ -1516,6 +1528,7 @@
     z-index: 1500 !important;
     display: flex !important;
     flex-direction: column !important;
+    overscroll-behavior-y: contain;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 

@@ -196,7 +196,7 @@ export const MathBlock = ({
                 title="Copiar código LaTeX"
               >
                 {copied ? <Check size={13} color="var(--accent-green, #10b981)" /> : <Copy size={13} />}
-                <span>{copied ? 'Copiado' : 'Copiar'}</span>
+                <span className={styles.btnLabel}>{copied ? 'Copiado' : 'Copiar'}</span>
               </button>
               {onDelete && (
                 <button

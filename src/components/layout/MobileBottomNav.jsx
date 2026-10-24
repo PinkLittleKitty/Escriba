@@ -19,6 +19,9 @@ export const MobileBottomNav = () => {
   const activeModal = useUIStore((state) => state.activeModal);
 
   const handleNavClick = (target) => {
+    if (activeModal && target !== 'settings') {
+      useUIStore.getState().closeModal();
+    }
     if (target === 'dashboard') {
       setActiveView('dashboard');
       setSidebarOpen(false);
@@ -29,7 +32,11 @@ export const MobileBottomNav = () => {
       toggleSidebar();
     } else if (target === 'settings') {
       setSidebarOpen(false);
-      openModal('settings');
+      if (activeModal === 'settings') {
+        useUIStore.getState().closeModal();
+      } else {
+        openModal('settings');
+      }
     }
   };
 

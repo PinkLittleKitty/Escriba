@@ -148,3 +148,38 @@
     transform: translateY(0);
   }
 }
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0.35rem 0.5rem;
+    gap: 0.2rem;
+  }
+
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toolbarGroup {
+    flex-shrink: 0;
+  }
+
+  .separator {
+    margin: 0 0.2rem;
+    height: 16px;
+  }
+
+  .toolbarBtn {
+    padding: 0.35rem 0.4rem;
+  }
+
+  .dropdownMenu {
+    position: fixed;
+    z-index: 1000;
+  }
+}

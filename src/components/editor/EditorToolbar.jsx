@@ -51,6 +51,17 @@ export const EditorToolbar = ({
   const highlightMenuRef = useRef(null);
   const savedSelectionRef = useRef(null);
 
+  const getMobileDropdownStyle = (ref) => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768 && ref?.current) {
+      const rect = ref.current.getBoundingClientRect();
+      return {
+        top: `${Math.round(rect.bottom + 4)}px`,
+        left: `${Math.round(Math.max(8, Math.min(rect.left, window.innerWidth - 185)))}px`
+      };
+    }
+    return {};
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (fontMenuRef.current && !fontMenuRef.current.contains(e.target)) {
@@ -207,7 +218,7 @@ export const EditorToolbar = ({
           {showHighlightMenu && (
             <div
               className={styles.dropdownMenu}
-              style={{ minWidth: '175px' }}
+              style={{ minWidth: '175px', ...getMobileDropdownStyle(highlightMenuRef) }}
               onMouseDown={(e) => e.preventDefault()}
             >
               <ColorPicker
@@ -248,7 +259,11 @@ export const EditorToolbar = ({
             <Type size={15} />
           </button>
           {showFontMenu && (
-            <div className={styles.dropdownMenu} onMouseDown={(e) => e.preventDefault()}>
+            <div
+              className={styles.dropdownMenu}
+              style={{ ...getMobileDropdownStyle(fontMenuRef) }}
+              onMouseDown={(e) => e.preventDefault()}
+            >
               <button type="button" className={styles.dropdownOption} onClick={() => handleFontSize('2')}>
                 Chico
               </button>
@@ -284,7 +299,7 @@ export const EditorToolbar = ({
           {showColorMenu && (
             <div
               className={styles.dropdownMenu}
-              style={{ minWidth: '180px' }}
+              style={{ minWidth: '180px', ...getMobileDropdownStyle(colorMenuRef) }}
               onMouseDown={(e) => e.preventDefault()}
             >
               <ColorPicker onChange={handleTextColor} size="small" />

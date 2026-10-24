@@ -411,6 +411,14 @@ export const SettingsModal = () => {
     }
   };
 
+  const handleTabClick = (tabKey) => {
+    setSettingsTab(tabKey);
+    const tabEl = document.getElementById(`settings-tab-${tabKey}`);
+    if (tabEl) {
+      tabEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  };
+
   return (
     <div className={styles.overlay} onClick={closeModal}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -430,8 +438,9 @@ export const SettingsModal = () => {
           <aside className={styles.settingsSidebar}>
             <button
               type="button"
+              id="settings-tab-general"
               className={`${styles.tabBtn} ${settingsTab === 'general' ? styles.active : ''}`}
-              onClick={() => setSettingsTab('general')}
+              onClick={() => handleTabClick('general')}
             >
               <SlidersHorizontal size={16} />
               <span>General</span>
@@ -439,8 +448,9 @@ export const SettingsModal = () => {
 
             <button
               type="button"
+              id="settings-tab-appearance"
               className={`${styles.tabBtn} ${settingsTab === 'appearance' ? styles.active : ''}`}
-              onClick={() => setSettingsTab('appearance')}
+              onClick={() => handleTabClick('appearance')}
             >
               <Paintbrush size={16} />
               <span>Apariencia</span>
@@ -448,29 +458,35 @@ export const SettingsModal = () => {
 
             <button
               type="button"
+              id="settings-tab-storage"
               className={`${styles.tabBtn} ${settingsTab === 'storage' ? styles.active : ''}`}
-              onClick={() => setSettingsTab('storage')}
+              onClick={() => handleTabClick('storage')}
             >
               <HardDrive size={16} />
-              <span>Almacenamiento & Sync</span>
+              <span className={styles.tabFullLabel}>Almacenamiento & Sync</span>
+              <span className={styles.tabShortLabel}>Sync</span>
             </button>
 
             <button
               type="button"
+              id="settings-tab-data"
               className={`${styles.tabBtn} ${settingsTab === 'data' ? styles.active : ''}`}
-              onClick={() => setSettingsTab('data')}
+              onClick={() => handleTabClick('data')}
             >
               <Database size={16} />
-              <span>Datos y Carpeta</span>
+              <span className={styles.tabFullLabel}>Datos y Carpeta</span>
+              <span className={styles.tabShortLabel}>Datos</span>
             </button>
 
             <button
               type="button"
+              id="settings-tab-about"
               className={`${styles.tabBtn} ${settingsTab === 'about' ? styles.active : ''}`}
-              onClick={() => setSettingsTab('about')}
+              onClick={() => handleTabClick('about')}
             >
               <HelpCircle size={16} />
-              <span>Ayuda / Acerca de</span>
+              <span className={styles.tabFullLabel}>Ayuda / Acerca de</span>
+              <span className={styles.tabShortLabel}>Ayuda</span>
             </button>
           </aside>
 
@@ -534,62 +550,58 @@ export const SettingsModal = () => {
                     Elegí el esquema de colores que mejor se adapte a tu entorno de estudio.
                   </p>
 
-                  <div className={styles.themeGroupsContainer}>
-                    {THEME_GROUPS.map((group, idx) => (
-                      <div key={idx} className={styles.themeGrid}>
-                        {group.themes.map((theme) => {
-                          const isCurrent = (settings.theme || 'dark') === theme.id;
-                          return (
+                  <div className={styles.themeGrid}>
+                    {THEMES.map((theme) => {
+                      const isCurrent = (settings.theme || 'dark') === theme.id;
+                      return (
+                        <div
+                          key={theme.id}
+                          className={`${styles.themeCard} ${isCurrent ? styles.activeTheme : ''}`}
+                          onClick={() => setTheme(theme.id)}
+                        >
+                          <div
+                            className={styles.themeMiniWindow}
+                            style={{ backgroundColor: theme.previewBg }}
+                          >
                             <div
-                              key={theme.id}
-                              className={`${styles.themeCard} ${isCurrent ? styles.activeTheme : ''}`}
-                              onClick={() => setTheme(theme.id)}
+                              className={styles.miniWindowHeader}
+                              style={{ backgroundColor: theme.headerBg }}
                             >
+                              <div className={styles.miniDots} />
+                            </div>
+                            <div className={styles.miniWindowBody}>
                               <div
-                                className={styles.themeMiniWindow}
-                                style={{ backgroundColor: theme.previewBg }}
+                                className={styles.miniWindowSidebar}
+                                style={{ backgroundColor: theme.sidebarBg }}
                               >
                                 <div
-                                  className={styles.miniWindowHeader}
-                                  style={{ backgroundColor: theme.headerBg }}
-                                >
-                                  <div className={styles.miniDots} />
-                                </div>
-                                <div className={styles.miniWindowBody}>
-                                  <div
-                                    className={styles.miniWindowSidebar}
-                                    style={{ backgroundColor: theme.sidebarBg }}
-                                  >
-                                    <div
-                                      className={styles.miniSidebarItem}
-                                      style={{ backgroundColor: theme.item1 }}
-                                    />
-                                    <div
-                                      className={styles.miniSidebarItem}
-                                      style={{ backgroundColor: theme.item2 }}
-                                    />
-                                  </div>
-                                  <div
-                                    className={styles.miniWindowContent}
-                                    style={{ backgroundColor: theme.contentBg }}
-                                  >
-                                    <div
-                                      className={styles.miniLineMain}
-                                      style={{ backgroundColor: theme.lineMain }}
-                                    />
-                                    <div
-                                      className={styles.miniLineSub}
-                                      style={{ backgroundColor: theme.lineSub }}
-                                    />
-                                  </div>
-                                </div>
+                                  className={styles.miniSidebarItem}
+                                  style={{ backgroundColor: theme.item1 }}
+                                />
+                                <div
+                                  className={styles.miniSidebarItem}
+                                  style={{ backgroundColor: theme.item2 }}
+                                />
                               </div>
-                              <span className={styles.themeName}>{theme.name}</span>
+                              <div
+                                className={styles.miniWindowContent}
+                                style={{ backgroundColor: theme.contentBg }}
+                              >
+                                <div
+                                  className={styles.miniLineMain}
+                                  style={{ backgroundColor: theme.lineMain }}
+                                />
+                                <div
+                                  className={styles.miniLineSub}
+                                  style={{ backgroundColor: theme.lineSub }}
+                                />
+                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                          </div>
+                          <span className={styles.themeName}>{theme.name}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -674,8 +686,7 @@ export const SettingsModal = () => {
                   </div>
                 </div>
 
-                {(settings.storageMode || 'local') === 'github' && (
-                  <div className={styles.settingsSection}>
+                <div className={styles.settingsSection}>
                     <div className={styles.sectionHeader}>
                       <GitHubIcon size={18} color="var(--accent-blue)" />
                       <span>Sincronización con GitHub</span>
@@ -683,17 +694,7 @@ export const SettingsModal = () => {
 
                     {isAuthenticated ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div
-                          style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border-color)',
-                            padding: '1rem 1.25rem',
-                            borderRadius: 'var(--radius-lg)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}
-                        >
+                        <div className={styles.accountCard}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                             <GitHubIcon size={28} color="var(--accent-blue)" />
                             <div>
@@ -949,7 +950,6 @@ export const SettingsModal = () => {
                       </div>
                     )}
                   </div>
-                )}
 
                 {settings.storageMode === 'local' && (
                   <div className={styles.settingsSection}>

@@ -252,3 +252,56 @@
     text-align: center !important;
   }
 }
+
+@media (max-width: 768px) {
+  .btnLabel {
+    display: none;
+  }
+
+  .mathHeader {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .headerLeft {
+    font-size: 0.72rem;
+    gap: 5px;
+  }
+
+  .tabBtn {
+    padding: 3px 7px;
+    font-size: 0.7rem;
+  }
+
+  .actionBtn {
+    padding: 4px 6px;
+  }
+
+  .quickSymbolsBar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 6px;
+    gap: 5px;
+  }
+
+  .quickSymbolsBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .quickSymbolChip,
+  .quickStructureChip {
+    flex-shrink: 0;
+    padding: 4px 9px;
+    font-size: 0.8rem;
+  }
+
+  .previewArea {
+    padding: 1.25rem 0.75rem;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+

@@ -316,3 +316,61 @@
     transform: translateY(0);
   }
 }
+
+@media (max-width: 768px) {
+  .modalContent {
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  .modalHeader {
+    padding: 0.65rem 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .titleArea {
+    gap: 0.45rem;
+  }
+
+  .modalTitle {
+    font-size: 0.95rem;
+  }
+
+  .statsBadge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .searchBar {
+    width: 100%;
+    order: 3;
+  }
+
+  .controlsPanel {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+
+  .controlBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .legendPanel {
+    display: none;
+  }
+
+  .nodeCard {
+    top: auto;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    right: 50px;
+    max-width: calc(100% - 62px);
+  }
+}

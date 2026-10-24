@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, Download, X } from 'lucide-react';
+import { Monitor, Smartphone, Download, X } from 'lucide-react';
 import { storageService } from '../../services/storageService.js';
 import { usePWA } from '../../services/pwaService.js';
 import styles from './DesktopDownloadPopup.module.css';
@@ -12,9 +12,15 @@ export const DesktopDownloadPopup = () => {
   const [isClosing, setIsClosing] = useState(false);
   const { canInstall, isInstalled, installApp } = usePWA();
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
   useEffect(() => {
     const isElectron = storageService.isElectron();
     const isDismissed = localStorage.getItem(STORAGE_KEY) === 'true';
+
+    if (isMobile && !canInstall) {
+      return;
+    }
 
     if (!isElectron && !isInstalled && !isDismissed) {
       const timer = setTimeout(() => {
@@ -22,7 +28,7 @@ export const DesktopDownloadPopup = () => {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [isInstalled]);
+  }, [isInstalled, canInstall, isMobile]);
 
   const handleDismiss = () => {
     setIsClosing(true);
@@ -42,7 +48,7 @@ export const DesktopDownloadPopup = () => {
     <div
       className={`${styles.popup} ${isClosing ? styles.closing : ''}`}
       role="dialog"
-      aria-label="Descargar versión para PC"
+      aria-label={isMobile ? 'Instalar aplicación móvil' : 'Descargar versión para PC'}
     >
       <button
         type="button"
@@ -56,12 +62,20 @@ export const DesktopDownloadPopup = () => {
 
       <div className={styles.header}>
         <div className={styles.iconWrapper}>
-          <Monitor size={20} className={styles.monitorIcon} />
+          {isMobile ? (
+            <Smartphone size={20} className={styles.monitorIcon} />
+          ) : (
+            <Monitor size={20} className={styles.monitorIcon} />
+          )}
         </div>
         <div className={styles.textContainer}>
-          <h4 className={styles.title}>Escriba para escritorio</h4>
+          <h4 className={styles.title}>
+            {isMobile ? 'Instalar Escriba' : 'Escriba para escritorio'}
+          </h4>
           <p className={styles.description}>
-            Llevá Escriba a tu escritorio con almacenamiento local y atajos nativos.
+            {isMobile
+              ? 'Instalá la app en tu dispositivo para acceder a tus notas rápido y sin conexión.'
+              : 'Llevá Escriba a tu escritorio con almacenamiento local y atajos nativos.'}
           </p>
         </div>
       </div>

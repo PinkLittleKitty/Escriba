@@ -958,7 +958,7 @@ export const NoteEditor = () => {
 
           <button
             type="button"
-            className="btn-icon"
+            className={`btn-icon ${styles.printBtn}`}
             onClick={handlePrint}
             title="Imprimir / Exportar PDF"
           >

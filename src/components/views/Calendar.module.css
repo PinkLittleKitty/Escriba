@@ -177,13 +177,93 @@
   gap: 0.4rem;
 }
 
+.desktopEvents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.mobileDots {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .calendarContainer {
     flex-direction: column;
+    overflow-y: auto;
   }
+
   .sidebarPanel {
     width: 100%;
     border-left: none;
     border-top: 1px solid var(--border-color);
+  }
+}
+
+@media (max-width: 768px) {
+  .calendarMain {
+    padding: 0.85rem 0.65rem;
+  }
+
+  .calendarHeader {
+    margin-bottom: 0.85rem;
+    gap: 0.6rem;
+  }
+
+  .currentMonthTitle {
+    font-size: 1.15rem;
+    min-width: auto;
+  }
+
+  .weekdaysHeader {
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .weekdayName {
+    padding: 0.45rem 0.2rem;
+    font-size: 0.72rem;
+  }
+
+  .daysGrid {
+    min-height: auto;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .dayCell {
+    min-height: 52px;
+    padding: 0.3rem 0.15rem;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .dayNumber {
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .desktopEvents {
+    display: none;
+  }
+
+  .mobileDots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 2px;
+  }
+
+  .mobileEventDot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .sidebarPanel {
+    padding: 1rem 0.85rem;
+    gap: 1rem;
   }
 }

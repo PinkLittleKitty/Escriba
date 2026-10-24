@@ -7,6 +7,8 @@
   box-shadow: var(--shadow-sm);
   user-select: text;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .umlContainer:focus-within {
@@ -506,5 +508,53 @@
     height: auto !important;
     max-height: 550pt !important;
     background: #ffffff !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .umlHeader {
+    padding: 0.35rem 0.5rem;
+    gap: 0.35rem;
+  }
+
+  .headerTitle {
+    display: none;
+  }
+
+  .presetsBtn span {
+    display: none;
+  }
+
+  .studioBtn span {
+    display: none;
+  }
+
+  .exportBtn span {
+    display: none;
+  }
+
+  .tabBtn span {
+    display: none;
+  }
+
+  .tabGroup button:last-child {
+    display: none !important;
+  }
+
+  .zoomControls {
+    display: none !important;
+  }
+
+  .editorWrapper.splitMode {
+    flex-direction: column !important;
+  }
+
+  .editorWrapper.splitMode .editorPanel,
+  .editorWrapper.splitMode .previewPanel {
+    width: 100% !important;
+  }
+
+  .previewArea {
+    min-height: 180px;
   }
 }

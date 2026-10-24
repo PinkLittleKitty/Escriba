@@ -94,7 +94,7 @@ export const Header = () => {
       </div>
 
       <div className={styles.rightSection}>
-        {isAuthenticated && (
+        {isAuthenticated ? (
           <div className={styles.githubGroup}>
             <button
               type="button"
@@ -119,7 +119,7 @@ export const Header = () => {
               <span className={`${styles.syncIconWrap} ${syncStatus === 'syncing' ? styles.spin : ''}`}>
                 <RefreshCw size={14} />
               </span>
-              <span>
+              <span className={styles.syncBtnText}>
                 {syncStatus === 'syncing'
                   ? 'Sincronizando...'
                   : syncStatus === 'success'
@@ -148,6 +148,21 @@ export const Header = () => {
               <Upload size={15} />
             </button>
           </div>
+        ) : (
+          <button
+            type="button"
+            className={styles.syncBtnUnauth}
+            onClick={() => {
+              useUIStore.getState().setSettingsTab('storage');
+              useUIStore.getState().openModal('settings');
+            }}
+            title="Conectar con GitHub para sincronizar notas"
+          >
+            <span className={styles.syncIconWrap}>
+              <RefreshCw size={14} />
+            </span>
+            <span className={styles.syncBtnText}>Sincronizar</span>
+          </button>
         )}
 
         <button

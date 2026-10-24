@@ -1041,13 +1041,47 @@ export const Sidebar = () => {
     });
   };
 
+  const [sheetDragY, setSheetDragY] = useState(0);
+  const touchStartYRef = useRef(null);
+  const isDraggingSheetRef = useRef(false);
+
+  const handleGrabberTouchStart = (e) => {
+    touchStartYRef.current = e.touches[0].clientY;
+    isDraggingSheetRef.current = true;
+  };
+
+  const handleGrabberTouchMove = (e) => {
+    if (!isDraggingSheetRef.current || touchStartYRef.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartYRef.current;
+    if (diff > 0) {
+      setSheetDragY(diff);
+    } else {
+      setSheetDragY(0);
+    }
+  };
+
+  const handleGrabberTouchEnd = () => {
+    if (!isDraggingSheetRef.current) return;
+    if (sheetDragY > 70) {
+      setSidebarOpen(false);
+    }
+    setSheetDragY(0);
+    isDraggingSheetRef.current = false;
+    touchStartYRef.current = null;
+  };
+
   return (
     <aside
       className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''} ${sidebarCollapsed ? styles.collapsed : ''}`}
+      style={sheetDragY > 0 ? { transform: `translateY(${sheetDragY}px)`, transition: 'none' } : undefined}
     >
       <div
         className={styles.mobileGrabber}
         onClick={() => setSidebarOpen(false)}
+        onTouchStart={handleGrabberTouchStart}
+        onTouchMove={handleGrabberTouchMove}
+        onTouchEnd={handleGrabberTouchEnd}
         role="button"
         tabIndex={0}
         aria-label="Cerrar cajón de materias"

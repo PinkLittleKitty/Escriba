@@ -171,31 +171,48 @@ export const CalendarView = () => {
                 onClick={() => setSelectedDate(cell.date)}
               >
                 <span className={styles.dayNumber}>{cell.day}</span>
-                {dayEvents.slice(0, 2).map((ev) => {
-                  const evSubject = subjects.find((s) => s.id === ev.subjectId);
-                  return (
-                    <div
-                      key={ev.id}
-                      className={styles.eventPill}
-                      style={{
-                        background: evSubject?.color ? `${evSubject.color}22` : 'var(--accent-blue-bg)',
-                        color: evSubject?.color || 'var(--accent-blue)',
-                        borderLeft: `2px solid ${evSubject?.color || 'var(--accent-blue)'}`
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openModal('event', { event: ev });
-                      }}
-                      title={`${ev.title} (Click para editar)`}
-                    >
-                      <span>{ev.title}</span>
-                    </div>
-                  );
-                })}
-                {dayEvents.length > 2 && (
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                    +{dayEvents.length - 2} más
-                  </span>
+                <div className={styles.desktopEvents}>
+                  {dayEvents.slice(0, 2).map((ev) => {
+                    const evSubject = subjects.find((s) => s.id === ev.subjectId);
+                    return (
+                      <div
+                        key={ev.id}
+                        className={styles.eventPill}
+                        style={{
+                          background: evSubject?.color ? `${evSubject.color}22` : 'var(--accent-blue-bg)',
+                          color: evSubject?.color || 'var(--accent-blue)',
+                          borderLeft: `2px solid ${evSubject?.color || 'var(--accent-blue)'}`
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openModal('event', { event: ev });
+                        }}
+                        title={`${ev.title} (Click para editar)`}
+                      >
+                        <span>{ev.title}</span>
+                      </div>
+                    );
+                  })}
+                  {dayEvents.length > 2 && (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                      +{dayEvents.length - 2} más
+                    </span>
+                  )}
+                </div>
+
+                {dayEvents.length > 0 && (
+                  <div className={styles.mobileDots}>
+                    {dayEvents.slice(0, 3).map((ev) => {
+                      const evSubject = subjects.find((s) => s.id === ev.subjectId);
+                      return (
+                        <span
+                          key={ev.id}
+                          className={styles.mobileEventDot}
+                          style={{ backgroundColor: evSubject?.color || 'var(--accent-blue)' }}
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             );

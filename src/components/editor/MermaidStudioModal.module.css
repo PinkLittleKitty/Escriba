@@ -555,3 +555,64 @@
     transform: rotate(360deg);
   }
 }
+
+@media (max-width: 768px) {
+  .overlay {
+    padding: 0;
+  }
+
+  .studioModal {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .studioHeader {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .title {
+    font-size: 0.85rem;
+  }
+
+  .headerActions button span,
+  .exportBtn span,
+  .applyBtn span {
+    display: none;
+  }
+
+  .studioBody {
+    flex-direction: column;
+  }
+
+  .editorPane {
+    width: 100% !important;
+    height: 45%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .previewPane {
+    width: 100% !important;
+    height: 55%;
+  }
+
+  .zoomOverlay {
+    bottom: 0.5rem;
+    right: 0.5rem;
+    padding: 2px 4px;
+    gap: 2px;
+  }
+
+  .zoomBtn {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+
+  .zoomLevel {
+    display: none;
+  }
+}

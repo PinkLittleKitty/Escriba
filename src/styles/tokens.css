@@ -29,7 +29,7 @@
   --z-header: 200;
   --z-overlay: 300;
   --z-dropdown: 400;
-  --z-modal: 500;
-  --z-toast: 600;
-  --z-tooltip: 700;
+  --z-modal: 2000;
+  --z-toast: 3000;
+  --z-tooltip: 4000;
 }

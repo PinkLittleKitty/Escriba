@@ -414,7 +414,7 @@ export const SettingsModal = () => {
   const handleTabClick = (tabKey) => {
     setSettingsTab(tabKey);
     const tabEl = document.getElementById(`settings-tab-${tabKey}`);
-    if (tabEl) {
+    if (tabEl?.scrollIntoView) {
       tabEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
   };

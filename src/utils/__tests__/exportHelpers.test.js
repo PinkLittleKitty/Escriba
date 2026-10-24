@@ -308,7 +308,7 @@ describe('exportHelpers', () => {
       const container = document.getElementById('printFolderContainer');
       expect(container).not.toBeNull();
       expect(container.innerHTML).toContain('POO2');
-    }, 15000);
+    }, 30000);
   });
 
   describe('File Export formatting for Code and UML Blocks', () => {

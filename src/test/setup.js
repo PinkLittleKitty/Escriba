@@ -34,3 +34,7 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false
   })
 });
+
+if (typeof window.HTMLElement.prototype.scrollIntoView !== 'function') {
+  window.HTMLElement.prototype.scrollIntoView = () => { };
+}
